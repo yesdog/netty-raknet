@@ -1,0 +1,28 @@
+<project name="RakNetServer" default="build" basedir=".">
+
+	<property name="src.dir" value="src" />
+	<property name="build.dir" value="build" />
+	<property name="classes.dir" value="${build.dir}/classes" />
+	<property name="libs.dir" value="libs" />
+
+	<path id="libs">
+		<fileset dir="${libs.dir}" includes="**/*.jar" />
+	</path>
+
+	<property name="UDPServerSocketChannel.file" value="${libs.dir}/UdpServerSocketChannel.jar"/>
+
+	<target name="build">
+		<mkdir dir="${libs.dir}"/>
+		<mkdir dir="${classes.dir}"/>
+		<get src="http://repo1.maven.org/maven2/io/netty/netty-all/4.0.30.Final/netty-all-4.0.30.Final.jar" dest="${libs.dir}/netty.jar" usetimestamp="true"/>
+		<get src="http://build.true-games.org/view/ProtocolSupport/job/UdpServerSocketChannel/lastSuccessfulBuild/artifact/target/UdpServerSocketChannel.jar" dest="${UDPServerSocketChannel.file}" usetimestamp="true"/>
+		<javac source="1.7" target="1.7" encoding="UTF-8" srcdir="${src.dir}" destdir="${classes.dir}" classpathref="libs" debug="on"/>
+		<unzip dest="${classes.dir}" src="${UDPServerSocketChannel.file}"/>
+		<copy todir="${classes.dir}">
+			<fileset file="LICENSE"/>
+		</copy>
+		<jar destfile="target/RakNetServer.jar" basedir="${classes.dir}"/>
+		<delete dir="${build.dir}" />
+	</target>
+
+</project>

@@ -1,0 +1,10 @@
+# Build Folders #
+bin/
+libs/
+build/
+target/
+.externalToolBuilders/
+ # Eclipse Files #
+*.project
+*.classpath
+*.prefs
