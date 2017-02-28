@@ -17,11 +17,10 @@
 		<get src="http://repo1.maven.org/maven2/io/netty/netty-all/4.0.30.Final/netty-all-4.0.30.Final.jar" dest="${libs.dir}/netty.jar" usetimestamp="true"/>
 		<get src="http://build.true-games.org/view/ProtocolSupport/job/UdpServerSocketChannel/lastSuccessfulBuild/artifact/target/UdpServerSocketChannel.jar" dest="${UDPServerSocketChannel.file}" usetimestamp="true"/>
 		<javac source="1.8" target="1.8" encoding="UTF-8" srcdir="${src.dir}" destdir="${classes.dir}" classpathref="libs" debug="on"/>
-		<unzip dest="${classes.dir}" src="${UDPServerSocketChannel.file}"/>
-		<copy todir="${classes.dir}">
+		<jar destfile="target/RakNetServer.jar" basedir="${classes.dir}">
 			<fileset file="LICENSE"/>
-		</copy>
-		<jar destfile="target/RakNetServer.jar" basedir="${classes.dir}"/>
+			<zipgroupfileset file="${UDPServerSocketChannel.file}"/>
+		</jar>
 		<delete dir="${build.dir}" />
 	</target>
 
