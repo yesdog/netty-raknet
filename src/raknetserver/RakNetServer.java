@@ -46,17 +46,17 @@ public class RakNetServer {
 			@Override
 			protected void initChannel(Channel channel) throws Exception {
 				channel.pipeline()
-				.addLast(new ReadTimeoutHandler(30))
-				.addLast(new RakNetPacketEncoder())
-				.addLast(new RakNetPacketDecoder())
-				.addLast(new RakNetPacketConnectionEstablishHandler(pinghandler))
-				.addLast(new RakNetPacketReliabilityHandler())
-				.addLast(new EncapsulatedPacketReadHandler())
-				.addLast(new EncapsulatedPacketWriteHandler())
-				.addLast(new InternalPacketEncoder(userPacketId))
-				.addLast(new InternalPacketDecoder(userPacketId))
-				.addLast(new InternalPacketReadHandler())
-				.addLast(new InternalPacketWriteHandler());
+				.addLast("rns-timeout", new ReadTimeoutHandler(30))
+				.addLast("rns-rn-encoder", new RakNetPacketEncoder())
+				.addLast("rns-rn-decoder", new RakNetPacketDecoder())
+				.addLast("rns-rn-connect", new RakNetPacketConnectionEstablishHandler(pinghandler))
+				.addLast("rns-rn-reliability", new RakNetPacketReliabilityHandler())
+				.addLast("rns-e-readh", new EncapsulatedPacketReadHandler())
+				.addLast("rns-e-writeh", new EncapsulatedPacketWriteHandler())
+				.addLast("rns-i-encoder", new InternalPacketEncoder(userPacketId))
+				.addLast("rns-i-decoder", new InternalPacketDecoder(userPacketId))
+				.addLast("rns-i-readh", new InternalPacketReadHandler())
+				.addLast("rns-i-writeh", new InternalPacketWriteHandler());
 				userinit.init(channel);
 			}
 		});
