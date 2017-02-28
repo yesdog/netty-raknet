@@ -10,14 +10,13 @@ import raknetserver.packet.raknet.RakNetConnectionReply1;
 import raknetserver.packet.raknet.RakNetConnectionReply2;
 import raknetserver.packet.raknet.RakNetConnectionRequest1;
 import raknetserver.packet.raknet.RakNetConnectionRequest2;
-import raknetserver.packet.raknet.RakNetDisconnectNotification;
 import raknetserver.packet.raknet.RakNetEncapsulatedData;
 import raknetserver.packet.raknet.RakNetInvalidVersion;
 import raknetserver.packet.raknet.RakNetPacket;
-import raknetserver.packet.raknet.RakNetUnconnectedPing;
-import raknetserver.packet.raknet.RakNetUnconnectedPong;
 import raknetserver.packet.raknet.RakNetReliability.RakNetACK;
 import raknetserver.packet.raknet.RakNetReliability.RakNetNACK;
+import raknetserver.packet.raknet.RakNetUnconnectedPing;
+import raknetserver.packet.raknet.RakNetUnconnectedPong;
 import raknetserver.utils.PacketHandlerRegistry;
 
 public class RakNetPacketConnectionEstablishHandler extends SimpleChannelInboundHandler<RakNetPacket> {
@@ -50,7 +49,7 @@ public class RakNetPacketConnectionEstablishHandler extends SimpleChannelInbound
 		if (state == State.CONNECTED) {
 			ctx.fireExceptionCaught(cause);
 		} else {
-			ctx.writeAndFlush(new RakNetDisconnectNotification());
+			//TODO: send some packet that will disconnect client with neutral message and close connection
 		}
 	}
 
