@@ -2,7 +2,7 @@ package raknetserver.packet;
 
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
-import raknetserver.Utils;
+import raknetserver.utils.Utils;
 public class EncapsulatedPacket {
 
 	protected int reliability;
@@ -69,10 +69,10 @@ public class EncapsulatedPacket {
 		int length = Utils.divideAndCeilWithBase(buf.readShort(), 8);
 
 		if (reliability > 0) {
-			if (reliability >= 2 && reliability != 5) {
+			if ((reliability >= 2) && (reliability != 5)) {
 				messageIndex = RakNetDataSerializer.readTriad(buf);
 			}
-			if (reliability <= 4 && reliability != 2) {
+			if ((reliability <= 4) && (reliability != 2)) {
 				orderIndex = RakNetDataSerializer.readTriad(buf);
 				orderChannel = buf.readUnsignedByte();
 			}
@@ -89,7 +89,7 @@ public class EncapsulatedPacket {
 
 	public void encode(ByteBuf buf) {
 		byte flag = 0;
-		flag = (byte) (flag | reliability << 5);
+		flag = (byte) (flag | (reliability << 5));
 		if (hasSplit) {
 			flag = (byte) ((flag & 0xFF) | 0x10);
 		}
@@ -98,10 +98,10 @@ public class EncapsulatedPacket {
 		buf.writeShort((data.length << 3) & 0xFFFF);
 
 		if (reliability > 0) {
-			if (reliability >= 2 && reliability != 5) {
+			if ((reliability >= 2) && (reliability != 5)) {
 				RakNetDataSerializer.writeTriad(buf, messageIndex);
 			}
-			if (reliability <= 4 && reliability != 2) {
+			if ((reliability <= 4) && (reliability != 2)) {
 				RakNetDataSerializer.writeTriad(buf, orderIndex);
 				buf.writeByte(orderChannel);
 			}

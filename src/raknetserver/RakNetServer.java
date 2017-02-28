@@ -8,24 +8,32 @@ import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelInitializer;
 import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.handler.timeout.ReadTimeoutHandler;
-import raknetserver.channel.EncapsulatedPacketReadHandler;
-import raknetserver.channel.EncapsulatedPacketWriteHandler;
-import raknetserver.channel.InternalPacketHandler;
-import raknetserver.channel.RakNetConnectionEstablishHandler;
-import raknetserver.channel.RakNetDecoder;
-import raknetserver.channel.RakNetEncoder;
-import raknetserver.channel.RakNetReliabilityHandler;
+import raknetserver.pipeline.ecnapsulated.EncapsulatedPacketReadHandler;
+import raknetserver.pipeline.ecnapsulated.EncapsulatedPacketWriteHandler;
+import raknetserver.pipeline.internal.InternalPacketDecoder;
+import raknetserver.pipeline.internal.InternalPacketEncoder;
+import raknetserver.pipeline.internal.InternalPacketReadHandler;
+import raknetserver.pipeline.internal.InternalPacketWriteHandler;
+import raknetserver.pipeline.raknet.RakNetPacketConnectionEstablishHandler;
+import raknetserver.pipeline.raknet.RakNetPacketConnectionEstablishHandler.PingHandler;
+import raknetserver.pipeline.raknet.RakNetPacketDecoder;
+import raknetserver.pipeline.raknet.RakNetPacketEncoder;
+import raknetserver.pipeline.raknet.RakNetPacketReliabilityHandler;
 import udpserversocketchannel.channel.NioUdpServerChannel;
 import udpserversocketchannel.eventloop.UdpEventLoopGroup;
 
 public class RakNetServer {
 
-	private final InetSocketAddress local;
-	private final UserHandler.Factory userHandlerFactory;
+	protected final InetSocketAddress local;
+	protected final PingHandler pinghandler;
+	protected final UserChannelInitializer userinit;
+	protected final int userPacketId;
 
-	public RakNetServer(InetSocketAddress local, UserHandler.Factory userHandler) {
+	public RakNetServer(InetSocketAddress local, PingHandler pinghandler, UserChannelInitializer init, int userPacketId) {
 		this.local = local;
-		this.userHandlerFactory = userHandler;
+		this.pinghandler = pinghandler;
+		this.userinit = init;
+		this.userPacketId = userPacketId;
 	}
 
 	private ChannelFuture channel = null;
@@ -39,14 +47,17 @@ public class RakNetServer {
 			protected void initChannel(Channel channel) throws Exception {
 				channel.pipeline()
 				.addLast(new ReadTimeoutHandler(30))
-				.addLast(new RakNetEncoder())
-				.addLast(new RakNetDecoder())
-				.addLast(new RakNetConnectionEstablishHandler())
-				.addLast(new RakNetReliabilityHandler())
-				.addLast(new EncapsulatedPacketWriteHandler())
+				.addLast(new RakNetPacketEncoder())
+				.addLast(new RakNetPacketDecoder())
+				.addLast(new RakNetPacketConnectionEstablishHandler(pinghandler))
+				.addLast(new RakNetPacketReliabilityHandler())
 				.addLast(new EncapsulatedPacketReadHandler())
-				.addLast(new InternalPacketHandler())
-				.addLast(UserHandler.PIPELINE_NAME, userHandlerFactory.create());
+				.addLast(new EncapsulatedPacketWriteHandler())
+				.addLast(new InternalPacketEncoder(userPacketId))
+				.addLast(new InternalPacketDecoder(userPacketId))
+				.addLast(new InternalPacketReadHandler())
+				.addLast(new InternalPacketWriteHandler());
+				userinit.init(channel);
 			}
 		});
 		channel = bootstrap.bind(local).syncUninterruptibly();
@@ -57,6 +68,10 @@ public class RakNetServer {
 			channel.channel().close();
 			channel = null;
 		}
+	}
+
+	public static interface UserChannelInitializer {
+		public void init(Channel channel);
 	}
 
 }
