@@ -12,6 +12,7 @@ public class InternalClientHandshake implements InternalPacket {
 		}
 		buf.skipBytes(8); //pong time
 		buf.skipBytes(8); //timestamp
+		buf.skipBytes(70); //WTF is this?
 	}
 
 	@Override
