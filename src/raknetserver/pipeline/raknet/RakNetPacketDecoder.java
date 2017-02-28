@@ -19,7 +19,7 @@ public class RakNetPacketDecoder extends ByteToMessageDecoder {
 		RakNetPacket packet = RakNetPacketRegistry.getPacket(buffer.readUnsignedByte());
 		packet.decode(buffer);
 		if (buffer.readableBytes() > 0) {
-			throw new DecoderException(buffer.readableBytes() + " bytes left after decoding packet " + packet.getClass().getName());
+			throw new DecoderException(buffer.readableBytes() + " bytes left after decoding packet " + packet.getClass());
 		}
 		list.add(packet);
 	}
