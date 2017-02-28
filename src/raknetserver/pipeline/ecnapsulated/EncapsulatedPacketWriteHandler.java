@@ -1,7 +1,6 @@
 package raknetserver.pipeline.ecnapsulated;
 
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.List;
 
 import io.netty.buffer.ByteBuf;
@@ -28,9 +27,9 @@ public class EncapsulatedPacketWriteHandler extends MessageToMessageEncoder<Byte
 					splitID, epackets.length, splitIndex
 				);
 			}
-			ctx.writeAndFlush(Arrays.asList(epackets));
+			list.addAll(Arrays.asList(epackets));
 		} else {
-			ctx.writeAndFlush(Collections.singletonList(new EncapsulatedPacket(buffer, getNextMessageIndex(), orderIndex)));
+			list.add(new EncapsulatedPacket(buffer, getNextMessageIndex(), orderIndex));
 		}
 	}
 
