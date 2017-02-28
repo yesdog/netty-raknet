@@ -34,14 +34,10 @@ public class RakNetPacketConnectionEstablishHandler extends SimpleChannelInbound
 
 	@Override
 	protected void channelRead0(ChannelHandlerContext ctx, RakNetPacket packet) throws Exception {
-		if (state == State.CONNECTED) {
-			ctx.fireChannelRead(packet);
-		} else {
-			registry.handle(ctx, this, packet);
-		}
+		registry.handle(ctx, this, packet);
 	}
 
-	public void handleConnectionRequest1(ChannelHandlerContext ctx, RakNetConnectionRequest1 connectionRequest1) {
+	protected void handleConnectionRequest1(ChannelHandlerContext ctx, RakNetConnectionRequest1 connectionRequest1) {
 		if (connectionRequest1.getRakNetProtocolVersion() == RakNetInvalidVersion.VALID_VERSION) {
 			ctx.writeAndFlush(new RakNetConnectionReply1(connectionRequest1.getMtu())).addListener(ChannelFutureListener.FIRE_EXCEPTION_ON_FAILURE);
 		} else {
@@ -49,9 +45,9 @@ public class RakNetPacketConnectionEstablishHandler extends SimpleChannelInbound
 		}
 	}
 
-	private long guid;
+	protected long guid;
 
-	public void handleConnectionRequest2(ChannelHandlerContext ctx, RakNetConnectionRequest2 connectionRequest2) {
+	protected void handleConnectionRequest2(ChannelHandlerContext ctx, RakNetConnectionRequest2 connectionRequest2) {
 		long nguid = connectionRequest2.getGUID();
 		if (state == State.NEW) {
 			state = State.CONNECTED;
@@ -70,7 +66,7 @@ public class RakNetPacketConnectionEstablishHandler extends SimpleChannelInbound
 	}
 
 	//Always allow retrieving server info, but close channel if that was a new connection
-	public void handlePing(ChannelHandlerContext ctx, RakNetUnconnectedPing unconnectedPing) {
+	protected void handlePing(ChannelHandlerContext ctx, RakNetUnconnectedPing unconnectedPing) {
 		String info = pinghandler.getServerInfo(ctx.channel());
 		if (state == State.NEW) {
 			ctx.writeAndFlush(new RakNetUnconnectedPong(unconnectedPing.getClientTime(), info)).addListener(ChannelFutureListener.CLOSE);
@@ -79,7 +75,7 @@ public class RakNetPacketConnectionEstablishHandler extends SimpleChannelInbound
 		}
 	}
 
-	private static enum State {
+	protected static enum State {
 		NEW, CONNECTED
 	}
 
