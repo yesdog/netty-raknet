@@ -29,7 +29,7 @@ public class EncapsulatedPacketReadHandler extends MessageToMessageDecoder<Colle
 		//unsplit packets
 		Collection<EncapsulatedPacket> fullEPackets = getFullPackets(orderedPackets);
 		//add buffers
-		fullEPackets.forEach(fillEPacket -> list.add(fullEPackets));
+		fullEPackets.forEach(fillEPacket -> list.add(fillEPacket.getData()));
 	}
 
 	private final HashMap<Integer, EncapsulatedPacket> queue = new HashMap<>(300);

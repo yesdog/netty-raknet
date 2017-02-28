@@ -2,7 +2,7 @@ package raknetserver.pipeline.internal;
 
 import java.net.InetSocketAddress;
 
-import io.netty.buffer.ByteBuf;
+import io.netty.buffer.Unpooled;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.SimpleChannelInboundHandler;
 import raknetserver.packet.internal.InternalConnectionRequest;
@@ -36,9 +36,7 @@ public class InternalPacketReadHandler extends SimpleChannelInboundHandler<Inter
 	}
 
 	protected void handleUserData(ChannelHandlerContext ctx, InternalUserData packet) {
-		ByteBuf buf = ctx.alloc().buffer();
-		buf.writeBytes(packet.getData());
-		ctx.fireChannelRead(buf);
+		ctx.fireChannelRead(Unpooled.wrappedBuffer(packet.getData()));
 	}
 
 }
