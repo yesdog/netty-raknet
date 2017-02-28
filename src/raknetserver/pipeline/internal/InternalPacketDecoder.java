@@ -4,13 +4,13 @@ import java.util.List;
 
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.ChannelHandlerContext;
-import io.netty.handler.codec.ByteToMessageDecoder;
 import io.netty.handler.codec.DecoderException;
+import io.netty.handler.codec.MessageToMessageDecoder;
 import raknetserver.packet.internal.InternalPacket;
 import raknetserver.packet.internal.InternalPacketRegistry;
 import raknetserver.packet.internal.InternalUserData;
 
-public class InternalPacketDecoder extends ByteToMessageDecoder {
+public class InternalPacketDecoder extends MessageToMessageDecoder<ByteBuf> {
 
 	private final int userPacketId;
 	public InternalPacketDecoder(int userPacketId) {
