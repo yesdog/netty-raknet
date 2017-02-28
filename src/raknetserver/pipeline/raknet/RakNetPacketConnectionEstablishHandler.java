@@ -10,10 +10,13 @@ import raknetserver.packet.raknet.RakNetConnectionReply1;
 import raknetserver.packet.raknet.RakNetConnectionReply2;
 import raknetserver.packet.raknet.RakNetConnectionRequest1;
 import raknetserver.packet.raknet.RakNetConnectionRequest2;
+import raknetserver.packet.raknet.RakNetEncapsulatedData;
 import raknetserver.packet.raknet.RakNetInvalidVersion;
 import raknetserver.packet.raknet.RakNetPacket;
 import raknetserver.packet.raknet.RakNetUnconnectedPing;
 import raknetserver.packet.raknet.RakNetUnconnectedPong;
+import raknetserver.packet.raknet.RakNetReliability.RakNetACK;
+import raknetserver.packet.raknet.RakNetReliability.RakNetNACK;
 import raknetserver.utils.PacketHandlerRegistry;
 
 public class RakNetPacketConnectionEstablishHandler extends SimpleChannelInboundHandler<RakNetPacket> {
@@ -23,6 +26,9 @@ public class RakNetPacketConnectionEstablishHandler extends SimpleChannelInbound
 		registry.register(RakNetConnectionRequest1.class, (ctx, handler, packet) -> handler.handleConnectionRequest1(ctx, packet));
 		registry.register(RakNetConnectionRequest2.class, (ctx, handler, packet) -> handler.handleConnectionRequest2(ctx, packet));
 		registry.register(RakNetUnconnectedPing.class, (ctx, handler, packet) -> handler.handlePing(ctx, packet));
+		registry.register(RakNetEncapsulatedData.class, (ctx, handler, packet) -> handler.fireNext(ctx, packet));
+		registry.register(RakNetACK.class, (ctx, handler, packet) -> handler.fireNext(ctx, packet));
+		registry.register(RakNetNACK.class, (ctx, handler, packet) -> handler.fireNext(ctx, packet));
 	}
 
 	private final PingHandler pinghandler;
@@ -73,6 +79,13 @@ public class RakNetPacketConnectionEstablishHandler extends SimpleChannelInbound
 		} else {
 			ctx.writeAndFlush(new RakNetUnconnectedPong(unconnectedPing.getClientTime(), info)).addListener(ChannelFutureListener.FIRE_EXCEPTION_ON_FAILURE);
 		}
+	}
+
+	protected void fireNext(ChannelHandlerContext ctx, RakNetPacket packet) {
+		if (state != State.CONNECTED) {
+			throw new IllegalStateException("Can't handle packet " + packet.getClass() + ", connection is not established yet");
+		}
+		ctx.fireChannelRead(packet);
 	}
 
 	protected static enum State {
