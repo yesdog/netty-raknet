@@ -10,6 +10,7 @@ import raknetserver.packet.raknet.RakNetConnectionReply1;
 import raknetserver.packet.raknet.RakNetConnectionReply2;
 import raknetserver.packet.raknet.RakNetConnectionRequest1;
 import raknetserver.packet.raknet.RakNetConnectionRequest2;
+import raknetserver.packet.raknet.RakNetDisconnectNotification;
 import raknetserver.packet.raknet.RakNetEncapsulatedData;
 import raknetserver.packet.raknet.RakNetInvalidVersion;
 import raknetserver.packet.raknet.RakNetPacket;
@@ -41,6 +42,16 @@ public class RakNetPacketConnectionEstablishHandler extends SimpleChannelInbound
 	@Override
 	protected void channelRead0(ChannelHandlerContext ctx, RakNetPacket packet) throws Exception {
 		registry.handle(ctx, this, packet);
+	}
+
+	//if the exception occured before the connection was established - kick the client so it no longer spam us
+	@Override
+	public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) throws Exception {
+		if (state == State.CONNECTED) {
+			ctx.fireExceptionCaught(cause);
+		} else {
+			ctx.writeAndFlush(new RakNetDisconnectNotification());
+		}
 	}
 
 	protected void handleConnectionRequest1(ChannelHandlerContext ctx, RakNetConnectionRequest1 connectionRequest1) {
