@@ -28,7 +28,7 @@ public class RakNetPacketReliabilityHandler extends MessageToMessageCodec<RakNet
 
 	@Override
 	public void channelActive(final ChannelHandlerContext ctx) throws Exception {
-		super.channelInactive(ctx);
+		super.channelActive(ctx);
 		task = ctx.channel().eventLoop().scheduleAtFixedRate(new Runnable() {
 			@Override
 			public void run() {
