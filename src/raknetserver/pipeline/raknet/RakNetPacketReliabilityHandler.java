@@ -28,7 +28,6 @@ public class RakNetPacketReliabilityHandler extends MessageToMessageCodec<RakNet
 
 	@Override
 	public void channelActive(final ChannelHandlerContext ctx) throws Exception {
-		super.channelActive(ctx);
 		task = ctx.channel().eventLoop().scheduleAtFixedRate(new Runnable() {
 			@Override
 			public void run() {
@@ -49,12 +48,13 @@ public class RakNetPacketReliabilityHandler extends MessageToMessageCodec<RakNet
 				}
 			}
 		}, 100, 50, TimeUnit.MILLISECONDS);
+		super.channelActive(ctx);
 	}
 
 	@Override
 	public void channelInactive(ChannelHandlerContext ctx) throws Exception {
-		super.channelInactive(ctx);
 		task.cancel(false);
+		super.channelInactive(ctx);
 	}
 
 	private int lastReceivedSeqId = -1;
