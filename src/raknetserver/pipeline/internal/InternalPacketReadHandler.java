@@ -7,6 +7,7 @@ import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.SimpleChannelInboundHandler;
 import raknetserver.packet.internal.InternalClientHandshake;
 import raknetserver.packet.internal.InternalConnectionRequest;
+import raknetserver.packet.internal.InternalDisconnect;
 import raknetserver.packet.internal.InternalKeepAlive.InternalPing;
 import raknetserver.packet.internal.InternalKeepAlive.InternalPong;
 import raknetserver.packet.internal.InternalPacket;
@@ -23,6 +24,7 @@ public class InternalPacketReadHandler extends SimpleChannelInboundHandler<Inter
 		registry.register(InternalClientHandshake.class, (ctx, handler, packet) -> handler.handleHandshake(ctx, packet));
 		registry.register(InternalPing.class, (ctx, handler, packet) -> handler.handlePing(ctx, packet));
 		registry.register(InternalUserData.class, (ctx, handler, packet) -> handler.handleUserData(ctx, packet));
+		registry.register(InternalDisconnect.class, (ctx, handler, packet) -> handler.handleDisconnect(ctx, packet));
 	}
 
 	@Override
@@ -43,6 +45,10 @@ public class InternalPacketReadHandler extends SimpleChannelInboundHandler<Inter
 
 	protected void handleUserData(ChannelHandlerContext ctx, InternalUserData packet) {
 		ctx.fireChannelRead(Unpooled.wrappedBuffer(packet.getData()));
+	}
+
+	protected void handleDisconnect(ChannelHandlerContext ctx, InternalDisconnect packet) {
+		ctx.channel().close();
 	}
 
 }
