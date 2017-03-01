@@ -79,8 +79,8 @@ public class RakNetPacketReliabilityHandler extends MessageToMessageCodec<RakNet
 			else {
 				return;
 			}
-			//fire channel read for encapsulated packets
-			ctx.fireChannelRead(edata.getPackets());
+			//add encapsulated packet
+			list.add(edata.getPackets());
 		} else if (packet instanceof RakNetACK) {
 			for (REntry entry : ((RakNetACK) packet).getEntries()) {
 				confirmRakNetPackets(entry.idstart, entry.idfinish);
@@ -94,7 +94,9 @@ public class RakNetPacketReliabilityHandler extends MessageToMessageCodec<RakNet
 
 	@Override
 	protected void encode(ChannelHandlerContext ctx, EncapsulatedPacket packet, List<Object> list) throws Exception {
-		sendRakNetPacket(ctx, new RakNetEncapsulatedData(packet));
+		RakNetEncapsulatedData rpacket = new RakNetEncapsulatedData(packet);
+		initRakNetPacket(rpacket);
+		list.add(rpacket);
 	}
 
 	private void confirmRakNetPackets(int idstart, int idfinish) {
@@ -113,9 +115,13 @@ public class RakNetPacketReliabilityHandler extends MessageToMessageCodec<RakNet
 		}
 	}
 
-	protected void sendRakNetPacket(ChannelHandlerContext ctx, RakNetEncapsulatedData rpacket) {
+	protected void initRakNetPacket(RakNetEncapsulatedData rpacket) {
 		rpacket.setSeqId(getNextRakSeqID());
 		sentPackets.put(rpacket.getSeqId(), rpacket);
+	}
+
+	protected void sendRakNetPacket(ChannelHandlerContext ctx, RakNetEncapsulatedData rpacket) {
+		initRakNetPacket(rpacket);
 		ctx.writeAndFlush(rpacket);
 	}
 
