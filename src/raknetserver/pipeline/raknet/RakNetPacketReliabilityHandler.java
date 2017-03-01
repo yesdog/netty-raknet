@@ -1,7 +1,6 @@
 package raknetserver.pipeline.raknet;
 
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
@@ -19,7 +18,7 @@ import raknetserver.packet.raknet.RakNetReliability.RakNetACK;
 import raknetserver.packet.raknet.RakNetReliability.RakNetNACK;
 
 //TODO: figure out if seq numbers can wrap
-public class RakNetPacketReliabilityHandler extends MessageToMessageCodec<RakNetPacket, Collection<EncapsulatedPacket>> {
+public class RakNetPacketReliabilityHandler extends MessageToMessageCodec<RakNetPacket, EncapsulatedPacket> {
 
 	protected int lastReceivedACK = -1;
 	protected final HashMap<Integer, RakNetEncapsulatedData> sentPackets = new HashMap<>();
@@ -94,10 +93,8 @@ public class RakNetPacketReliabilityHandler extends MessageToMessageCodec<RakNet
 	}
 
 	@Override
-	protected void encode(ChannelHandlerContext ctx, Collection<EncapsulatedPacket> packets, List<Object> list) throws Exception {
-		for (EncapsulatedPacket packet : packets) {
-			sendRakNetPacket(ctx, new RakNetEncapsulatedData(packet));
-		}
+	protected void encode(ChannelHandlerContext ctx, EncapsulatedPacket packet, List<Object> list) throws Exception {
+		sendRakNetPacket(ctx, new RakNetEncapsulatedData(packet));
 	}
 
 	private void confirmRakNetPackets(int idstart, int idfinish) {
