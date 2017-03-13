@@ -5,11 +5,11 @@ import java.util.List;
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.codec.DecoderException;
-import io.netty.handler.codec.MessageToMessageDecoder;
+import io.netty.handler.codec.ReplayingDecoder;
 import raknetserver.packet.raknet.RakNetPacket;
 import raknetserver.packet.raknet.RakNetPacketRegistry;
 
-public class RakNetPacketDecoder extends MessageToMessageDecoder<ByteBuf> {
+public class RakNetPacketDecoder extends ReplayingDecoder<ByteBuf> {
 
 	@Override
 	protected void decode(ChannelHandlerContext ctx, ByteBuf buffer, List<Object> list) throws Exception {
