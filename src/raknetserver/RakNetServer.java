@@ -19,6 +19,7 @@ import raknetserver.pipeline.raknet.RakNetPacketConnectionEstablishHandler.PingH
 import raknetserver.pipeline.raknet.RakNetPacketDecoder;
 import raknetserver.pipeline.raknet.RakNetPacketEncoder;
 import raknetserver.pipeline.raknet.RakNetPacketReliabilityHandler;
+import raknetserver.utils.Bytes1500RecvByteBufAllocator;
 import udpserversocketchannel.channel.NioUdpServerChannel;
 import udpserversocketchannel.eventloop.UdpEventLoopGroup;
 
@@ -61,6 +62,7 @@ public class RakNetServer {
 			}
 		});
 		channel = bootstrap.bind(local).syncUninterruptibly();
+		channel.channel().config().setRecvByteBufAllocator(Bytes1500RecvByteBufAllocator.INSTANCE);
 	}
 
 	public void stop() {
