@@ -22,39 +22,16 @@ public class EncapsulatedPacket {
 	public EncapsulatedPacket() {
 	}
 
-	public EncapsulatedPacket(ByteBuf data) {
-		this.reliability = 0;
+	public EncapsulatedPacket(ByteBuf data, int messageIndex, int orderChannel, int orderIndex) {
 		this.data = Utils.readBytes(data);
-	}
-
-	public EncapsulatedPacket(ByteBuf data, int splitID, int splitCount, int splitIndex) {
-		this(data);
-		setSplitInfo(splitID, splitCount, splitIndex);
-	}
-
-	public EncapsulatedPacket(ByteBuf data, int messageIndex) {
-		this(data);
-		this.reliability = 2;
-		this.messageIndex = messageIndex;
-	}
-
-	public EncapsulatedPacket(ByteBuf data, int messageIndex, int splitID, int splitCount, int splitIndex) {
-		this(data, messageIndex);
-		setSplitInfo(splitID, splitCount, splitIndex);
-	}
-
-	public EncapsulatedPacket(ByteBuf data, int messageIndex, int orderIndex) {
-		this(data, messageIndex);
 		this.reliability = 3;
+		this.messageIndex = messageIndex;
+		this.orderChannel = orderChannel;
 		this.orderIndex = orderIndex;
 	}
 
-	public EncapsulatedPacket(ByteBuf data, int messageIndex, int orderIndex, int splitID, int splitCount, int splitIndex) {
-		this(data, messageIndex, orderIndex);
-		setSplitInfo(splitID, splitCount, splitIndex);
-	}
-
-	private void setSplitInfo(int splitID, int splitCount, int splitIndex) {
+	public EncapsulatedPacket(ByteBuf data, int messageIndex, int orderChannel, int orderIndex, int splitID, int splitCount, int splitIndex) {
+		this(data, messageIndex, orderChannel, orderIndex);
 		this.hasSplit = true;
 		this.splitID = splitID;
 		this.splitCount = splitCount;
@@ -148,8 +125,12 @@ public class EncapsulatedPacket {
 		return splitCount;
 	}
 
+	public int getDataSize() {
+		return data.length;
+	}
+
 	public ByteBuf getData() {
-		return Unpooled.wrappedBuffer(data.clone());
+		return Unpooled.copiedBuffer(data);
 	}
 
 }

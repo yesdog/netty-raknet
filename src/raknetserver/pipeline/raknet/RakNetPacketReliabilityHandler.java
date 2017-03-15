@@ -80,7 +80,7 @@ public class RakNetPacketReliabilityHandler extends MessageToMessageCodec<RakNet
 				return;
 			}
 			//add encapsulated packet
-			list.add(edata.getPackets());
+			list.addAll(edata.getPackets());
 		} else if (packet instanceof RakNetACK) {
 			for (REntry entry : ((RakNetACK) packet).getEntries()) {
 				confirmRakNetPackets(entry.idstart, entry.idfinish);

@@ -10,32 +10,27 @@ import raknetserver.packet.EncapsulatedPacket;
 import raknetserver.packet.RakNetConstants;
 import raknetserver.utils.Utils;
 
-public class EncapsulatedPacketWriteHandler extends MessageToMessageEncoder<ByteBuf> {
+public class EncaupsulatedPacketSplitter extends MessageToMessageEncoder<EncapsulatedPacket> {
 
 	@Override
-	protected void encode(ChannelHandlerContext ctx, ByteBuf buffer, List<Object> list) throws Exception {
+	protected void encode(ChannelHandlerContext ctx, EncapsulatedPacket packet, List<Object> list) throws Exception {
 		int mtu = ctx.channel().attr(RakNetConstants.MTU).get();
 		int splitSize = mtu - 200;
-		int orderIndex = getNextOrderIndex();
-		if (buffer.readableBytes() > (mtu - 100)) {
-			EncapsulatedPacket[] epackets = new EncapsulatedPacket[Utils.getSplitCount(buffer.readableBytes(), splitSize)];
+		if (packet.getDataSize() > (mtu - 100)) {
+			EncapsulatedPacket[] epackets = new EncapsulatedPacket[Utils.getSplitCount(packet.getDataSize(), splitSize)];
 			int splitID = getNextSplitID();
+			ByteBuf buffer = packet.getData();
 			for (int splitIndex = 0; splitIndex < epackets.length; splitIndex++) {
 				epackets[splitIndex] = new EncapsulatedPacket(
 					buffer.readBytes(buffer.readableBytes() < splitSize ? buffer.readableBytes() : splitSize),
-					getNextMessageIndex(), orderIndex,
+					getNextMessageIndex(), packet.getOrderChannel(), packet.getOrderIndex(),
 					splitID, epackets.length, splitIndex
 				);
 			}
 			list.addAll(Arrays.asList(epackets));
 		} else {
-			list.add(new EncapsulatedPacket(buffer, getNextMessageIndex(), orderIndex));
+			list.add(packet);
 		}
-	}
-
-	private int currentSplitID = 0;
-	private int getNextSplitID() {
-		return currentSplitID++ % Short.MAX_VALUE;
 	}
 
 	private int currentMessageIndex = 0;
@@ -43,9 +38,9 @@ public class EncapsulatedPacketWriteHandler extends MessageToMessageEncoder<Byte
 		return currentMessageIndex++ % 16777216;
 	}
 
-	private int currentOrderIndex = 0;
-	private int getNextOrderIndex() {
-		return currentOrderIndex++ % 16777216;
+	private int currentSplitID = 0;
+	private int getNextSplitID() {
+		return currentSplitID++ % Short.MAX_VALUE;
 	}
 
 }

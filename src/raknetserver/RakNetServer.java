@@ -10,8 +10,10 @@ import io.netty.channel.ChannelOption;
 import io.netty.channel.FixedRecvByteBufAllocator;
 import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.handler.timeout.ReadTimeoutHandler;
-import raknetserver.pipeline.ecnapsulated.EncapsulatedPacketReadHandler;
-import raknetserver.pipeline.ecnapsulated.EncapsulatedPacketWriteHandler;
+import raknetserver.pipeline.ecnapsulated.EncapsulatedPacketInboundOrderer;
+import raknetserver.pipeline.ecnapsulated.EncapsulatedPacketUnsplitter;
+import raknetserver.pipeline.ecnapsulated.EncaupsulatedPacketSplitter;
+import raknetserver.pipeline.ecnapsulated.EncapsulatedPacketOutboundOrder;
 import raknetserver.pipeline.internal.InternalPacketDecoder;
 import raknetserver.pipeline.internal.InternalPacketEncoder;
 import raknetserver.pipeline.internal.InternalPacketReadHandler;
@@ -25,6 +27,19 @@ import udpserversocketchannel.channel.NioUdpServerChannel;
 import udpserversocketchannel.eventloop.UdpEventLoopGroup;
 
 public class RakNetServer {
+
+	public static void main(String[] args) {
+		new RakNetServer(new InetSocketAddress(2222), new PingHandler() {
+			@Override
+			public String getServerInfo(Channel channel) {
+				return "123";
+			}
+		}, new UserChannelInitializer() {
+			@Override
+			public void init(Channel channel) {
+			}
+		}, 0xFE).start();
+	}
 
 	protected final InetSocketAddress local;
 	protected final PingHandler pinghandler;
@@ -54,8 +69,10 @@ public class RakNetServer {
 				.addLast("rns-rn-decoder", new RakNetPacketDecoder())
 				.addLast("rns-rn-connect", new RakNetPacketConnectionEstablishHandler(pinghandler))
 				.addLast("rns-rn-reliability", new RakNetPacketReliabilityHandler())
-				.addLast("rns-e-readh", new EncapsulatedPacketReadHandler())
-				.addLast("rns-e-writeh", new EncapsulatedPacketWriteHandler())
+				.addLast("rns-e-ru", new EncapsulatedPacketUnsplitter())
+				.addLast("rns-e-ro", new EncapsulatedPacketInboundOrderer())
+				.addLast("rns-e-ws", new EncaupsulatedPacketSplitter())
+				.addLast("rns-e-wo", new EncapsulatedPacketOutboundOrder())
 				.addLast("rns-i-encoder", new InternalPacketEncoder(userPacketId))
 				.addLast("rns-i-decoder", new InternalPacketDecoder(userPacketId))
 				.addLast("rns-i-readh", new InternalPacketReadHandler())
