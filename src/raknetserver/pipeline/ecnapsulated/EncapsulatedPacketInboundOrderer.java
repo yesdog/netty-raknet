@@ -34,7 +34,7 @@ public class EncapsulatedPacketInboundOrderer extends MessageToMessageDecoder<En
 		private final HashMap<Integer, EncapsulatedPacket> queue = new HashMap<>(300);
 		private int lastReceivedIndex = -1;
 		private int lastOrderedIndex = -1;
-	
+
 		public Collection<EncapsulatedPacket> getOrdered(EncapsulatedPacket epacket) {
 			if (queue.size() > 256) {
 				throw new DecoderException("Too big packet loss");
