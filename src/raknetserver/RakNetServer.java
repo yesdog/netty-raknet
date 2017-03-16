@@ -13,7 +13,7 @@ import io.netty.handler.timeout.ReadTimeoutHandler;
 import raknetserver.pipeline.ecnapsulated.EncapsulatedPacketInboundOrderer;
 import raknetserver.pipeline.ecnapsulated.EncapsulatedPacketOutboundOrder;
 import raknetserver.pipeline.ecnapsulated.EncapsulatedPacketUnsplitter;
-import raknetserver.pipeline.ecnapsulated.EncaupsulatedPacketSplitter;
+import raknetserver.pipeline.ecnapsulated.EncapsulatedPacketSplitter;
 import raknetserver.pipeline.internal.InternalPacketDecoder;
 import raknetserver.pipeline.internal.InternalPacketEncoder;
 import raknetserver.pipeline.internal.InternalPacketReadHandler;
@@ -58,7 +58,7 @@ public class RakNetServer {
 				.addLast("rns-rn-reliability", new RakNetPacketReliabilityHandler())
 				.addLast("rns-e-ru", new EncapsulatedPacketUnsplitter())
 				.addLast("rns-e-ro", new EncapsulatedPacketInboundOrderer())
-				.addLast("rns-e-ws", new EncaupsulatedPacketSplitter())
+				.addLast("rns-e-ws", new EncapsulatedPacketSplitter())
 				.addLast("rns-e-wo", new EncapsulatedPacketOutboundOrder())
 				.addLast("rns-i-encoder", new InternalPacketEncoder(userPacketId))
 				.addLast("rns-i-decoder", new InternalPacketDecoder(userPacketId))

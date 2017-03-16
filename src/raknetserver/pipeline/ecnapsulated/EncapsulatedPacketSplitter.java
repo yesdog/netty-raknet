@@ -10,7 +10,7 @@ import raknetserver.packet.EncapsulatedPacket;
 import raknetserver.packet.RakNetConstants;
 import raknetserver.utils.Utils;
 
-public class EncaupsulatedPacketSplitter extends MessageToMessageEncoder<EncapsulatedPacket> {
+public class EncapsulatedPacketSplitter extends MessageToMessageEncoder<EncapsulatedPacket> {
 
 	@Override
 	protected void encode(ChannelHandlerContext ctx, EncapsulatedPacket packet, List<Object> list) throws Exception {
@@ -29,7 +29,7 @@ public class EncaupsulatedPacketSplitter extends MessageToMessageEncoder<Encapsu
 			}
 			list.addAll(Arrays.asList(epackets));
 		} else {
-			list.add(packet);
+			list.add(new EncapsulatedPacket(packet.getData(), getNextMessageIndex(), packet.getOrderChannel(), packet.getOrderIndex()));
 		}
 	}
 
