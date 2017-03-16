@@ -28,19 +28,6 @@ import udpserversocketchannel.eventloop.UdpEventLoopGroup;
 
 public class RakNetServer {
 
-	public static void main(String[] args) {
-		new RakNetServer(new InetSocketAddress(2222), new PingHandler() {
-			@Override
-			public String getServerInfo(Channel channel) {
-				return "123";
-			}
-		}, new UserChannelInitializer() {
-			@Override
-			public void init(Channel channel) {
-			}
-		}, 0xFE).start();
-	}
-
 	protected final InetSocketAddress local;
 	protected final PingHandler pinghandler;
 	protected final UserChannelInitializer userinit;

@@ -81,14 +81,10 @@ public class RakNetPacketConnectionEstablishHandler extends SimpleChannelInbound
 		}
 	}
 
-	//Always allow retrieving server info, but close channel if that was a new connection
 	protected void handlePing(ChannelHandlerContext ctx, RakNetUnconnectedPing unconnectedPing) {
-		String info = pinghandler.getServerInfo(ctx.channel());
-		if (state == State.NEW) {
-			ctx.writeAndFlush(new RakNetUnconnectedPong(unconnectedPing.getClientTime(), info)).addListener(ChannelFutureListener.CLOSE);
-		} else {
-			ctx.writeAndFlush(new RakNetUnconnectedPong(unconnectedPing.getClientTime(), info)).addListener(ChannelFutureListener.FIRE_EXCEPTION_ON_FAILURE);
-		}
+		pinghandler.executeHandler(() -> {
+			ctx.writeAndFlush(new RakNetUnconnectedPong(unconnectedPing.getClientTime(), pinghandler.getServerInfo(ctx.channel()))).addListener(ChannelFutureListener.CLOSE);
+		});
 	}
 
 	protected void fireNext(ChannelHandlerContext ctx, RakNetPacket packet) {
@@ -103,6 +99,8 @@ public class RakNetPacketConnectionEstablishHandler extends SimpleChannelInbound
 	}
 
 	public static interface PingHandler {
+
+		public void executeHandler(Runnable runnable);
 
 		public String getServerInfo(Channel channel);
 
