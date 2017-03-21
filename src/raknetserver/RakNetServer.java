@@ -6,14 +6,12 @@ import io.netty.bootstrap.ServerBootstrap;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelInitializer;
-import io.netty.channel.ChannelOption;
-import io.netty.channel.FixedRecvByteBufAllocator;
 import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.handler.timeout.ReadTimeoutHandler;
 import raknetserver.pipeline.ecnapsulated.EncapsulatedPacketInboundOrderer;
 import raknetserver.pipeline.ecnapsulated.EncapsulatedPacketOutboundOrder;
-import raknetserver.pipeline.ecnapsulated.EncapsulatedPacketUnsplitter;
 import raknetserver.pipeline.ecnapsulated.EncapsulatedPacketSplitter;
+import raknetserver.pipeline.ecnapsulated.EncapsulatedPacketUnsplitter;
 import raknetserver.pipeline.internal.InternalPacketDecoder;
 import raknetserver.pipeline.internal.InternalPacketEncoder;
 import raknetserver.pipeline.internal.InternalPacketReadHandler;
@@ -46,7 +44,6 @@ public class RakNetServer {
 		ServerBootstrap bootstrap = new ServerBootstrap()
 		.group(new NioEventLoopGroup(), new UdpEventLoopGroup())
 		.channel(NioUdpServerChannel.class)
-		.option(ChannelOption.RCVBUF_ALLOCATOR, new FixedRecvByteBufAllocator(1500))
 		.childHandler(new ChannelInitializer<Channel>() {
 			@Override
 			protected void initChannel(Channel channel) throws Exception {

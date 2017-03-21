@@ -15,7 +15,7 @@
 		<mkdir dir="${libs.dir}"/>
 		<mkdir dir="${classes.dir}"/>
 		<get src="http://repo1.maven.org/maven2/io/netty/netty-all/4.0.30.Final/netty-all-4.0.30.Final.jar" dest="${libs.dir}/netty.jar" usetimestamp="true"/>
-		<get src="https://build.true-games.org/job/UdpServerSocketChannel/5/artifact/target/UdpServerSocketChannel.jar" dest="${UDPServerSocketChannel.file}" usetimestamp="true"/>
+		<get src="https://build.true-games.org/job/UdpServerSocketChannelNetty40/lastSuccessfulBuild/artifact/target/UdpServerSocketChannel.jar" dest="${UDPServerSocketChannel.file}" usetimestamp="true"/>
 		<javac source="1.8" target="1.8" encoding="UTF-8" srcdir="${src.dir}" destdir="${classes.dir}" classpathref="libs" debug="on"/>
 		<jar destfile="target/RakNetServer.jar" basedir="${classes.dir}">
 			<fileset file="LICENSE"/>
