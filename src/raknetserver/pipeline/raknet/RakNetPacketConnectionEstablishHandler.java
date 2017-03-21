@@ -5,13 +5,13 @@ import io.netty.channel.ChannelFutureListener;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.SimpleChannelInboundHandler;
 import raknetserver.packet.RakNetConstants;
-import raknetserver.packet.raknet.RakNetAlreadyConnected;
 import raknetserver.packet.raknet.RakNetConnectionReply1;
 import raknetserver.packet.raknet.RakNetConnectionReply2;
 import raknetserver.packet.raknet.RakNetConnectionRequest1;
 import raknetserver.packet.raknet.RakNetConnectionRequest2;
 import raknetserver.packet.raknet.RakNetEncapsulatedData;
 import raknetserver.packet.raknet.RakNetInvalidVersion;
+import raknetserver.packet.raknet.RakNetConnectionFailed;
 import raknetserver.packet.raknet.RakNetPacket;
 import raknetserver.packet.raknet.RakNetReliability.RakNetACK;
 import raknetserver.packet.raknet.RakNetReliability.RakNetNACK;
@@ -49,7 +49,7 @@ public class RakNetPacketConnectionEstablishHandler extends SimpleChannelInbound
 		if (state == State.CONNECTED) {
 			ctx.fireExceptionCaught(cause);
 		} else {
-			//TODO: send some packet that will disconnect client with neutral message and close connection
+			ctx.writeAndFlush(new RakNetConnectionFailed()).addListener(ChannelFutureListener.CLOSE);
 		}
 	}
 
@@ -57,7 +57,7 @@ public class RakNetPacketConnectionEstablishHandler extends SimpleChannelInbound
 		if (connectionRequest1.getRakNetProtocolVersion() == RakNetInvalidVersion.VALID_VERSION) {
 			ctx.writeAndFlush(new RakNetConnectionReply1(connectionRequest1.getMtu())).addListener(ChannelFutureListener.FIRE_EXCEPTION_ON_FAILURE);
 		} else {
-			ctx.writeAndFlush(new RakNetInvalidVersion()).addListener(ChannelFutureListener.FIRE_EXCEPTION_ON_FAILURE);
+			ctx.writeAndFlush(new RakNetInvalidVersion()).addListener(ChannelFutureListener.CLOSE);
 		}
 	}
 
@@ -76,7 +76,7 @@ public class RakNetPacketConnectionEstablishHandler extends SimpleChannelInbound
 			if (guid == nguid) {
 				ctx.writeAndFlush(new RakNetConnectionReply2(ctx.channel().attr(RakNetConstants.MTU).get())).addListener(ChannelFutureListener.FIRE_EXCEPTION_ON_FAILURE);
 			} else {
-				ctx.writeAndFlush(new RakNetAlreadyConnected()).addListener(ChannelFutureListener.FIRE_EXCEPTION_ON_FAILURE);
+				ctx.writeAndFlush(new RakNetConnectionFailed()).addListener(ChannelFutureListener.CLOSE);
 			}
 		}
 	}

@@ -16,7 +16,7 @@ public final class RakNetConstants {
 	public static final int ID_RN_OPEN_CONNECTION_REQUEST_1 = 0x05;
 	public static final int ID_RN_OPEN_CONNECTION_REPLY_1 = 0x06;
 	public static final int ID_RN_INVALID_VERSION = 25;
-	public static final int ID_RN_ALREADY_CONNECTED = 18;
+	public static final int ID_RN_CONNECTION_FAILED = 17;
 	public static final int ID_RN_OPEN_CONNECTION_REQUEST_2 = 0x07;
 	public static final int ID_RN_OPEN_CONNECTION_REPLY_2 = 0x08;
 	public static final int ID_RN_ACK = 0xC0;

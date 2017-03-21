@@ -3,11 +3,10 @@ package raknetserver.packet.raknet;
 import io.netty.buffer.ByteBuf;
 import raknetserver.packet.RakNetConstants;
 
-public class RakNetAlreadyConnected implements RakNetPacket {
+public class RakNetConnectionFailed implements RakNetPacket {
 
 	@Override
 	public void decode(ByteBuf buf) {
-		throw new UnsupportedOperationException();
 	}
 
 	@Override

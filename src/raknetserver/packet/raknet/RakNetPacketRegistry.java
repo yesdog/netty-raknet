@@ -14,7 +14,7 @@ public class RakNetPacketRegistry {
 	private static final Constructor<? extends RakNetPacket>[] idToPacket = new Constructor[2 << Byte.SIZE];
 	private static final HashMap<Class<? extends RakNetPacket>, Integer> packetToId = new HashMap<>();
 
-	private static final void registerClientBound(int packetId, Class<? extends RakNetPacket> packetClass) {
+	private static final void register(int packetId, Class<? extends RakNetPacket> packetClass) {
 		packetToId.put(packetClass, packetId);
 		try {
 			idToPacket[packetId] = packetClass.getConstructor();
@@ -23,18 +23,18 @@ public class RakNetPacketRegistry {
 	}
 
 	static {
-		registerClientBound(RakNetConstants.ID_RN_UNCONNECTED_PING, RakNetUnconnectedPing.class);
-		registerClientBound(RakNetConstants.ID_RN_UNCONNECTED_PONG, RakNetUnconnectedPong.class);
-		registerClientBound(RakNetConstants.ID_RN_OPEN_CONNECTION_REQUEST_1, RakNetConnectionRequest1.class);
-		registerClientBound(RakNetConstants.ID_RN_OPEN_CONNECTION_REPLY_1, RakNetConnectionReply1.class);
-		registerClientBound(RakNetConstants.ID_RN_INVALID_VERSION, RakNetInvalidVersion.class);
-		registerClientBound(RakNetConstants.ID_RN_ALREADY_CONNECTED, RakNetAlreadyConnected.class);
-		registerClientBound(RakNetConstants.ID_RN_OPEN_CONNECTION_REQUEST_2, RakNetConnectionRequest2.class);
-		registerClientBound(RakNetConstants.ID_RN_OPEN_CONNECTION_REPLY_2, RakNetConnectionReply2.class);
-		registerClientBound(RakNetConstants.ID_RN_ACK, RakNetACK.class);
-		registerClientBound(RakNetConstants.ID_RN_NACK, RakNetNACK.class);
+		register(RakNetConstants.ID_RN_UNCONNECTED_PING, RakNetUnconnectedPing.class);
+		register(RakNetConstants.ID_RN_UNCONNECTED_PONG, RakNetUnconnectedPong.class);
+		register(RakNetConstants.ID_RN_OPEN_CONNECTION_REQUEST_1, RakNetConnectionRequest1.class);
+		register(RakNetConstants.ID_RN_OPEN_CONNECTION_REPLY_1, RakNetConnectionReply1.class);
+		register(RakNetConstants.ID_RN_INVALID_VERSION, RakNetInvalidVersion.class);
+		register(RakNetConstants.ID_RN_CONNECTION_FAILED, RakNetConnectionFailed.class);
+		register(RakNetConstants.ID_RN_OPEN_CONNECTION_REQUEST_2, RakNetConnectionRequest2.class);
+		register(RakNetConstants.ID_RN_OPEN_CONNECTION_REPLY_2, RakNetConnectionReply2.class);
+		register(RakNetConstants.ID_RN_ACK, RakNetACK.class);
+		register(RakNetConstants.ID_RN_NACK, RakNetNACK.class);
 		for (int i = 0x80; i <= 0x8f; i++) {
-			registerClientBound(i, RakNetEncapsulatedData.class);
+			register(i, RakNetEncapsulatedData.class);
 		}
 	}
 
