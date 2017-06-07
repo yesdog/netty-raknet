@@ -6,6 +6,7 @@ import io.netty.bootstrap.ServerBootstrap;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelInitializer;
+import io.netty.channel.DefaultEventLoopGroup;
 import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.handler.timeout.ReadTimeoutHandler;
 import raknetserver.pipeline.ecnapsulated.EncapsulatedPacketInboundOrderer;
@@ -22,7 +23,6 @@ import raknetserver.pipeline.raknet.RakNetPacketDecoder;
 import raknetserver.pipeline.raknet.RakNetPacketEncoder;
 import raknetserver.pipeline.raknet.RakNetPacketReliabilityHandler;
 import udpserversocketchannel.channel.NioUdpServerChannel;
-import udpserversocketchannel.eventloop.UdpEventLoopGroup;
 
 public class RakNetServer {
 
@@ -42,7 +42,7 @@ public class RakNetServer {
 
 	public void start() {
 		ServerBootstrap bootstrap = new ServerBootstrap()
-		.group(new NioEventLoopGroup(), new UdpEventLoopGroup())
+		.group(new NioEventLoopGroup(), new DefaultEventLoopGroup())
 		.channel(NioUdpServerChannel.class)
 		.childHandler(new ChannelInitializer<Channel>() {
 			@Override
