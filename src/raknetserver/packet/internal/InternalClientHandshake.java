@@ -7,12 +7,11 @@ public class InternalClientHandshake implements InternalPacket {
 
 	@Override
 	public void decode(ByteBuf buf) {
-		for (int i = 0; i < 11; i++) {
+		for (int i = 0; i < 21; i++) {
 			RakNetDataSerializer.readAddress(buf);
 		}
 		buf.skipBytes(8); //pong time
 		buf.skipBytes(8); //timestamp
-		buf.skipBytes(70); //WTF is this?
 	}
 
 	@Override

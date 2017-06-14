@@ -25,7 +25,7 @@ public class InternalServerHandshake implements InternalPacket {
 	public void encode(ByteBuf buf) {
 		RakNetDataSerializer.writeAddress(buf, clientAddr);
 		buf.writeShort(0);
-		for (int i = 0; i < 10; i++) {
+		for (int i = 0; i < 20; i++) {
 			RakNetDataSerializer.writeAddress(buf, RakNetConstants.NULL_ADDR);
 		}
 		buf.writeLong(timestamp);
