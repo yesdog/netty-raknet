@@ -4,6 +4,7 @@ import java.util.Arrays;
 import java.util.List;
 
 import io.netty.buffer.ByteBuf;
+import io.netty.buffer.Unpooled;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.codec.MessageToMessageEncoder;
 import raknetserver.packet.EncapsulatedPacket;
@@ -19,10 +20,11 @@ public class EncapsulatedPacketSplitter extends MessageToMessageEncoder<Encapsul
 		if (packet.getDataSize() > (mtu - 100)) {
 			EncapsulatedPacket[] epackets = new EncapsulatedPacket[Utils.getSplitCount(packet.getDataSize(), splitSize)];
 			int splitID = getNextSplitID();
-			ByteBuf buffer = packet.getData();
+			//TODO: direct array split
+			ByteBuf buffer = Unpooled.wrappedBuffer(packet.getData());
 			for (int splitIndex = 0; splitIndex < epackets.length; splitIndex++) {
 				epackets[splitIndex] = new EncapsulatedPacket(
-					buffer.readBytes(buffer.readableBytes() < splitSize ? buffer.readableBytes() : splitSize),
+					Utils.readBytes(buffer, buffer.readableBytes() < splitSize ? buffer.readableBytes() : splitSize),
 					getNextMessageIndex(), packet.getOrderChannel(), packet.getOrderIndex(),
 					splitID, epackets.length, splitIndex
 				);

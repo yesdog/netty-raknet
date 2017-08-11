@@ -39,9 +39,9 @@ public class RakNetDataSerializer {
 			addr = ByteBuffer.allocate(4).putInt(addri).array();
 			port = buf.readUnsignedShort();
 		} else if (type == 6) {
-			//socaddr_in6 structure
+			//sockaddr_in6 structure
 			buf.skipBytes(2); //family
-			port = buf.readShort();
+			port = buf.readUnsignedShort();
 			buf.skipBytes(4); //flow info
 			addr = new byte[16];
 			buf.readBytes(addr);

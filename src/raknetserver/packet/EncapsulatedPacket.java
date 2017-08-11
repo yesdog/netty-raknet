@@ -1,8 +1,8 @@
 package raknetserver.packet;
 
 import io.netty.buffer.ByteBuf;
-import io.netty.buffer.Unpooled;
 import raknetserver.utils.Utils;
+
 public class EncapsulatedPacket {
 
 	protected int reliability;
@@ -22,15 +22,15 @@ public class EncapsulatedPacket {
 	public EncapsulatedPacket() {
 	}
 
-	public EncapsulatedPacket(ByteBuf data, int messageIndex, int orderChannel, int orderIndex) {
-		this.data = Utils.readBytes(data);
+	public EncapsulatedPacket(byte[] data, int messageIndex, int orderChannel, int orderIndex) {
+		this.data = data.clone();
 		this.reliability = 3;
 		this.messageIndex = messageIndex;
 		this.orderChannel = orderChannel;
 		this.orderIndex = orderIndex;
 	}
 
-	public EncapsulatedPacket(ByteBuf data, int messageIndex, int orderChannel, int orderIndex, int splitID, int splitCount, int splitIndex) {
+	public EncapsulatedPacket(byte[] data, int messageIndex, int orderChannel, int orderIndex, int splitID, int splitCount, int splitIndex) {
 		this(data, messageIndex, orderChannel, orderIndex);
 		this.hasSplit = true;
 		this.splitID = splitID;
@@ -129,8 +129,8 @@ public class EncapsulatedPacket {
 		return data.length;
 	}
 
-	public ByteBuf getData() {
-		return Unpooled.copiedBuffer(data);
+	public byte[] getData() {
+		return data.clone();
 	}
 
 }

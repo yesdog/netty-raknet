@@ -3,11 +3,11 @@ package raknetserver.pipeline.ecnapsulated;
 import java.util.HashMap;
 import java.util.List;
 
-import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.codec.MessageToMessageDecoder;
 import raknetserver.packet.EncapsulatedPacket;
+import raknetserver.utils.Utils;
 
 public class EncapsulatedPacketUnsplitter extends MessageToMessageDecoder<EncapsulatedPacket> {
 
@@ -38,14 +38,14 @@ public class EncapsulatedPacketUnsplitter extends MessageToMessageDecoder<Encaps
 
 		private int receivedSplits = 0;
 		private final EncapsulatedPacket startpacket;
-		private final ByteBuf[] packets;
+		private final byte[][] packets;
 
 		public SplittedPacket(EncapsulatedPacket startpacket) {
 			if (startpacket.getSplitCount() > maxSplits) {
-				throw new IllegalStateException("Too many splits for single packet, max: "+maxSplits+", packet: "+startpacket.getSplitCount());
+				throw new IllegalStateException("Too many splits for single packet, max: " + maxSplits + ", packet: " + startpacket.getSplitCount());
 			}
 			this.startpacket = startpacket;
-			this.packets = new ByteBuf[startpacket.getSplitCount()];
+			this.packets = new byte[startpacket.getSplitCount()][];
 			this.packets[0] = startpacket.getData();
 		}
 
@@ -62,7 +62,7 @@ public class EncapsulatedPacketUnsplitter extends MessageToMessageDecoder<Encaps
 		}
 
 		public EncapsulatedPacket getFullPacket() {
-			return new EncapsulatedPacket(Unpooled.wrappedBuffer(packets), 0, startpacket.getOrderChannel(), startpacket.getOrderIndex());
+			return new EncapsulatedPacket(Utils.readBytes(Unpooled.wrappedBuffer(packets)), 0, startpacket.getOrderChannel(), startpacket.getOrderIndex());
 		}
 
 	}
