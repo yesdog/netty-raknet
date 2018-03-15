@@ -1,16 +1,10 @@
 package raknetserver.pipeline.raknet;
 
-import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.Iterator;
 import java.util.List;
-import java.util.Map.Entry;
-import java.util.concurrent.TimeUnit;
-
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.codec.DecoderException;
 import io.netty.handler.codec.MessageToMessageCodec;
-import io.netty.util.concurrent.ScheduledFuture;
 import raknetserver.packet.EncapsulatedPacket;
 import raknetserver.packet.raknet.RakNetEncapsulatedData;
 import raknetserver.packet.raknet.RakNetPacket;
@@ -22,42 +16,7 @@ import raknetserver.utils.Constants;
 //TODO: figure out if seq numbers can wrap
 public class RakNetPacketReliabilityHandler extends MessageToMessageCodec<RakNetPacket, EncapsulatedPacket> {
 
-	protected int lastReceivedACK = -1;
 	protected final HashMap<Integer, RakNetEncapsulatedData> sentPackets = new HashMap<>();
-
-	protected ScheduledFuture<?> task;
-
-	@Override
-	public void channelActive(final ChannelHandlerContext ctx) throws Exception {
-		task = ctx.channel().eventLoop().scheduleAtFixedRate(new Runnable() {
-			@Override
-			public void run() {
-				//resend packets that weren't confirmed as received on the other side
-				//only packets with seq id less than latest received ack are sent
-				ArrayList<RakNetEncapsulatedData> toResend = new ArrayList<>();
-				Iterator<Entry<Integer, RakNetEncapsulatedData>> iterator = sentPackets.entrySet().iterator();
-				while (iterator.hasNext()) {
-					Entry<Integer, RakNetEncapsulatedData> entry = iterator.next();
-					RakNetEncapsulatedData packet = entry.getValue();
-					if (packet.getSeqId() < lastReceivedACK) {
-						iterator.remove();
-						toResend.add(packet);
-					}
-				}
-				for (RakNetEncapsulatedData packet : toResend) {
-					sendRakNetPacket(ctx, packet);
-				}
-			}
-		}, Constants.PACKET_RESEND_INTERVAL, Constants.PACKET_RESEND_INTERVAL, TimeUnit.MILLISECONDS);
-		super.channelActive(ctx);
-	}
-
-	@Override
-	public void channelInactive(ChannelHandlerContext ctx) throws Exception {
-		task.cancel(false);
-		super.channelInactive(ctx);
-	}
-
 	protected int lastReceivedSeqId = -1;
 
 	@Override
@@ -107,7 +66,6 @@ public class RakNetPacketReliabilityHandler extends MessageToMessageCodec<RakNet
 		for (int id = idstart; id <= idfinish; id++) {
 			sentPackets.remove(id);
 		}
-		lastReceivedACK = idfinish;
 	}
 
 	private void resendRakNetPackets(ChannelHandlerContext ctx, int idstart, int idfinish) {
