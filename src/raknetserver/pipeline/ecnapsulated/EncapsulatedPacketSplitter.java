@@ -35,13 +35,13 @@ public class EncapsulatedPacketSplitter extends MessageToMessageEncoder<Encapsul
 		}
 	}
 
-	private int currentMessageIndex = 0;
-	private int getNextMessageIndex() {
+	protected int currentMessageIndex = 0;
+	protected int getNextMessageIndex() {
 		return currentMessageIndex++ % 16777216;
 	}
 
-	private int currentSplitID = 0;
-	private int getNextSplitID() {
+	protected int currentSplitID = 0;
+	protected int getNextSplitID() {
 		return currentSplitID++ % Short.MAX_VALUE;
 	}
 

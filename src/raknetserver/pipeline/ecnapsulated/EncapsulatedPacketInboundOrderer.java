@@ -11,6 +11,7 @@ import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.codec.DecoderException;
 import io.netty.handler.codec.MessageToMessageDecoder;
 import raknetserver.packet.EncapsulatedPacket;
+import raknetserver.utils.Constants;
 
 public class EncapsulatedPacketInboundOrderer extends MessageToMessageDecoder<EncapsulatedPacket> {
 
@@ -30,16 +31,21 @@ public class EncapsulatedPacketInboundOrderer extends MessageToMessageDecoder<En
 		}
 	}
 
-	private static class OrderedChannelPacketQueue {
+	protected static class OrderedChannelPacketQueue {
 
 		private final HashMap<Integer, EncapsulatedPacket> queue = new HashMap<>(300);
 		private int lastReceivedIndex = -1;
 		private int lastOrderedIndex = -1;
 
 		public Collection<EncapsulatedPacket> getOrdered(EncapsulatedPacket epacket) {
-			if (queue.size() > 256) {
-				throw new DecoderException("Too big packet loss");
+			Collection<EncapsulatedPacket> ordered = getOrdered0(epacket);
+			if (queue.size() > Constants.MAX_PACKET_LOSS) {
+				throw new DecoderException("Too big packet loss (missed ordered packets)");
 			}
+			return ordered;
+		}
+
+		protected Collection<EncapsulatedPacket> getOrdered0(EncapsulatedPacket epacket) {
 			int messageIndex = epacket.getOrderIndex();
 			//duplicate packet, ignore it
 			if (messageIndex <= lastOrderedIndex) {

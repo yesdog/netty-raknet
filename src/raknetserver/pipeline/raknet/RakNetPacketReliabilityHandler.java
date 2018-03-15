@@ -8,6 +8,7 @@ import java.util.Map.Entry;
 import java.util.concurrent.TimeUnit;
 
 import io.netty.channel.ChannelHandlerContext;
+import io.netty.handler.codec.DecoderException;
 import io.netty.handler.codec.MessageToMessageCodec;
 import io.netty.util.concurrent.ScheduledFuture;
 import raknetserver.packet.EncapsulatedPacket;
@@ -16,6 +17,7 @@ import raknetserver.packet.raknet.RakNetPacket;
 import raknetserver.packet.raknet.RakNetReliability.REntry;
 import raknetserver.packet.raknet.RakNetReliability.RakNetACK;
 import raknetserver.packet.raknet.RakNetReliability.RakNetNACK;
+import raknetserver.utils.Constants;
 
 //TODO: figure out if seq numbers can wrap
 public class RakNetPacketReliabilityHandler extends MessageToMessageCodec<RakNetPacket, EncapsulatedPacket> {
@@ -23,14 +25,14 @@ public class RakNetPacketReliabilityHandler extends MessageToMessageCodec<RakNet
 	protected int lastReceivedACK = -1;
 	protected final HashMap<Integer, RakNetEncapsulatedData> sentPackets = new HashMap<>();
 
-	private ScheduledFuture<?> task;
+	protected ScheduledFuture<?> task;
 
 	@Override
 	public void channelActive(final ChannelHandlerContext ctx) throws Exception {
 		task = ctx.channel().eventLoop().scheduleAtFixedRate(new Runnable() {
 			@Override
 			public void run() {
-				//resend packets that werent confirmed as received on the other side
+				//resend packets that weren't confirmed as received on the other side
 				//only packets with seq id less than latest received ack are sent
 				ArrayList<RakNetEncapsulatedData> toResend = new ArrayList<>();
 				Iterator<Entry<Integer, RakNetEncapsulatedData>> iterator = sentPackets.entrySet().iterator();
@@ -46,7 +48,7 @@ public class RakNetPacketReliabilityHandler extends MessageToMessageCodec<RakNet
 					sendRakNetPacket(ctx, packet);
 				}
 			}
-		}, 100, 50, TimeUnit.MILLISECONDS);
+		}, Constants.PACKET_RESEND_INTERVAL, Constants.PACKET_RESEND_INTERVAL, TimeUnit.MILLISECONDS);
 		super.channelActive(ctx);
 	}
 
@@ -56,9 +58,8 @@ public class RakNetPacketReliabilityHandler extends MessageToMessageCodec<RakNet
 		super.channelInactive(ctx);
 	}
 
-	private int lastReceivedSeqId = -1;
+	protected int lastReceivedSeqId = -1;
 
-	//TODO: limit how much packets can be missed and how much ids reliability packet can contain
 	@Override
 	protected void decode(ChannelHandlerContext ctx, RakNetPacket packet, List<Object> list) throws Exception {
 		if (packet instanceof RakNetEncapsulatedData) {
@@ -100,6 +101,9 @@ public class RakNetPacketReliabilityHandler extends MessageToMessageCodec<RakNet
 	}
 
 	private void confirmRakNetPackets(int idstart, int idfinish) {
+		if ((idfinish - idstart) > Constants.MAX_PACKET_LOSS) {
+			throw new DecoderException("Too big packet loss (ack confirm range)");
+		}
 		for (int id = idstart; id <= idfinish; id++) {
 			sentPackets.remove(id);
 		}
@@ -107,6 +111,9 @@ public class RakNetPacketReliabilityHandler extends MessageToMessageCodec<RakNet
 	}
 
 	private void resendRakNetPackets(ChannelHandlerContext ctx, int idstart, int idfinish) {
+		if ((idfinish - idstart) > Constants.MAX_PACKET_LOSS) {
+			throw new DecoderException("Too big packet loss (nack resend range)");
+		}
 		for (int id = idstart; id <= idfinish; id++) {
 			RakNetEncapsulatedData packet = sentPackets.remove(id);
 			if (packet != null) {
@@ -117,6 +124,9 @@ public class RakNetPacketReliabilityHandler extends MessageToMessageCodec<RakNet
 
 	protected void initRakNetPacket(RakNetEncapsulatedData rpacket) {
 		rpacket.setSeqId(getNextRakSeqID());
+		if (sentPackets.size() > Constants.MAX_PACKET_LOSS) {
+			throw new DecoderException("Too big packet loss (unconfirmed sent packets)");
+		}
 		sentPackets.put(rpacket.getSeqId(), rpacket);
 	}
 
@@ -125,8 +135,8 @@ public class RakNetPacketReliabilityHandler extends MessageToMessageCodec<RakNet
 		ctx.writeAndFlush(rpacket);
 	}
 
-	private int currentRakSeqID = 0;
-	private int getNextRakSeqID() {
+	protected int currentRakSeqID = 0;
+	protected int getNextRakSeqID() {
 		if (currentRakSeqID >= 16777216) {
 			throw new IllegalStateException("Rak seq id reached max");
 		}

@@ -7,6 +7,7 @@ import io.netty.buffer.Unpooled;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.codec.MessageToMessageDecoder;
 import raknetserver.packet.EncapsulatedPacket;
+import raknetserver.utils.Constants;
 import raknetserver.utils.Utils;
 
 public class EncapsulatedPacketUnsplitter extends MessageToMessageDecoder<EncapsulatedPacket> {
@@ -34,15 +35,13 @@ public class EncapsulatedPacketUnsplitter extends MessageToMessageDecoder<Encaps
 
 	private static final class SplittedPacket {
 
-		private static final long maxSplits = 512;
-
 		private int receivedSplits = 0;
 		private final EncapsulatedPacket startpacket;
 		private final byte[][] packets;
 
 		public SplittedPacket(EncapsulatedPacket startpacket) {
-			if (startpacket.getSplitCount() > maxSplits) {
-				throw new IllegalStateException("Too many splits for single packet, max: " + maxSplits + ", packet: " + startpacket.getSplitCount());
+			if (startpacket.getSplitCount() > Constants.MAX_PACKET_SPLITS) {
+				throw new IllegalStateException("Too many splits for single packet, max: " + Constants.MAX_PACKET_SPLITS + ", packet: " + startpacket.getSplitCount());
 			}
 			this.startpacket = startpacket;
 			this.packets = new byte[startpacket.getSplitCount()][];
