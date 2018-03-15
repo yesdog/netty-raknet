@@ -1,0 +1,75 @@
+plugins {
+	id 'java'
+}
+
+group 'raknetserver'
+version '1.0'
+
+sourceCompatibility = 1.8
+
+
+import java.text.MessageFormat
+
+File dlDepsDir = new File('dllibs')
+dlDepsDir.mkdirs()
+
+def dlDeps = [
+	new Tuple(
+		'https://build.true-games.org/job/UdpServerSocketChannel/10/artifact/target/UdpServerSocketChannel.jar',
+		'udpserver-1.jar'
+	),
+]
+
+task updateLibs(type: DefaultTask) {doLast{
+	def dlDepsNames = new HashSet<String>()
+	dlDeps.each({
+		String dlDepUrl = it[0]
+		File dlDepFile = new File(dlDepsDir, it[1])
+		dlDepsNames.add(dlDepFile.getName())
+		if (!dlDepFile.exists()) {
+			logger.lifecycle(MessageFormat.format("Downloading {0} from {1}", dlDepFile.getName(), dlDepUrl))
+			ant.get(src: dlDepUrl, dest: dlDepFile)
+		} else {
+			logger.lifecycle(MessageFormat.format("Skipping download of {0} because it already exists", dlDepFile.getName()))
+		}
+	})
+	dlDepsDir.listFiles().findAll({ !dlDepsNames.contains(it.getName()) }).each({
+		logger.lifecycle(MessageFormat.format("Deleting old dllib {0}", it.getName()))
+		it.delete()
+	})
+}}
+
+
+sourceSets {
+	main {
+		java {
+			srcDirs = ['src']
+		}
+	}
+}
+
+repositories {
+	mavenCentral()
+}
+
+dependencies {
+	compile fileTree(dir: dlDepsDir, include: '*.jar')
+	compile group: 'io.netty', name: 'netty-all', version: '4.1.22.Final'
+}
+
+
+jar {
+	doFirst {
+		new File(destinationDir, archiveName).delete()
+	}
+
+	from sourceSets.main.java.srcDirs
+	from 'LICENSE'
+
+	destinationDir = file('target')
+	archiveName = 'RakNetServer.jar'
+}
+
+
+compileJava.dependsOn(clean)
+compileJava.dependsOn(updateLibs)
