@@ -15,8 +15,8 @@ dlDepsDir.mkdirs()
 
 def dlDeps = [
 	new Tuple(
-		'https://build.true-games.org/job/UdpServerSocketChannel/10/artifact/target/UdpServerSocketChannel.jar',
-		'udpserver-1.jar'
+		'https://build.true-games.org/job/UdpServerSocketChannel/11/artifact/target/UdpServerSocketChannel.jar',
+		'udpserver-2.jar'
 	),
 ]
 
