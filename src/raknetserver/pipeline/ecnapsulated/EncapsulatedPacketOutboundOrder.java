@@ -6,6 +6,7 @@ import io.netty.buffer.ByteBuf;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.codec.MessageToMessageEncoder;
 import raknetserver.packet.EncapsulatedPacket;
+import raknetserver.utils.UINT;
 import raknetserver.utils.Utils;
 
 public class EncapsulatedPacketOutboundOrder extends MessageToMessageEncoder<ByteBuf> {
@@ -15,9 +16,11 @@ public class EncapsulatedPacketOutboundOrder extends MessageToMessageEncoder<Byt
 		list.add(new EncapsulatedPacket(Utils.readBytes(buffer), 0, 0, getNextOrderIndex()));
 	}
 
-	private int currentOrderIndex = 0;
-	private int getNextOrderIndex() {
-		return currentOrderIndex++ % 16777216;
+	protected int nextOrderIndex = 0;
+	protected int getNextOrderIndex() {
+		int orderIndex = nextOrderIndex;
+		nextOrderIndex = UINT.B3.plus(nextOrderIndex, 1);
+		return orderIndex;
 	}
 
 }

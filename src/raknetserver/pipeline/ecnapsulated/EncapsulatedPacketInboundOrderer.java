@@ -12,6 +12,7 @@ import io.netty.handler.codec.DecoderException;
 import io.netty.handler.codec.MessageToMessageDecoder;
 import raknetserver.packet.EncapsulatedPacket;
 import raknetserver.utils.Constants;
+import raknetserver.utils.UINT;
 
 public class EncapsulatedPacketInboundOrderer extends MessageToMessageDecoder<EncapsulatedPacket> {
 
@@ -31,11 +32,14 @@ public class EncapsulatedPacketInboundOrderer extends MessageToMessageDecoder<En
 		}
 	}
 
+	//TODO: handle wrap ids
 	protected static class OrderedChannelPacketQueue {
 
-		private final HashMap<Integer, EncapsulatedPacket> queue = new HashMap<>(300);
-		private int lastReceivedIndex = -1;
-		private int lastOrderedIndex = -1;
+		protected static final int HALF_WINDOW = UINT.B3.MAX_VALUE / 2;
+
+		protected final HashMap<Integer, EncapsulatedPacket> queue = new HashMap<>();
+		protected int lastReceivedIndex = -1;
+		protected int lastOrderedIndex = -1;
 
 		public Collection<EncapsulatedPacket> getOrdered(EncapsulatedPacket epacket) {
 			Collection<EncapsulatedPacket> ordered = getOrdered0(epacket);
@@ -46,42 +50,48 @@ public class EncapsulatedPacketInboundOrderer extends MessageToMessageDecoder<En
 		}
 
 		protected Collection<EncapsulatedPacket> getOrdered0(EncapsulatedPacket epacket) {
-			int messageIndex = epacket.getOrderIndex();
-			//duplicate packet, ignore it
-			if (messageIndex <= lastOrderedIndex) {
+			int orderIndex = epacket.getOrderIndex();
+			int orderIdLastOrderedDiff = UINT.B3.minus(orderIndex, lastOrderedIndex);
+			int orderIdLastReceivedDiff = UINT.B3.minus(orderIndex, lastReceivedIndex);
+			//ignore duplicate packet
+			if ((orderIdLastOrderedDiff == 0) || (orderIdLastOrderedDiff > HALF_WINDOW)) {
 				return Collections.emptyList();
 			}
-			//some packets were lost, put packet in queue and wait
-			if ((messageIndex - lastReceivedIndex) > 1) {
-				queue.put(messageIndex, epacket);
-				lastReceivedIndex = messageIndex;
+			//some packets were lost this time, put packet in queue and wait
+			if (orderIdLastReceivedDiff > 1) {
+				queue.put(orderIndex, epacket);
+				lastReceivedIndex = orderIndex;
 				return Collections.emptyList();
 			}
 			//no packets were lost since last received, we have two cases
-			//1st - no missing packets - add packet to list
-			//2nd - have missing packets - put packet in queue
-			if ((messageIndex - lastReceivedIndex) == 1) {
-				lastReceivedIndex = messageIndex;
+			//1st - no missing packets from last time - add packet to list
+			//2nd - have missing packets from last time - put packet in queue
+			if (orderIdLastReceivedDiff == 1) {
+				lastReceivedIndex = orderIndex;
 				if (queue.isEmpty()) {
 					lastOrderedIndex = lastReceivedIndex;
 					return Collections.singletonList(epacket);
 				} else {
-					queue.put(messageIndex, epacket);
+					queue.put(orderIndex, epacket);
 					return Collections.emptyList();
 				}
 			}
-			//duplicate packet, ignore it
-			if (queue.containsKey(messageIndex)) {
+			//ignore duplicate packet
+			if (queue.containsKey(orderIndex)) {
 				return  Collections.emptyList();
 			}
 			//we received a missing packet, put packet in queue
-			queue.put(messageIndex, epacket);
-			//return as much ordered packets as we can
+			queue.put(orderIndex, epacket);
+			//grab as much ordered packets as we can from queue
 			ArrayList<EncapsulatedPacket> ordered = new ArrayList<>();
-			EncapsulatedPacket foundPacket = null;
-			while ((foundPacket = queue.remove(lastOrderedIndex + 1)) != null) {
+			while (true) {
+				int fOrderedIndex = UINT.B3.plus(lastOrderedIndex, 1);
+				EncapsulatedPacket foundPacket = queue.remove(fOrderedIndex);
+				if (foundPacket == null) {
+					break;
+				}
 				ordered.add(foundPacket);
-				lastOrderedIndex++;
+				lastOrderedIndex = fOrderedIndex;
 			}
 			return ordered;
 		}

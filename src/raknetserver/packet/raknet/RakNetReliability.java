@@ -37,8 +37,8 @@ public class RakNetReliability implements RakNetPacket {
 		buf.writeShort(entries.length);
 		for (REntry entry : entries) {
 			buf.writeBoolean(false);
-			RakNetDataSerializer.writeTriad(buf, entry.idstart);
-			RakNetDataSerializer.writeTriad(buf, entry.idfinish);
+			RakNetDataSerializer.writeTriad(buf, entry.idStart);
+			RakNetDataSerializer.writeTriad(buf, entry.idFinish);
 		}
 	}
 
@@ -47,14 +47,14 @@ public class RakNetReliability implements RakNetPacket {
 	}
 
 	public static class REntry {
-		public final int idstart;
-		public final int idfinish;
+		public final int idStart;
+		public final int idFinish;
 		public REntry(int id) {
 			this(id, id);
 		}
 		public REntry(int idstart, int idfinish) {
-			this.idstart = idstart;
-			this.idfinish = idfinish;
+			this.idStart = idstart;
+			this.idFinish = idfinish;
 		}
 	}
 

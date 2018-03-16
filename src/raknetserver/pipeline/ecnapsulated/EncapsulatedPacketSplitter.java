@@ -9,6 +9,7 @@ import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.codec.MessageToMessageEncoder;
 import raknetserver.packet.EncapsulatedPacket;
 import raknetserver.packet.RakNetConstants;
+import raknetserver.utils.UINT;
 import raknetserver.utils.Utils;
 
 public class EncapsulatedPacketSplitter extends MessageToMessageEncoder<EncapsulatedPacket> {
@@ -35,14 +36,18 @@ public class EncapsulatedPacketSplitter extends MessageToMessageEncoder<Encapsul
 		}
 	}
 
-	protected int currentMessageIndex = 0;
+	protected int nextMessageIndex = 0;
 	protected int getNextMessageIndex() {
-		return currentMessageIndex++ % 16777216;
+		int messageIndex = nextMessageIndex;
+		nextMessageIndex = UINT.B3.plus(nextMessageIndex, 1);
+		return messageIndex;
 	}
 
-	protected int currentSplitID = 0;
+	protected int nextSplitId = 0;
 	protected int getNextSplitID() {
-		return currentSplitID++ % Short.MAX_VALUE;
+		int splitId = nextSplitId;
+		nextSplitId = UINT.B2.plus(nextSplitId, 1);
+		return splitId;
 	}
 
 }

@@ -21,7 +21,7 @@ import raknetserver.utils.PacketHandlerRegistry;
 
 public class RakNetPacketConnectionEstablishHandler extends SimpleChannelInboundHandler<RakNetPacket> {
 
-	private static final PacketHandlerRegistry<RakNetPacketConnectionEstablishHandler, RakNetPacket> registry = new PacketHandlerRegistry<>();
+	protected static final PacketHandlerRegistry<RakNetPacketConnectionEstablishHandler, RakNetPacket> registry = new PacketHandlerRegistry<>();
 	static {
 		registry.register(RakNetConnectionRequest1.class, (ctx, handler, packet) -> handler.handleConnectionRequest1(ctx, packet));
 		registry.register(RakNetConnectionRequest2.class, (ctx, handler, packet) -> handler.handleConnectionRequest2(ctx, packet));
@@ -31,12 +31,12 @@ public class RakNetPacketConnectionEstablishHandler extends SimpleChannelInbound
 		registry.register(RakNetNACK.class, (ctx, handler, packet) -> handler.fireNext(ctx, packet));
 	}
 
-	private final PingHandler pinghandler;
+	protected final PingHandler pinghandler;
 	public RakNetPacketConnectionEstablishHandler(PingHandler pinghandler) {
 		this.pinghandler = pinghandler;
 	}
 
-	private State state = State.NEW;
+	protected State state = State.NEW;
 
 	@Override
 	protected void channelRead0(ChannelHandlerContext ctx, RakNetPacket packet) throws Exception {
