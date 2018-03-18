@@ -8,14 +8,13 @@ import io.netty.channel.SimpleChannelInboundHandler;
 import raknetserver.packet.internal.InternalClientHandshake;
 import raknetserver.packet.internal.InternalConnectionRequest;
 import raknetserver.packet.internal.InternalDisconnect;
-import raknetserver.packet.internal.InternalKeepAlive.InternalPing;
-import raknetserver.packet.internal.InternalKeepAlive.InternalPong;
 import raknetserver.packet.internal.InternalPacket;
+import raknetserver.packet.internal.InternalPing;
+import raknetserver.packet.internal.InternalPong;
 import raknetserver.packet.internal.InternalServerHandshake;
 import raknetserver.packet.internal.InternalUserData;
 import raknetserver.utils.PacketHandlerRegistry;
 
-//TODO: do a state validation?
 public class InternalPacketReadHandler extends SimpleChannelInboundHandler<InternalPacket> {
 
 	private static final PacketHandlerRegistry<InternalPacketReadHandler, InternalPacket> registry = new PacketHandlerRegistry<>();
@@ -23,6 +22,7 @@ public class InternalPacketReadHandler extends SimpleChannelInboundHandler<Inter
 		registry.register(InternalConnectionRequest.class, (ctx, handler, packet) -> handler.handleConnectionRequest(ctx, packet));
 		registry.register(InternalClientHandshake.class, (ctx, handler, packet) -> handler.handleHandshake(ctx, packet));
 		registry.register(InternalPing.class, (ctx, handler, packet) -> handler.handlePing(ctx, packet));
+		registry.register(InternalPong.class, (ctx, handler, packet) -> handler.handlePong(ctx, packet));
 		registry.register(InternalUserData.class, (ctx, handler, packet) -> handler.handleUserData(ctx, packet));
 		registry.register(InternalDisconnect.class, (ctx, handler, packet) -> handler.handleDisconnect(ctx, packet));
 	}
@@ -40,7 +40,10 @@ public class InternalPacketReadHandler extends SimpleChannelInboundHandler<Inter
 	}
 
 	protected void handlePing(ChannelHandlerContext ctx, InternalPing packet) {
-		ctx.writeAndFlush(new InternalPong(packet.getKeepAlive()));
+		ctx.writeAndFlush(new InternalPong(packet.getTimestamp()));
+	}
+
+	protected void handlePong(ChannelHandlerContext ctx, InternalPong packet) {
 	}
 
 	protected void handleUserData(ChannelHandlerContext ctx, InternalUserData packet) {

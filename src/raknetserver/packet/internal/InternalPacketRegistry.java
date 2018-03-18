@@ -5,8 +5,6 @@ import java.lang.reflect.InvocationTargetException;
 import java.util.HashMap;
 
 import raknetserver.packet.RakNetConstants;
-import raknetserver.packet.internal.InternalKeepAlive.InternalPing;
-import raknetserver.packet.internal.InternalKeepAlive.InternalPong;
 
 public class InternalPacketRegistry {
 
@@ -14,7 +12,7 @@ public class InternalPacketRegistry {
 	private static final Constructor<? extends InternalPacket>[] idToPacket = new Constructor[2 << Byte.SIZE];
 	private static final HashMap<Class<? extends InternalPacket>, Integer> packetToId = new HashMap<>();
 
-	private static final void register(int packetId, Class<? extends InternalPacket> packetClass) {
+	protected static final void register(int packetId, Class<? extends InternalPacket> packetClass) {
 		packetToId.put(packetClass, packetId);
 		try {
 			idToPacket[packetId] = packetClass.getConstructor();

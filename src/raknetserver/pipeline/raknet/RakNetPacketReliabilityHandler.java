@@ -1,12 +1,11 @@
 package raknetserver.pipeline.raknet;
 
-import java.util.HashMap;
-
 import io.netty.channel.ChannelDuplexHandler;
 import io.netty.channel.ChannelFutureListener;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelPromise;
 import io.netty.handler.codec.DecoderException;
+import it.unimi.dsi.fastutil.ints.Int2ObjectOpenHashMap;
 import raknetserver.packet.EncapsulatedPacket;
 import raknetserver.packet.raknet.RakNetEncapsulatedData;
 import raknetserver.packet.raknet.RakNetPacket;
@@ -37,7 +36,7 @@ public class RakNetPacketReliabilityHandler extends ChannelDuplexHandler {
 
 	protected static final int HALF_WINDOW = UINT.B3.MAX_VALUE / 2;
 
-	protected final HashMap<Integer, RakNetEncapsulatedData> sentPackets = new HashMap<>();
+	protected final Int2ObjectOpenHashMap<RakNetEncapsulatedData> sentPackets = new Int2ObjectOpenHashMap	<>();
 	protected int lastReceivedSeqId = -1;
 
 	protected void handleEncapsulatedData(ChannelHandlerContext ctx, RakNetEncapsulatedData packet) {

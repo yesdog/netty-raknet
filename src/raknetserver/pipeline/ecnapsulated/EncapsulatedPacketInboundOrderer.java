@@ -3,13 +3,13 @@ package raknetserver.pipeline.ecnapsulated;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.List;
 
 import io.netty.buffer.Unpooled;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.codec.DecoderException;
 import io.netty.handler.codec.MessageToMessageDecoder;
+import it.unimi.dsi.fastutil.ints.Int2ObjectOpenHashMap;
 import raknetserver.packet.EncapsulatedPacket;
 import raknetserver.utils.Constants;
 import raknetserver.utils.UINT;
@@ -32,12 +32,11 @@ public class EncapsulatedPacketInboundOrderer extends MessageToMessageDecoder<En
 		}
 	}
 
-	//TODO: handle wrap ids
 	protected static class OrderedChannelPacketQueue {
 
 		protected static final int HALF_WINDOW = UINT.B3.MAX_VALUE / 2;
 
-		protected final HashMap<Integer, EncapsulatedPacket> queue = new HashMap<>();
+		protected final Int2ObjectOpenHashMap<EncapsulatedPacket> queue = new Int2ObjectOpenHashMap<>();
 		protected int lastReceivedIndex = -1;
 		protected int lastOrderedIndex = -1;
 

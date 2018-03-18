@@ -1,10 +1,14 @@
 package raknetserver.pipeline.raknet;
 
+import java.util.concurrent.TimeUnit;
+
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelFutureListener;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.SimpleChannelInboundHandler;
+import io.netty.util.concurrent.ScheduledFuture;
 import raknetserver.packet.RakNetConstants;
+import raknetserver.packet.internal.InternalPing;
 import raknetserver.packet.raknet.RakNetConnectionFailed;
 import raknetserver.packet.raknet.RakNetConnectionReply1;
 import raknetserver.packet.raknet.RakNetConnectionReply2;
@@ -43,7 +47,8 @@ public class RakNetPacketConnectionEstablishHandler extends SimpleChannelInbound
 		registry.handle(ctx, this, packet);
 	}
 
-	//if the exception occured before the connection was established - kick the client so it no longer spam us
+	protected ScheduledFuture<?> pingTask;
+
 	@Override
 	public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) throws Exception {
 		if (state == State.CONNECTED) {
@@ -51,6 +56,12 @@ public class RakNetPacketConnectionEstablishHandler extends SimpleChannelInbound
 		} else {
 			ctx.writeAndFlush(new RakNetConnectionFailed()).addListener(ChannelFutureListener.CLOSE);
 		}
+	}
+
+	@Override
+	public void channelInactive(ChannelHandlerContext ctx) throws Exception {
+		pingTask.cancel(true);
+		super.channelInactive(ctx);
 	}
 
 	protected void handleConnectionRequest1(ChannelHandlerContext ctx, RakNetConnectionRequest1 connectionRequest1) {
@@ -68,8 +79,12 @@ public class RakNetPacketConnectionEstablishHandler extends SimpleChannelInbound
 		if (state == State.NEW) {
 			state = State.CONNECTED;
 			guid = nguid;
-			ctx.channel().attr(RakNetConstants.MTU).set(connectionRequest2.getMtu());
+			Channel channel = ctx.channel();
+			channel.attr(RakNetConstants.MTU).set(connectionRequest2.getMtu());
 			ctx.writeAndFlush(new RakNetConnectionReply2(connectionRequest2.getMtu())).addListener(ChannelFutureListener.FIRE_EXCEPTION_ON_FAILURE);
+			pingTask = channel.eventLoop().scheduleAtFixedRate(() -> {
+				channel.writeAndFlush(new InternalPing()).addListener(ChannelFutureListener.FIRE_EXCEPTION_ON_FAILURE);
+			}, 1, 1, TimeUnit.SECONDS);
 		} else {
 			//if guid matches then it means that reply2 packet didn't arrive to the clients
 			//otherwise it means that it is actually a new client connecting using already taken ip+port
