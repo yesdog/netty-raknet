@@ -4,7 +4,6 @@ import java.util.ArrayList;
 
 import io.netty.buffer.ByteBuf;
 import raknetserver.packet.EncapsulatedPacket;
-import raknetserver.packet.RakNetDataSerializer;
 
 public class RakNetEncapsulatedData implements RakNetPacket {
 
@@ -20,7 +19,7 @@ public class RakNetEncapsulatedData implements RakNetPacket {
 
 	@Override
 	public void decode(ByteBuf buf) {
-		seqId = RakNetDataSerializer.readTriad(buf);
+		seqId = buf.readUnsignedMediumLE();
 		while (buf.isReadable()) {
 			EncapsulatedPacket packet = new EncapsulatedPacket();
 			packet.decode(buf);
@@ -30,7 +29,7 @@ public class RakNetEncapsulatedData implements RakNetPacket {
 
 	@Override
 	public void encode(ByteBuf buf) {
-		RakNetDataSerializer.writeTriad(buf, seqId);
+		buf.writeMediumLE(seqId);
 		for (EncapsulatedPacket packet : packets) {
 			packet.encode(buf);
 		}

@@ -14,16 +14,6 @@ import io.netty.handler.codec.EncoderException;
 
 public class RakNetDataSerializer {
 
-	public static int readTriad(ByteBuf buf) {
-		return buf.readUnsignedByte() | (buf.readUnsignedByte() << 8) | (buf.readUnsignedByte() << 16);
-	}
-
-	public static void writeTriad(ByteBuf buf, int triad) {
-		buf.writeByte(triad & 0x0000FF);
-		buf.writeByte((triad & 0x00FF00) >> 8);
-		buf.writeByte((triad & 0xFF0000) >> 16);
-	}
-
 	public static void writeString(ByteBuf buf, String str) {
 		byte[] bytes = str.getBytes(StandardCharsets.UTF_8);
 		buf.writeShort(bytes.length);

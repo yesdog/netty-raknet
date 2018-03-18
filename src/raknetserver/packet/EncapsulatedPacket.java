@@ -39,25 +39,25 @@ public class EncapsulatedPacket {
 	}
 
 	public void decode(ByteBuf buf) {
-		int flags = buf.readByte();
+		int flags = buf.readUnsignedByte();
 		reliability = (flags & 0b11100000) >> 5;
 		hasSplit = (flags & 0b00010000) > 0;
 
-		int length = Utils.divideAndCeilWithBase(buf.readShort(), 8);
+		int length = Utils.divideAndCeilWithBase(buf.readUnsignedShort(), 8);
 
 		if (reliability > 0) {
 			if ((reliability >= 2) && (reliability != 5)) {
-				messageIndex = RakNetDataSerializer.readTriad(buf);
+				messageIndex = buf.readUnsignedMediumLE();
 			}
 			if ((reliability <= 4) && (reliability != 2)) {
-				orderIndex = RakNetDataSerializer.readTriad(buf);
+				orderIndex = buf.readUnsignedMediumLE();
 				orderChannel = buf.readUnsignedByte();
 			}
 		}
 
 		if (hasSplit) {
 			splitCount = buf.readInt();
-			splitID = buf.readShort();
+			splitID = buf.readUnsignedShort();
 			splitIndex = buf.readInt();
 		}
 
@@ -76,10 +76,10 @@ public class EncapsulatedPacket {
 
 		if (reliability > 0) {
 			if ((reliability >= 2) && (reliability != 5)) {
-				RakNetDataSerializer.writeTriad(buf, messageIndex);
+				buf.writeMediumLE(messageIndex);
 			}
 			if ((reliability <= 4) && (reliability != 2)) {
-				RakNetDataSerializer.writeTriad(buf, orderIndex);
+				buf.writeMediumLE(orderIndex);
 				buf.writeByte(orderChannel);
 			}
 		}

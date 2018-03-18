@@ -1,7 +1,6 @@
 package raknetserver.packet.raknet;
 
 import io.netty.buffer.ByteBuf;
-import raknetserver.packet.RakNetDataSerializer;
 
 public class RakNetReliability implements RakNetPacket {
 
@@ -25,9 +24,9 @@ public class RakNetReliability implements RakNetPacket {
 		for (int i = 0; i < entries.length; i++) {
 			boolean single = buf.readBoolean();
 			if (single) {
-				entries[i] = new REntry(RakNetDataSerializer.readTriad(buf));
+				entries[i] = new REntry(buf.readUnsignedMediumLE());
 			} else {
-				entries[i] = new REntry(RakNetDataSerializer.readTriad(buf), RakNetDataSerializer.readTriad(buf));
+				entries[i] = new REntry(buf.readUnsignedMediumLE(), buf.readUnsignedMediumLE());
 			}
 		}
 	}
@@ -37,8 +36,8 @@ public class RakNetReliability implements RakNetPacket {
 		buf.writeShort(entries.length);
 		for (REntry entry : entries) {
 			buf.writeBoolean(false);
-			RakNetDataSerializer.writeTriad(buf, entry.idStart);
-			RakNetDataSerializer.writeTriad(buf, entry.idFinish);
+			buf.writeMediumLE(entry.idStart);
+			buf.writeMediumLE(entry.idFinish);
 		}
 	}
 
