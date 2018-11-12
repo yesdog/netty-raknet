@@ -1,6 +1,9 @@
 package raknetserver.pipeline.raknet;
 
-import io.netty.channel.*;
+import io.netty.channel.ChannelDuplexHandler;
+import io.netty.channel.ChannelFutureListener;
+import io.netty.channel.ChannelHandlerContext;
+import io.netty.channel.ChannelPromise;
 import io.netty.handler.codec.DecoderException;
 import it.unimi.dsi.fastutil.ints.Int2ObjectOpenHashMap;
 import it.unimi.dsi.fastutil.ints.IntRBTreeSet;
@@ -53,8 +56,8 @@ public class RakNetPacketReliabilityHandler extends ChannelDuplexHandler {
 		packet.getPackets().forEach(ctx::fireChannelRead);
 		recvStash.remove(packetSeqId);
 		for (int i = 0 ; i < ACK_REPEAT ; i++) {
-			// lets be kind and repeat our acks a few times,
-			// the client resend buffer will thank us.
+			//lets be kind and repeat our acks a few times,
+			//the client resend buffer will thank us.
 			ackSet.add(UINT.B3.minus(packetSeqId, i + 1));
 		}
 	}
@@ -71,17 +74,16 @@ public class RakNetPacketReliabilityHandler extends ChannelDuplexHandler {
 		}
 		ackSet.add(packetSeqId);
 		nackSet.remove(packetSeqId);
-		//packet not needed yet
-		if (seqIdDiff > 1) {
-			// check missing id range and add to nack map
+		if (seqIdDiff > 1) { //packet not needed yet
+			//check missing id range and add to nack map
 			for (int i = 1 ; i < seqIdDiff ; i++) {
 				int nextId = UINT.B3.plus(lastReceivedSeqId, i);
-				if (!recvStash.containsKey(nextId))
+				if (!recvStash.containsKey(nextId)) {
 					nackSet.add(nextId);
+				}
 			}
 			recvStash.put(packetSeqId, packet);
-		} else {
-			//packet needed now
+		} else { //packet needed now
 			processEncapsulatedData(ctx, packet);
 			//restore any cached sequence available
 			for (int nextId = UINT.B3.plus(packetSeqId, 1); recvStash.containsKey(nextId); nextId = UINT.B3.plus(nextId, 1)) {
@@ -127,11 +129,10 @@ public class RakNetPacketReliabilityHandler extends ChannelDuplexHandler {
 	protected void flushControlResponses(ChannelHandlerContext ctx) {
 		long dt = System.currentTimeMillis() - lastFlush;
 		if (dt < CONTROL_INTERVAL) {
-			// we have these nice dense nack/ack packets, lets be kind towards
-			// the MTU, and slam the client with less small packets
+			//we have these nice dense nack/ack packets, lets be kind towards
+			//the MTU, and slam the client with less small packets
 			return;
 		}
-		lastFlush = System.currentTimeMillis();
 		if (!nackSet.isEmpty()) {
 			ctx.writeAndFlush(new RakNetNACK(nackSet)).addListener(ChannelFutureListener.FIRE_EXCEPTION_ON_FAILURE);
 			nackSet.clear();
@@ -140,6 +141,7 @@ public class RakNetPacketReliabilityHandler extends ChannelDuplexHandler {
 			ctx.writeAndFlush(new RakNetACK(ackSet)).addListener(ChannelFutureListener.FIRE_EXCEPTION_ON_FAILURE);
 			ackSet.clear();
 		}
+		lastFlush = System.currentTimeMillis();
 	}
 
 	@Override
