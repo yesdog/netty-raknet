@@ -1,9 +1,6 @@
 package raknetserver.pipeline.raknet;
 
-import io.netty.channel.ChannelDuplexHandler;
-import io.netty.channel.ChannelFutureListener;
-import io.netty.channel.ChannelHandlerContext;
-import io.netty.channel.ChannelPromise;
+import io.netty.channel.*;
 import io.netty.handler.codec.DecoderException;
 import it.unimi.dsi.fastutil.ints.Int2ObjectOpenHashMap;
 import raknetserver.packet.EncapsulatedPacket;
@@ -15,6 +12,8 @@ import raknetserver.packet.raknet.RakNetReliability.RakNetNACK;
 import raknetserver.utils.Constants;
 import raknetserver.utils.PacketHandlerRegistry;
 import raknetserver.utils.UINT;
+
+import java.util.concurrent.TimeUnit;
 
 public class RakNetPacketReliabilityHandler extends ChannelDuplexHandler {
 
@@ -36,27 +35,54 @@ public class RakNetPacketReliabilityHandler extends ChannelDuplexHandler {
 
 	protected static final int HALF_WINDOW = UINT.B3.MAX_VALUE / 2;
 
+	protected final Int2ObjectOpenHashMap<Object> nackMap = new Int2ObjectOpenHashMap<>();
+	protected final Int2ObjectOpenHashMap<Object> ackMap = new Int2ObjectOpenHashMap<>();
+	protected final Int2ObjectOpenHashMap<RakNetEncapsulatedData> recvWindow = new Int2ObjectOpenHashMap<>();
 	protected final Int2ObjectOpenHashMap<RakNetEncapsulatedData> sentPackets = new Int2ObjectOpenHashMap	<>();
 	protected int lastReceivedSeqId = -1;
+	protected long lastFlush = 0l;
 
-	protected void handleEncapsulatedData(ChannelHandlerContext ctx, RakNetEncapsulatedData packet) {
-		RakNetEncapsulatedData edata = packet;
-		int packetSeqId = edata.getSeqId();
-		int seqIdDiff = UINT.B3.minus(packetSeqId, lastReceivedSeqId);
-		//ignore duplicate packet
-		if ((seqIdDiff == 0) || (seqIdDiff > HALF_WINDOW)) {
-			return;
-		}
-		//send nack for missed packets
-		if (seqIdDiff > 1) {
-			ctx.writeAndFlush(new RakNetNACK(UINT.B3.plus(lastReceivedSeqId, 1), UINT.B3.minus(packetSeqId, 1))).addListener(ChannelFutureListener.FIRE_EXCEPTION_ON_FAILURE);
-		}
+	protected void processEncapsulatedData(ChannelHandlerContext ctx, RakNetEncapsulatedData packet) {
+		int packetSeqId = packet.getSeqId();
 		//can now update last received seq id
 		lastReceivedSeqId = packetSeqId;
-		//send ack for received packet
-		ctx.writeAndFlush(new RakNetACK(packetSeqId)).addListener(ChannelFutureListener.FIRE_EXCEPTION_ON_FAILURE);
 		//read encapsulated packets
-		edata.getPackets().forEach(ctx::fireChannelRead);
+		packet.getPackets().forEach(ctx::fireChannelRead);
+		recvWindow.remove(packetSeqId);
+	}
+
+	protected void handleEncapsulatedData(ChannelHandlerContext ctx, RakNetEncapsulatedData packet) {
+		int packetSeqId = packet.getSeqId();
+		int seqIdDiff = UINT.B3.minus(packetSeqId, lastReceivedSeqId);
+		//ignore duplicate packet
+		if (seqIdDiff <= 0) { // can be negative?
+			return;
+		}
+		if (seqIdDiff > HALF_WINDOW) {
+			throw new DecoderException("Too big packet loss from client");
+		}
+
+		ackMap.put(packetSeqId, null);
+		nackMap.remove(packetSeqId);
+
+		//packet not needed yet
+		if (seqIdDiff > 1) {
+			// check missing id range and add to nack map
+			for (int i = 1 ; i < seqIdDiff ; i++) {
+				int nextId = UINT.B3.plus(lastReceivedSeqId, i);
+				if (!recvWindow.containsKey(nextId))
+					nackMap.put(nextId, null);
+			}
+			recvWindow.put(packetSeqId, packet);
+		} else {
+			//packet needed now
+			processEncapsulatedData(ctx, packet);
+			//restore any cached sequence available
+			for (int nextId = UINT.B3.plus(packetSeqId, 1); recvWindow.containsKey(nextId); nextId = UINT.B3.plus(nextId, 1)) {
+				processEncapsulatedData(ctx, recvWindow.get(nextId));
+			}
+		}
+		flushControlResponses(ctx);
 	}
 
 	protected void handleAck(ChannelHandlerContext ctx, RakNetACK ack) {
@@ -88,6 +114,24 @@ public class RakNetPacketReliabilityHandler extends ChannelDuplexHandler {
 				}
 			}
 		}
+	}
+
+	protected void flushControlResponses(ChannelHandlerContext ctx) {
+		long d = System.currentTimeMillis() - lastFlush;
+		if (d < 100) return;
+
+		lastFlush = System.currentTimeMillis();
+
+		//TODO: should use the condensed version of the nack/ack when possible
+		for(int packetId : nackMap.keySet()) {
+			ctx.write(new RakNetNACK(packetId)).addListener(ChannelFutureListener.FIRE_EXCEPTION_ON_FAILURE);
+		}
+		for(int packetId : ackMap.keySet()) {
+			ctx.write(new RakNetACK(packetId)).addListener(ChannelFutureListener.FIRE_EXCEPTION_ON_FAILURE);
+		}
+		nackMap.clear();
+		ackMap.clear();
+		ctx.flush();
 	}
 
 	@Override

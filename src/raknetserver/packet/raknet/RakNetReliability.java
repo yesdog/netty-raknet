@@ -8,6 +8,12 @@ public class RakNetReliability implements RakNetPacket {
 
 	public RakNetReliability() {
 	}
+	public RakNetReliability(int ... ids) {
+		entries = new REntry[ids.length];
+		for (int i = 0 ; i < ids.length ; i++) {
+			entries[i] = new REntry(ids[i]);
+		}
+	}
 
 	public RakNetReliability(int id) {
 		this(id, id);
@@ -35,9 +41,14 @@ public class RakNetReliability implements RakNetPacket {
 	public void encode(ByteBuf buf) {
 		buf.writeShort(entries.length);
 		for (REntry entry : entries) {
-			buf.writeBoolean(false);
-			buf.writeMediumLE(entry.idStart);
-			buf.writeMediumLE(entry.idFinish);
+			if (entry.idStart == entry.idFinish) {
+				buf.writeBoolean(true);
+				buf.writeMediumLE(entry.idStart);
+			} else {
+				buf.writeBoolean(false);
+				buf.writeMediumLE(entry.idStart);
+				buf.writeMediumLE(entry.idFinish);
+			}
 		}
 	}
 
@@ -60,6 +71,9 @@ public class RakNetReliability implements RakNetPacket {
 	public static class RakNetACK extends RakNetReliability {
 		public RakNetACK() {
 		}
+		public RakNetACK(int ... ids) {
+			super(ids);
+		}
 		public RakNetACK(int id) {
 			this(id, id);
 		}
@@ -69,6 +83,9 @@ public class RakNetReliability implements RakNetPacket {
 	}
 	public static class RakNetNACK extends RakNetReliability {
 		public RakNetNACK() {
+		}
+		public RakNetNACK(int ... ids) {
+			super(ids);
 		}
 		public RakNetNACK(int id) {
 			this(id, id);
