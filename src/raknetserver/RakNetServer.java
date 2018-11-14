@@ -10,10 +10,10 @@ import io.netty.channel.ChannelInitializer;
 import io.netty.channel.DefaultEventLoopGroup;
 import io.netty.channel.ServerChannel;
 import io.netty.handler.timeout.ReadTimeoutHandler;
-import raknetserver.pipeline.ecnapsulated.EncapsulatedPacketInboundOrderer;
-import raknetserver.pipeline.ecnapsulated.EncapsulatedPacketOutboundOrder;
-import raknetserver.pipeline.ecnapsulated.EncapsulatedPacketSplitter;
-import raknetserver.pipeline.ecnapsulated.EncapsulatedPacketUnsplitter;
+import raknetserver.pipeline.encapsulated.EncapsulatedPacketInboundOrderer;
+import raknetserver.pipeline.encapsulated.EncapsulatedPacketOutboundOrder;
+import raknetserver.pipeline.encapsulated.EncapsulatedPacketSplitter;
+import raknetserver.pipeline.encapsulated.EncapsulatedPacketUnsplitter;
 import raknetserver.pipeline.internal.InternalPacketDecoder;
 import raknetserver.pipeline.internal.InternalPacketEncoder;
 import raknetserver.pipeline.internal.InternalPacketReadHandler;
@@ -24,6 +24,7 @@ import raknetserver.pipeline.raknet.RakNetPacketDecoder;
 import raknetserver.pipeline.raknet.RakNetPacketEncoder;
 import raknetserver.pipeline.raknet.RakNetPacketReliabilityHandler;
 import raknetserver.utils.Constants;
+import raknetserver.utils.UINT;
 import udpserversocketchannel.channel.UdpServerChannel;
 
 public class RakNetServer {
@@ -59,7 +60,7 @@ public class RakNetServer {
 				.addLast("rns-rn-encoder", new RakNetPacketEncoder())
 				.addLast("rns-rn-decoder", new RakNetPacketDecoder())
 				.addLast("rns-rn-connect", new RakNetPacketConnectionEstablishHandler(pinghandler))
-				.addLast("rns-rn-reliability", new RakNetPacketReliabilityHandler())
+				.addLast("rns-rn-reliability", new RakNetPacketReliabilityHandler(channel))
 				.addLast("rns-e-ru", new EncapsulatedPacketUnsplitter())
 				.addLast("rns-e-ro", new EncapsulatedPacketInboundOrderer())
 				.addLast("rns-e-ws", new EncapsulatedPacketSplitter())

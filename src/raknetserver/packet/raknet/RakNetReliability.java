@@ -11,27 +11,30 @@ public class RakNetReliability implements RakNetPacket {
 
 	public RakNetReliability() {
 	}
-	public RakNetReliability(IntSortedSet ids) {
+	public RakNetReliability(IntSortedSet ids) { //TODO: dense format is broked
+		entries = new REntry[0];
+		if (ids.isEmpty()) {
+			return;
+		}
 		ArrayList<REntry> res = new ArrayList<>();
 		//lets make our sparse array of ids here
 		int startId = -1;
 		int endId = -1;
 		for(int i : ids) {
+			assert i >= 0;
 			if (startId == -1) {
 				startId = i; //new region
 				endId = i;
 			} else if (i == (endId + 1)) {
-				endId++; //continue region
+				endId = i; //continue region
 			} else {
 				res.add(new REntry(startId, endId));
 				startId = i; //new region
 				endId = i;
 			}
 		}
-		if (startId != -1) {
-			res.add(new REntry(startId, endId));
-		}
-		entries = res.toArray(new REntry[0]);
+		res.add(new REntry(startId, endId));
+		entries = res.toArray(entries);
 	}
 
 	public RakNetReliability(int id) {

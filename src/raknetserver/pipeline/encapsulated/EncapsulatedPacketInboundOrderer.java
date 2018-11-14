@@ -1,14 +1,12 @@
-package raknetserver.pipeline.ecnapsulated;
+package raknetserver.pipeline.encapsulated;
 
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Collections;
 import java.util.List;
 
 import io.netty.buffer.Unpooled;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.codec.DecoderException;
 import io.netty.handler.codec.MessageToMessageDecoder;
+import io.netty.util.internal.RecyclableArrayList;
 import it.unimi.dsi.fastutil.ints.Int2ObjectOpenHashMap;
 import raknetserver.packet.EncapsulatedPacket;
 import raknetserver.utils.Constants;
@@ -24,9 +22,9 @@ public class EncapsulatedPacketInboundOrderer extends MessageToMessageDecoder<En
 	}
 
 	@Override
-	protected void decode(ChannelHandlerContext ctx, EncapsulatedPacket packet, List<Object> list) throws Exception {
+	protected void decode(ChannelHandlerContext ctx, EncapsulatedPacket packet, List<Object> list) {
 		if (packet.getReliability() == 3) {
-			channels[packet.getOrderChannel()].getOrdered(packet).forEach(opacket -> list.add(Unpooled.wrappedBuffer(opacket.getData())));
+			channels[packet.getOrderChannel()].getOrdered(packet, list);
 		} else {
 			list.add(Unpooled.wrappedBuffer(packet.getData()));
 		}
@@ -34,65 +32,28 @@ public class EncapsulatedPacketInboundOrderer extends MessageToMessageDecoder<En
 
 	protected static class OrderedChannelPacketQueue {
 
-		protected static final int HALF_WINDOW = UINT.B3.MAX_VALUE / 2;
-
 		protected final Int2ObjectOpenHashMap<EncapsulatedPacket> queue = new Int2ObjectOpenHashMap<>();
 		protected int lastReceivedIndex = -1;
-		protected int lastOrderedIndex = -1;
 
-		public Collection<EncapsulatedPacket> getOrdered(EncapsulatedPacket epacket) {
-			Collection<EncapsulatedPacket> ordered = getOrdered0(epacket);
+		protected void getOrdered(EncapsulatedPacket epacket, List<Object> list) {
+			int orderIndex = epacket.getOrderIndex();
+			int indexDiff = UINT.B3.minusWrap(orderIndex, lastReceivedIndex);
+			if (indexDiff == 1) {
+				lastReceivedIndex = orderIndex;
+				list.add(Unpooled.wrappedBuffer(epacket.getData()));
+				int nextIndex = UINT.B3.plus(lastReceivedIndex, 1);
+				while (queue.containsKey(nextIndex)) {
+					list.add(Unpooled.wrappedBuffer(queue.get(nextIndex).getData()));
+					lastReceivedIndex = nextIndex;
+					queue.remove(nextIndex);
+					nextIndex = UINT.B3.plus(nextIndex, 1);
+				}
+			} else if (indexDiff > 1) { // future data
+				queue.put(orderIndex, epacket);
+			}
 			if (queue.size() > Constants.MAX_PACKET_LOSS) {
 				throw new DecoderException("Too big packet loss (missed ordered packets)");
 			}
-			return ordered;
-		}
-
-		protected Collection<EncapsulatedPacket> getOrdered0(EncapsulatedPacket epacket) {
-			int orderIndex = epacket.getOrderIndex();
-			int orderIdLastOrderedDiff = UINT.B3.minus(orderIndex, lastOrderedIndex);
-			int orderIdLastReceivedDiff = UINT.B3.minus(orderIndex, lastReceivedIndex);
-			//ignore duplicate packet
-			if ((orderIdLastOrderedDiff == 0) || (orderIdLastOrderedDiff > HALF_WINDOW)) {
-				return Collections.emptyList();
-			}
-			//some packets were lost this time, put packet in queue and wait
-			if (orderIdLastReceivedDiff > 1) {
-				queue.put(orderIndex, epacket);
-				lastReceivedIndex = orderIndex;
-				return Collections.emptyList();
-			}
-			//no packets were lost since last received, we have two cases
-			//1st - no missing packets from last time - add packet to list
-			//2nd - have missing packets from last time - put packet in queue
-			if (orderIdLastReceivedDiff == 1) {
-				lastReceivedIndex = orderIndex;
-				if (queue.isEmpty()) {
-					lastOrderedIndex = lastReceivedIndex;
-					return Collections.singletonList(epacket);
-				} else {
-					queue.put(orderIndex, epacket);
-					return Collections.emptyList();
-				}
-			}
-			//ignore duplicate packet
-			if (queue.containsKey(orderIndex)) {
-				return  Collections.emptyList();
-			}
-			//we received a missing packet, put packet in queue
-			queue.put(orderIndex, epacket);
-			//grab as much ordered packets as we can from queue
-			ArrayList<EncapsulatedPacket> ordered = new ArrayList<>();
-			while (true) {
-				int fOrderedIndex = UINT.B3.plus(lastOrderedIndex, 1);
-				EncapsulatedPacket foundPacket = queue.remove(fOrderedIndex);
-				if (foundPacket == null) {
-					break;
-				}
-				ordered.add(foundPacket);
-				lastOrderedIndex = fOrderedIndex;
-			}
-			return ordered;
 		}
 
 	}

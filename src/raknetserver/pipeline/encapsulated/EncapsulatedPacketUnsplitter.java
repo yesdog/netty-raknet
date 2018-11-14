@@ -1,18 +1,18 @@
-package raknetserver.pipeline.ecnapsulated;
+package raknetserver.pipeline.encapsulated;
 
-import java.util.HashMap;
 import java.util.List;
 
 import io.netty.buffer.Unpooled;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.codec.MessageToMessageDecoder;
+import it.unimi.dsi.fastutil.ints.Int2ObjectOpenHashMap;
 import raknetserver.packet.EncapsulatedPacket;
 import raknetserver.utils.Constants;
 import raknetserver.utils.Utils;
 
 public class EncapsulatedPacketUnsplitter extends MessageToMessageDecoder<EncapsulatedPacket> {
 
-	private final HashMap<Integer, SplittedPacket> notFullPackets = new HashMap<>();
+	private final Int2ObjectOpenHashMap<SplittedPacket> notFullPackets = new Int2ObjectOpenHashMap<>();
 
 	@Override
 	protected void decode(ChannelHandlerContext ctx, EncapsulatedPacket packet, List<Object> list) throws Exception {
