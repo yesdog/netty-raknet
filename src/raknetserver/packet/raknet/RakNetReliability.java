@@ -11,13 +11,12 @@ public class RakNetReliability implements RakNetPacket {
 
 	public RakNetReliability() {
 	}
-	public RakNetReliability(IntSortedSet ids) { //TODO: dense format is broked
+	public RakNetReliability(IntSortedSet ids) {
 		entries = new REntry[0];
 		if (ids.isEmpty()) {
 			return;
 		}
 		ArrayList<REntry> res = new ArrayList<>();
-		//lets make our sparse array of ids here
 		int startId = -1;
 		int endId = -1;
 		for(int i : ids) {

@@ -6,7 +6,6 @@ import io.netty.buffer.Unpooled;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.codec.DecoderException;
 import io.netty.handler.codec.MessageToMessageDecoder;
-import io.netty.util.internal.RecyclableArrayList;
 import it.unimi.dsi.fastutil.ints.Int2ObjectOpenHashMap;
 import raknetserver.packet.EncapsulatedPacket;
 import raknetserver.utils.Constants;
@@ -35,21 +34,27 @@ public class EncapsulatedPacketInboundOrderer extends MessageToMessageDecoder<En
 		protected final Int2ObjectOpenHashMap<EncapsulatedPacket> queue = new Int2ObjectOpenHashMap<>();
 		protected int lastReceivedIndex = -1;
 
-		protected void getOrdered(EncapsulatedPacket epacket, List<Object> list) {
-			int orderIndex = epacket.getOrderIndex();
-			int indexDiff = UINT.B3.minusWrap(orderIndex, lastReceivedIndex);
+		{
+			queue.defaultReturnValue(null);
+		}
+
+		protected void getOrdered(EncapsulatedPacket packet, List<Object> list) {
+			final int orderIndex = packet.getOrderIndex();
+			final int indexDiff = UINT.B3.minusWrap(orderIndex, lastReceivedIndex);
 			if (indexDiff == 1) {
 				lastReceivedIndex = orderIndex;
-				list.add(Unpooled.wrappedBuffer(epacket.getData()));
-				int nextIndex = UINT.B3.plus(lastReceivedIndex, 1);
-				while (queue.containsKey(nextIndex)) {
-					list.add(Unpooled.wrappedBuffer(queue.get(nextIndex).getData()));
+				list.add(Unpooled.wrappedBuffer(packet.getData()));
+				int nextIndex = UINT.B3.plus(orderIndex, 1);
+				EncapsulatedPacket nextPacket = queue.get(nextIndex);
+				while (nextPacket != null) {
+					list.add(Unpooled.wrappedBuffer(nextPacket.getData()));
 					lastReceivedIndex = nextIndex;
 					queue.remove(nextIndex);
 					nextIndex = UINT.B3.plus(nextIndex, 1);
+					nextPacket = queue.get(nextIndex);
 				}
 			} else if (indexDiff > 1) { // future data
-				queue.put(orderIndex, epacket);
+				queue.put(orderIndex, packet);
 			}
 			if (queue.size() > Constants.MAX_PACKET_LOSS) {
 				throw new DecoderException("Too big packet loss (missed ordered packets)");

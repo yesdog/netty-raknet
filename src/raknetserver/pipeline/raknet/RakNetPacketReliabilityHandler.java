@@ -9,6 +9,7 @@ import io.netty.handler.codec.DecoderException;
 import it.unimi.dsi.fastutil.ints.Int2ObjectOpenHashMap;
 import it.unimi.dsi.fastutil.ints.Int2ByteOpenHashMap;
 import it.unimi.dsi.fastutil.ints.IntRBTreeSet;
+import it.unimi.dsi.fastutil.ints.IntOpenHashSet;
 import it.unimi.dsi.fastutil.ints.IntSortedSet;
 import it.unimi.dsi.fastutil.ints.IntComparators;
 import raknetserver.packet.EncapsulatedPacket;
@@ -41,7 +42,7 @@ public class RakNetPacketReliabilityHandler extends ChannelDuplexHandler {
 
 	protected final IntSortedSet nackSet = new IntRBTreeSet(IntComparators.NATURAL_COMPARATOR);
 	protected final IntSortedSet ackSet = new IntRBTreeSet(IntComparators.NATURAL_COMPARATOR);
-	protected final IntSortedSet handledSet = new IntRBTreeSet(IntComparators.NATURAL_COMPARATOR);
+	protected final IntOpenHashSet handledSet = new IntOpenHashSet();
 	protected final Int2ByteOpenHashMap sentPacketResendTicks = new Int2ByteOpenHashMap();
 	protected final Int2ByteOpenHashMap sentPacketResendAttempts = new Int2ByteOpenHashMap();
 	protected final Int2ObjectOpenHashMap<RakNetEncapsulatedData> sentPackets = new Int2ObjectOpenHashMap<>();
@@ -163,6 +164,8 @@ public class RakNetPacketReliabilityHandler extends ChannelDuplexHandler {
 	protected void sendPacket(RakNetEncapsulatedData packet, ChannelPromise promise) {
 		int attempts = sentPacketResendAttempts.get(packet.getSeqId());
 		int resendTicks = RETRY_TICK_MULTIPLIER * FIBONACCI[Math.min(attempts, FIBONACCI.length - 1)];
+		//TODO: check if this packet had anything important
+		//TODO: different order channels for packet types.
 		sentPackets.put(packet.getSeqId(), packet);
 		sentPacketResendTicks.put(packet.getSeqId(), (byte)resendTicks);
 		sentPacketResendAttempts.put(packet.getSeqId(), (byte)(attempts + 1));
@@ -173,7 +176,7 @@ public class RakNetPacketReliabilityHandler extends ChannelDuplexHandler {
 		}
 	}
 
-	//pool ACKs/NACKs and flush on a tick
+	//pool ACKs/NACKs and flush on a tick. also resend packets when needed
 	protected void flushControlResponses() {
 		flushesDone++;
 		nackSet.removeIf(removalPredicate);
@@ -187,11 +190,10 @@ public class RakNetPacketReliabilityHandler extends ChannelDuplexHandler {
 			nacksSent += nackSet.size();
 			nackSet.clear();
 		}
-		//resend packets when needed
 		for (int sentId : sentPacketResendTicks.keySet()) {
-			int ticks = sentPacketResendTicks.get(sentId);
+			byte ticks = sentPacketResendTicks.get(sentId);
 			if (ticks == 0) {
-				sendPacket(sentPackets.get(sentId), null); //resend packet, and mark new time
+				sendPacket(sentPackets.get(sentId), null); //resend packet
 				timedResends++;
 			} else {
 				sentPacketResendTicks.put(sentId, (byte)(ticks - 1));
