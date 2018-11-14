@@ -7,7 +7,13 @@ import raknetserver.packet.EncapsulatedPacket;
 
 public class RakNetEncapsulatedData implements RakNetPacket {
 
+	protected static final int RETRY_TICK_OFFSET = 1;
+	protected static final byte[] FIBONACCI = new byte[] { 1, 1, 2, 3, 5, 8, 13, 21, 34 }; //used for retry backoff
+
 	private int seqId;
+	private int resendTicks;
+	private int sendAttempts;
+	private long sentTime = -1;
 	private final ArrayList<EncapsulatedPacket> packets = new ArrayList<EncapsulatedPacket>();
 
 	public RakNetEncapsulatedData() {
@@ -33,6 +39,21 @@ public class RakNetEncapsulatedData implements RakNetPacket {
 		for (EncapsulatedPacket packet : packets) {
 			packet.encode(buf);
 		}
+	}
+
+	public void refreshResend() {
+		if (sentTime == -1) {
+			sentTime = System.currentTimeMillis(); //only set on first attempt
+		}
+		resendTicks = FIBONACCI[Math.min(sendAttempts++, FIBONACCI.length - 1)] + RETRY_TICK_OFFSET;
+	}
+
+	public boolean resendTick() {
+		return --resendTicks <= 0; //returns true if resend needed
+	}
+
+	public long timeSinceSend() {
+		return (int)(System.currentTimeMillis() - sentTime);
 	}
 
 	public int getSeqId() {

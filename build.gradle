@@ -46,6 +46,11 @@ sourceSets {
 			srcDirs = ['src']
 		}
 	}
+	test {
+		java {
+			srcDirs = ['test']
+		}
+	}
 }
 
 repositories {
@@ -56,6 +61,7 @@ dependencies {
 	compile fileTree(dir: dlDepsDir, include: '*.jar')
 	compile group: 'io.netty', name: 'netty-all', version: '4.1.22.Final'
 	compile group: 'it.unimi.dsi', name: 'fastutil', version: '8.1.1'
+	testCompile group: 'junit', name: 'junit-dep', version: '4.8.1'
 }
 
 

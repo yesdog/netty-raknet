@@ -33,7 +33,6 @@ public class EncapsulatedPacketInboundOrderer extends MessageToMessageDecoder<En
 
 		protected final Int2ObjectOpenHashMap<EncapsulatedPacket> queue = new Int2ObjectOpenHashMap<>();
 		protected int lastReceivedIndex = -1;
-
 		{
 			queue.defaultReturnValue(null);
 		}
@@ -41,19 +40,19 @@ public class EncapsulatedPacketInboundOrderer extends MessageToMessageDecoder<En
 		protected void getOrdered(EncapsulatedPacket packet, List<Object> list) {
 			final int orderIndex = packet.getOrderIndex();
 			final int indexDiff = UINT.B3.minusWrap(orderIndex, lastReceivedIndex);
-			if (indexDiff == 1) {
+			if (indexDiff == 1) { //got next packet in line
 				lastReceivedIndex = orderIndex;
 				list.add(Unpooled.wrappedBuffer(packet.getData()));
 				int nextIndex = UINT.B3.plus(orderIndex, 1);
 				EncapsulatedPacket nextPacket = queue.get(nextIndex);
-				while (nextPacket != null) {
+				while (nextPacket != null) { //process next packets in line if queued
 					list.add(Unpooled.wrappedBuffer(nextPacket.getData()));
 					lastReceivedIndex = nextIndex;
 					queue.remove(nextIndex);
 					nextIndex = UINT.B3.plus(nextIndex, 1);
 					nextPacket = queue.get(nextIndex);
 				}
-			} else if (indexDiff > 1) { // future data
+			} else if (indexDiff > 1) { // future data goes in the queue
 				queue.put(orderIndex, packet);
 			}
 			if (queue.size() > Constants.MAX_PACKET_LOSS) {
