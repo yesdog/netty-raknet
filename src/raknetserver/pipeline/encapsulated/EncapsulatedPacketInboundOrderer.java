@@ -23,7 +23,7 @@ public class EncapsulatedPacketInboundOrderer extends MessageToMessageDecoder<En
 	@Override
 	protected void decode(ChannelHandlerContext ctx, EncapsulatedPacket packet, List<Object> list) {
 		if (packet.getReliability() == 3) {
-			channels[packet.getOrderChannel()].getOrdered(packet, list);
+			channels[packet.getOrderChannel()].decodeOrdered(packet, list);
 		} else {
 			list.add(Unpooled.wrappedBuffer(packet.getData()));
 		}
@@ -37,23 +37,16 @@ public class EncapsulatedPacketInboundOrderer extends MessageToMessageDecoder<En
 			queue.defaultReturnValue(null);
 		}
 
-		protected void getOrdered(EncapsulatedPacket packet, List<Object> list) {
-			final int orderIndex = packet.getOrderIndex();
-			final int indexDiff = UINT.B3.minusWrap(orderIndex, lastReceivedIndex);
+		protected void decodeOrdered(EncapsulatedPacket packet, List<Object> list) {
+			final int indexDiff = UINT.B3.minusWrap(packet.getOrderIndex(), lastReceivedIndex);
 			if (indexDiff == 1) { //got next packet in line
-				lastReceivedIndex = orderIndex;
-				list.add(Unpooled.wrappedBuffer(packet.getData()));
-				int nextIndex = UINT.B3.plus(orderIndex, 1);
-				EncapsulatedPacket nextPacket = queue.get(nextIndex);
-				while (nextPacket != null) { //process next packets in line if queued
-					list.add(Unpooled.wrappedBuffer(nextPacket.getData()));
-					lastReceivedIndex = nextIndex;
-					queue.remove(nextIndex);
-					nextIndex = UINT.B3.plus(nextIndex, 1);
-					nextPacket = queue.get(nextIndex);
-				}
+				do { //process this packet, and any queued packets following in sequence
+					lastReceivedIndex = packet.getOrderIndex();
+					list.add(Unpooled.wrappedBuffer(packet.getData()));
+					packet = queue.remove(UINT.B3.plus(packet.getOrderIndex(), 1));
+				} while(packet != null);
 			} else if (indexDiff > 1) { // future data goes in the queue
-				queue.put(orderIndex, packet);
+				queue.put(packet.getOrderIndex(), packet);
 			}
 			if (queue.size() > Constants.MAX_PACKET_LOSS) {
 				throw new DecoderException("Too big packet loss (missed ordered packets)");
