@@ -29,6 +29,7 @@ public class RakNetPacketReliabilityHandler extends ChannelDuplexHandler {
 	protected static final int WINDOW = 4096;
 	protected static final int HALF_WINDOW = WINDOW / 2;
 	protected static final int CONTROL_INTERVAL = 50; //millis
+	protected static final int RTT_FLOOR = 5; //millis
 
 	protected static final PacketHandlerRegistry<RakNetPacketReliabilityHandler, RakNetPacket> registry = new PacketHandlerRegistry<>();
 	static {
@@ -96,9 +97,8 @@ public class RakNetPacketReliabilityHandler extends ChannelDuplexHandler {
 		if (UINT.B3.minusWrap(packetSeqId, lastReceivedSeqId) > 0) { //can be zero on the first packet only
 			lastReceivedSeqId = UINT.B3.plus(lastReceivedSeqId, 1);
 			while (lastReceivedSeqId != packetSeqId) { //nack any missed packets before this one
-				//add missing packets to nack
 				if (!handledSet.contains(lastReceivedSeqId)) {
-					nackSet.add(lastReceivedSeqId);
+					nackSet.add(lastReceivedSeqId); //add missing packets to nack set
 				}
 				lastReceivedSeqId = UINT.B3.plus(lastReceivedSeqId, 1);
 			}
@@ -118,7 +118,7 @@ public class RakNetPacketReliabilityHandler extends ChannelDuplexHandler {
 				int packetId = UINT.B3.plus(idStart, i);
 				RakNetEncapsulatedData packet = sentPackets.remove(packetId);
 				if (packet != null) {
-					minRTT = Math.min(minRTT, packet.timeSinceSend());
+					minRTT = Math.min(minRTT, Math.max(packet.timeSinceSend(), RTT_FLOOR));
 				}
 			}
 		}

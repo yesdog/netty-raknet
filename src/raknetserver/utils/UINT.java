@@ -30,12 +30,10 @@ public class UINT {
 		}
 
 		public static int minusWrap(int value, int minus) {
-			if (minus == value) {
-				return 0;
-			} else if (minus > value) {
+			final int dist = value - minus;
+			if (dist < 0) {
 				return -minusWrap(minus, value);
 			}
-			final int dist = value - minus;
 			return dist > HALF_MAX ? value - (minus + MAX_VALUE + 1) : dist;
 		}
 	}
