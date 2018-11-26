@@ -45,7 +45,7 @@ public class EncapsulatedPacketInboundOrderer extends MessageToMessageDecoder<En
 					list.add(Unpooled.wrappedBuffer(packet.getData()));
 					packet = queue.remove(UINT.B3.plus(packet.getOrderIndex(), 1));
 				} while(packet != null);
-			} else if (indexDiff > 1) { // future data goes in the queue
+			} else if (indexDiff > 1) { // only future data goes in the queue
 				queue.put(packet.getOrderIndex(), packet);
 			}
 			if (queue.size() > Constants.MAX_PACKET_LOSS) {

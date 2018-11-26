@@ -64,6 +64,7 @@ public class RakNetPacketReliabilityHandler extends ChannelDuplexHandler {
 		}, CONTROL_INTERVAL, TimeUnit.MILLISECONDS);
 	}
 
+	//TODO: replace this with actual individual timers?
 	private void startResendTimer() {
 		channel.eventLoop().schedule(() -> {
 			if (channel.isOpen()) {
@@ -169,7 +170,6 @@ public class RakNetPacketReliabilityHandler extends ChannelDuplexHandler {
 	}
 
 	protected void ackTick() {
-		nackSet.removeIf(removalPredicate);
 		handledSet.removeIf(removalPredicate);
 		if (!ackSet.isEmpty()) {
 			channel.writeAndFlush(new RakNetACK(ackSet)).addListener(ChannelFutureListener.FIRE_EXCEPTION_ON_FAILURE);

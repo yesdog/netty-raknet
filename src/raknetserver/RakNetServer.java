@@ -55,7 +55,7 @@ public class RakNetServer {
 			@Override
 			protected void initChannel(Channel channel) throws Exception {
 				channel.pipeline()
-				.addLast("rns-timeout", new ReadTimeoutHandler(30))
+				.addLast("rns-timeout", new ReadTimeoutHandler(10))
 				.addLast("rns-rn-encoder", new RakNetPacketEncoder())
 				.addLast("rns-rn-decoder", new RakNetPacketDecoder())
 				.addLast("rns-rn-connect", new RakNetPacketConnectionEstablishHandler(pinghandler))
