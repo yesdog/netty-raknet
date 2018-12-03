@@ -7,7 +7,10 @@ import io.netty.channel.ChannelPromise;
 import io.netty.channel.Channel;
 import io.netty.handler.codec.DecoderException;
 import it.unimi.dsi.fastutil.ints.Int2ObjectOpenHashMap;
+import it.unimi.dsi.fastutil.ints.IntRBTreeSet;
 import it.unimi.dsi.fastutil.ints.IntOpenHashSet;
+import it.unimi.dsi.fastutil.ints.IntSortedSet;
+import it.unimi.dsi.fastutil.ints.IntComparators;
 import raknetserver.packet.EncapsulatedPacket;
 import raknetserver.packet.raknet.RakNetEncapsulatedData;
 import raknetserver.packet.raknet.RakNetPacket;
@@ -19,11 +22,13 @@ import raknetserver.utils.PacketHandlerRegistry;
 import raknetserver.utils.UINT;
 
 import java.util.concurrent.TimeUnit;
+import java.util.function.IntPredicate;
 
 public class RakNetPacketReliabilityHandler extends ChannelDuplexHandler {
 
 	protected static final int WINDOW = 4096;
 	protected static final int HALF_WINDOW = WINDOW / 2;
+	protected static final int CONTROL_INTERVAL = 50; //millis
 	protected static final int RTT_FLOOR = 5; //millis
 
 	protected static final PacketHandlerRegistry<RakNetPacketReliabilityHandler, RakNetPacket> registry = new PacketHandlerRegistry<>();
@@ -34,8 +39,11 @@ public class RakNetPacketReliabilityHandler extends ChannelDuplexHandler {
 	}
 
 	protected final Channel channel;
+	protected final IntSortedSet nackSet = new IntRBTreeSet(IntComparators.NATURAL_COMPARATOR);
+	protected final IntSortedSet ackSet = new IntRBTreeSet(IntComparators.NATURAL_COMPARATOR);
 	protected final IntOpenHashSet handledSet = new IntOpenHashSet();
 	protected final Int2ObjectOpenHashMap<RakNetEncapsulatedData> sentPackets = new Int2ObjectOpenHashMap<>();
+	protected final IntPredicate removalPredicate = x -> !idWithinWindow(x);
 
 	protected int lastReceivedSeqId = 0;
 	protected int nextSendSeqId = 0;
@@ -43,6 +51,7 @@ public class RakNetPacketReliabilityHandler extends ChannelDuplexHandler {
 
 	public RakNetPacketReliabilityHandler(Channel channel) {
 		this.channel = channel;
+		startFlushTimer();
 		startResendTimer();
 	}
 
@@ -79,7 +88,8 @@ public class RakNetPacketReliabilityHandler extends ChannelDuplexHandler {
 
 	protected void handleEncapsulatedData(ChannelHandlerContext ctx, RakNetEncapsulatedData packet) {
 		int packetSeqId = packet.getSeqId();
-		ctx.writeAndFlush(new RakNetACK(packetSeqId)).addListener(ChannelFutureListener.FIRE_EXCEPTION_ON_FAILURE);
+		ackSet.add(packetSeqId);
+		nackSet.remove(packetSeqId);
 		if (!idWithinWindow(packetSeqId) || handledSet.contains(packetSeqId)) { //ignore duplicate packet
 			return;
 		}
@@ -88,7 +98,7 @@ public class RakNetPacketReliabilityHandler extends ChannelDuplexHandler {
 			lastReceivedSeqId = UINT.B3.plus(lastReceivedSeqId, 1);
 			while (lastReceivedSeqId != packetSeqId) { //nack any missed packets before this one
 				if (!handledSet.contains(lastReceivedSeqId)) {
-					ctx.writeAndFlush(new RakNetNACK(lastReceivedSeqId)).addListener(ChannelFutureListener.FIRE_EXCEPTION_ON_FAILURE);
+					nackSet.add(lastReceivedSeqId); //add missing packets to nack set
 				}
 				lastReceivedSeqId = UINT.B3.plus(lastReceivedSeqId, 1);
 			}
@@ -159,6 +169,7 @@ public class RakNetPacketReliabilityHandler extends ChannelDuplexHandler {
 	}
 
 	protected void ackTick() {
+		nackSet.removeIf(removalPredicate);
 		handledSet.removeIf(removalPredicate);
 		if (!ackSet.isEmpty()) {
 			channel.writeAndFlush(new RakNetACK(ackSet)).addListener(ChannelFutureListener.FIRE_EXCEPTION_ON_FAILURE);

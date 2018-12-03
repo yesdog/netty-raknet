@@ -1,12 +1,39 @@
 package raknetserver.packet.raknet;
 
 import io.netty.buffer.ByteBuf;
+import it.unimi.dsi.fastutil.ints.IntSortedSet;
+
+import java.util.ArrayList;
 
 public class RakNetReliability implements RakNetPacket {
 
 	private REntry[] entries;
 
 	public RakNetReliability() {
+	}
+	public RakNetReliability(IntSortedSet ids) {
+		entries = new REntry[0];
+		if (ids.isEmpty()) {
+			return;
+		}
+		ArrayList<REntry> res = new ArrayList<>();
+		int startId = -1;
+		int endId = -1;
+		for(int i : ids) {
+			assert i >= 0;
+			if (startId == -1) {
+				startId = i; //new region
+				endId = i;
+			} else if (i == (endId + 1)) {
+				endId = i; //continue region
+			} else {
+				res.add(new REntry(startId, endId));
+				startId = i; //new region
+				endId = i;
+			}
+		}
+		res.add(new REntry(startId, endId));
+		entries = res.toArray(entries);
 	}
 
 	public RakNetReliability(int id) {
@@ -65,6 +92,9 @@ public class RakNetReliability implements RakNetPacket {
 	public static class RakNetACK extends RakNetReliability {
 		public RakNetACK() {
 		}
+		public RakNetACK(IntSortedSet ids) {
+			super(ids);
+		}
 		public RakNetACK(int id) {
 			this(id, id);
 		}
@@ -74,6 +104,9 @@ public class RakNetReliability implements RakNetPacket {
 	}
 	public static class RakNetNACK extends RakNetReliability {
 		public RakNetNACK() {
+		}
+		public RakNetNACK(IntSortedSet ids) {
+			super(ids);
 		}
 		public RakNetNACK(int id) {
 			this(id, id);
