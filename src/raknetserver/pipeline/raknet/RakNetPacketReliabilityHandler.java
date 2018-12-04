@@ -88,12 +88,12 @@ public class RakNetPacketReliabilityHandler extends ChannelDuplexHandler {
 
 	protected void handleEncapsulatedData(ChannelHandlerContext ctx, RakNetEncapsulatedData packet) {
 		int packetSeqId = packet.getSeqId();
-
 		ackSet.add(packetSeqId);
 		nackSet.remove(packetSeqId);
 		if (!idWithinWindow(packetSeqId) || handledSet.contains(packetSeqId)) { //ignore duplicate packet
 			return;
 		}
+		handledSet.add(packetSeqId);
 		if (UINT.B3.minusWrap(packetSeqId, lastReceivedSeqId) > 0) { //can be zero on the first packet only
 			lastReceivedSeqId = UINT.B3.plus(lastReceivedSeqId, 1);
 			while (lastReceivedSeqId != packetSeqId) { //nack any missed packets before this one
