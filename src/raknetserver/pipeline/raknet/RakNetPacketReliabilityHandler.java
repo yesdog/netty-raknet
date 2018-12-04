@@ -34,7 +34,6 @@ public class RakNetPacketReliabilityHandler extends ChannelDuplexHandler {
 	}
 
 	protected final Channel channel;
-	protected final IntOpenHashSet handledSet = new IntOpenHashSet();
 	protected final Int2ObjectOpenHashMap<RakNetEncapsulatedData> sentPackets = new Int2ObjectOpenHashMap<>();
 
 	protected int lastReceivedSeqId = 0;
@@ -71,16 +70,13 @@ public class RakNetPacketReliabilityHandler extends ChannelDuplexHandler {
 	protected void handleEncapsulatedData(ChannelHandlerContext ctx, RakNetEncapsulatedData packet) {
 		int packetSeqId = packet.getSeqId();
 		ctx.writeAndFlush(new RakNetACK(packetSeqId)).addListener(ChannelFutureListener.FIRE_EXCEPTION_ON_FAILURE);
-		if (!idWithinWindow(packetSeqId) || handledSet.contains(packetSeqId)) { //ignore duplicate packet
+		if (!idWithinWindow(packetSeqId)) { //ignore duplicate packet
 			return;
 		}
-		handledSet.add(packetSeqId);
 		if (UINT.B3.minusWrap(packetSeqId, lastReceivedSeqId) > 0) { //can be zero on the first packet only
 			lastReceivedSeqId = UINT.B3.plus(lastReceivedSeqId, 1);
 			while (lastReceivedSeqId != packetSeqId) { //nack any missed packets before this one
-				if (!handledSet.contains(lastReceivedSeqId)) {
-					ctx.writeAndFlush(new RakNetNACK(lastReceivedSeqId)).addListener(ChannelFutureListener.FIRE_EXCEPTION_ON_FAILURE);
-				}
+				ctx.writeAndFlush(new RakNetNACK(lastReceivedSeqId)).addListener(ChannelFutureListener.FIRE_EXCEPTION_ON_FAILURE);
 				lastReceivedSeqId = UINT.B3.plus(lastReceivedSeqId, 1);
 			}
 		}
