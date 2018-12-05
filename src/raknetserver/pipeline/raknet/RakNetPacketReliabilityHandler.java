@@ -94,6 +94,7 @@ public class RakNetPacketReliabilityHandler extends ChannelDuplexHandler {
 			return;
 		}
 		handledSet.add(packetSeqId);
+		//TODO: keep nacking from last received?
 		if (UINT.B3.minusWrap(packetSeqId, lastReceivedSeqId) > 0) { //can be zero on the first packet only
 			lastReceivedSeqId = UINT.B3.plus(lastReceivedSeqId, 1);
 			while (lastReceivedSeqId != packetSeqId) { //nack any missed packets before this one
