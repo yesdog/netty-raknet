@@ -28,14 +28,13 @@ public class RakNetPacketReliabilityHandler extends ChannelDuplexHandler {
 
 	protected static final int WINDOW = 4096;
 	protected static final int HALF_WINDOW = WINDOW / 2;
-	protected static final int CONTROL_INTERVAL = 50; //millis
-	protected static final int RTT_FLOOR = 5; //millis
+	protected static final long RTT_FLOOR = TimeUnit.NANOSECONDS.convert(5, TimeUnit.MILLISECONDS); //millis
 
 	protected static final PacketHandlerRegistry<RakNetPacketReliabilityHandler, RakNetPacket> registry = new PacketHandlerRegistry<>();
 	static {
 		registry.register(RakNetEncapsulatedData.class, (ctx, handler, packet) -> handler.handleEncapsulatedData(ctx, packet));
-		registry.register(RakNetACK.class, (ctx, handler, packet) -> handler.handleAck(ctx, packet));
-		registry.register(RakNetNACK.class, (ctx, handler, packet) -> handler.handleNack(ctx, packet));
+		registry.register(RakNetACK.class, (ctx, handler, packet) -> handler.handleAck(packet));
+		registry.register(RakNetNACK.class, (ctx, handler, packet) -> handler.handleNack(packet));
 	}
 
 	protected final Channel channel;
@@ -47,21 +46,11 @@ public class RakNetPacketReliabilityHandler extends ChannelDuplexHandler {
 
 	protected int lastReceivedSeqId = 0;
 	protected int nextSendSeqId = 0;
-	protected long minRTT = 2000;
+	protected long minRTT = TimeUnit.NANOSECONDS.convert(2, TimeUnit.SECONDS);
 
 	public RakNetPacketReliabilityHandler(Channel channel) {
 		this.channel = channel;
-		startFlushTimer();
 		startResendTimer();
-	}
-
-	private void startFlushTimer() {
-		channel.eventLoop().schedule(() -> {
-			if (channel.isOpen()) {
-				startFlushTimer();
-				ackTick();
-			}
-		}, CONTROL_INTERVAL, TimeUnit.MILLISECONDS);
 	}
 
 	private void startResendTimer() {
@@ -70,7 +59,7 @@ public class RakNetPacketReliabilityHandler extends ChannelDuplexHandler {
 				startResendTimer();
 				resendTick();
 			}
-		}, minRTT, TimeUnit.MILLISECONDS);
+		}, minRTT, TimeUnit.NANOSECONDS);
 	}
 
 	@Override
@@ -87,14 +76,13 @@ public class RakNetPacketReliabilityHandler extends ChannelDuplexHandler {
 	}
 
 	protected void handleEncapsulatedData(ChannelHandlerContext ctx, RakNetEncapsulatedData packet) {
-		int packetSeqId = packet.getSeqId();
+		final int packetSeqId = packet.getSeqId();
 		ackSet.add(packetSeqId);
 		nackSet.remove(packetSeqId);
 		if (!idWithinWindow(packetSeqId) || handledSet.contains(packetSeqId)) { //ignore duplicate packet
 			return;
 		}
 		handledSet.add(packetSeqId);
-		//TODO: keep nacking from last received?
 		if (UINT.B3.minusWrap(packetSeqId, lastReceivedSeqId) > 0) { //can be zero on the first packet only
 			lastReceivedSeqId = UINT.B3.plus(lastReceivedSeqId, 1);
 			while (lastReceivedSeqId != packetSeqId) { //nack any missed packets before this one
@@ -107,16 +95,16 @@ public class RakNetPacketReliabilityHandler extends ChannelDuplexHandler {
 		packet.getPackets().forEach(ctx::fireChannelRead); //read encapsulated packets
 	}
 
-	protected void handleAck(ChannelHandlerContext ctx, RakNetACK ack) {
+	protected void handleAck(RakNetACK ack) {
 		for (REntry entry : ack.getEntries()) {
-			int idStart = entry.idStart;
-			int idFinish = entry.idFinish;
-			int idDiff = UINT.B3.minusWrap(idFinish, idStart);
+			final int idStart = entry.idStart;
+			final int idFinish = entry.idFinish;
+			final int idDiff = UINT.B3.minusWrap(idFinish, idStart);
 			if (idDiff > Constants.MAX_PACKET_LOSS) {
 				throw new DecoderException("Too big packet loss (ack confirm range)");
 			}
 			for (int i = 0; i <= idDiff; i++) {
-				int packetId = UINT.B3.plus(idStart, i);
+				final int packetId = UINT.B3.plus(idStart, i);
 				RakNetEncapsulatedData packet = sentPackets.remove(packetId);
 				if (packet != null) {
 					minRTT = Math.min(minRTT, Math.max(packet.timeSinceSend(), RTT_FLOOR));
@@ -125,19 +113,17 @@ public class RakNetPacketReliabilityHandler extends ChannelDuplexHandler {
 		}
 	}
 
-	protected void handleNack(ChannelHandlerContext ctx, RakNetNACK nack) {
+	protected void handleNack(RakNetNACK nack) {
 		for (REntry entry : nack.getEntries()) {
-			int idStart = entry.idStart;
-			int idFinish = entry.idFinish;
-			int idDiff = UINT.B3.minusWrap(idFinish, idStart);
+			final int idStart = entry.idStart;
+			final int idFinish = entry.idFinish;
+			final int idDiff = UINT.B3.minusWrap(idFinish, idStart);
 			if (idDiff > Constants.MAX_PACKET_LOSS) {
 				throw new DecoderException("Too big packet loss (nack resend range)");
 			}
 			for (int i = 0; i <= idDiff; i++) {
-				RakNetEncapsulatedData packet = sentPackets.remove(UINT.B3.plus(idStart, i));
+				final RakNetEncapsulatedData packet = sentPackets.remove(UINT.B3.plus(idStart, i));
 				if (packet != null) {
-					packet.setSeqId(nextSendSeqId); //new id on nack
-					nextSendSeqId = UINT.B3.plus(nextSendSeqId, 1);
 					sendPacket(packet, null);
 				}
 			}
@@ -150,16 +136,15 @@ public class RakNetPacketReliabilityHandler extends ChannelDuplexHandler {
 			if (sentPackets.size() > Constants.MAX_PACKET_LOSS) {
 				throw new DecoderException("Too big packet loss (unconfirmed sent packets)");
 			}
-			RakNetEncapsulatedData outPacket = new RakNetEncapsulatedData((EncapsulatedPacket) msg);
-			outPacket.setSeqId(nextSendSeqId);
-			nextSendSeqId = UINT.B3.plus(nextSendSeqId, 1);
-			sendPacket(outPacket, promise);
+			sendPacket(new RakNetEncapsulatedData((EncapsulatedPacket) msg), promise);
 		} else {
 			ctx.writeAndFlush(msg, promise);
 		}
 	}
 
 	protected void sendPacket(RakNetEncapsulatedData packet, ChannelPromise promise) {
+		packet.setSeqId(nextSendSeqId);
+		nextSendSeqId = UINT.B3.plus(nextSendSeqId, 1);
 		sentPackets.put(packet.getSeqId(), packet);
 		packet.refreshResend();
 		if (promise != null) {
@@ -169,7 +154,7 @@ public class RakNetPacketReliabilityHandler extends ChannelDuplexHandler {
 		}
 	}
 
-	protected void ackTick() {
+	protected void resendTick() {
 		nackSet.removeIf(removalPredicate);
 		handledSet.removeIf(removalPredicate);
 		if (!ackSet.isEmpty()) {
@@ -180,11 +165,10 @@ public class RakNetPacketReliabilityHandler extends ChannelDuplexHandler {
 			channel.writeAndFlush(new RakNetNACK(nackSet)).addListener(ChannelFutureListener.FIRE_EXCEPTION_ON_FAILURE);
 			nackSet.clear();
 		}
-	}
 
-	protected void resendTick() {
 		for (RakNetEncapsulatedData packet : sentPackets.values()) {
 			if (packet.resendTick()) {
+				sentPackets.remove(packet.getSeqId());
 				sendPacket(packet, null); //resend packet
 			}
 		}

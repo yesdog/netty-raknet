@@ -12,7 +12,7 @@ public class RakNetEncapsulatedData implements RakNetPacket {
 
 	private int seqId;
 	private int resendTicks;
-	private int sendAttempts;
+	private int sendAttempts = 0;
 	private long sentTime = -1;
 	private final ArrayList<EncapsulatedPacket> packets = new ArrayList<EncapsulatedPacket>();
 
@@ -43,7 +43,7 @@ public class RakNetEncapsulatedData implements RakNetPacket {
 
 	public void refreshResend() {
 		if (sentTime == -1) {
-			sentTime = System.currentTimeMillis(); //only set on first attempt
+			sentTime = System.nanoTime(); //only set on first attempt
 		}
 		resendTicks = FIBONACCI[Math.min(sendAttempts++, FIBONACCI.length - 1)] + RETRY_TICK_OFFSET;
 	}
@@ -53,7 +53,7 @@ public class RakNetEncapsulatedData implements RakNetPacket {
 	}
 
 	public long timeSinceSend() {
-		return (int)(System.currentTimeMillis() - sentTime);
+		return System.nanoTime() - sentTime;
 	}
 
 	public int getSeqId() {
