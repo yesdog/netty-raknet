@@ -14,13 +14,9 @@ public class RakNetEncapsulatedData implements RakNetPacket {
 	private int resendTicks;
 	private int sendAttempts = 0;
 	private long sentTime = -1;
-	private final ArrayList<EncapsulatedPacket> packets = new ArrayList<EncapsulatedPacket>();
+	private final ArrayList<EncapsulatedPacket> packets = new ArrayList<>();
 
 	public RakNetEncapsulatedData() {
-	}
-
-	public RakNetEncapsulatedData(EncapsulatedPacket epacket) {
-		packets.add(epacket);
 	}
 
 	@Override
@@ -41,15 +37,20 @@ public class RakNetEncapsulatedData implements RakNetPacket {
 		}
 	}
 
-	public void refreshResend() {
+	public void refreshResend(int scale) {
 		if (sentTime == -1) {
 			sentTime = System.nanoTime(); //only set on first attempt
 		}
-		resendTicks = FIBONACCI[Math.min(sendAttempts++, FIBONACCI.length - 1)] + RETRY_TICK_OFFSET;
+		resendTicks = (FIBONACCI[Math.min(sendAttempts++, FIBONACCI.length - 1)] + RETRY_TICK_OFFSET) * scale;
 	}
 
-	public boolean resendTick() {
-		return --resendTicks <= 0; //returns true if resend needed
+	public void scheduleResend() {
+		resendTicks = 0; //resend asap
+	}
+
+	public boolean resendTick(int nTicks) {
+		resendTicks -= nTicks;
+		return resendTicks <= 0; //returns true if resend needed
 	}
 
 	public long timeSinceSend() {
@@ -66,6 +67,18 @@ public class RakNetEncapsulatedData implements RakNetPacket {
 
 	public ArrayList<EncapsulatedPacket> getPackets() {
 		return packets;
+	}
+
+	public int getRoughPacketSize() {
+		int out = 3;
+		for (EncapsulatedPacket packet : packets) {
+			out += packet.getRoughPacketSize();
+		}
+		return out;
+	}
+
+	public boolean isEmpty() {
+		return packets.isEmpty();
 	}
 
 }

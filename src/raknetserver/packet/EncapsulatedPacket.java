@@ -129,6 +129,10 @@ public class EncapsulatedPacket {
 		return data.length;
 	}
 
+	public int getRoughPacketSize() {
+		return getDataSize() + 18;
+	}
+
 	public byte[] getData() {
 		return data.clone();
 	}
