@@ -9,6 +9,7 @@ import io.netty.handler.codec.DecoderException;
 import it.unimi.dsi.fastutil.ints.Int2ObjectOpenHashMap;
 import it.unimi.dsi.fastutil.ints.IntRBTreeSet;
 import it.unimi.dsi.fastutil.ints.IntSortedSet;
+import it.unimi.dsi.fastutil.ints.Int2ObjectMap;
 import it.unimi.dsi.fastutil.ints.IntComparators;
 import it.unimi.dsi.fastutil.objects.ObjectIterator;
 import raknetserver.packet.EncapsulatedPacket;
@@ -26,7 +27,7 @@ import java.util.concurrent.TimeUnit;
 
 public class RakNetPacketReliabilityHandler extends ChannelDuplexHandler {
 
-	protected static final long COARSE_TIMER_RESOLUTION = 50; //in ms. limited by netty timer resolution
+	protected static final long COARSE_TIMER_RESOLUTION = 50; //in ms, limited by netty timer resolution
 	protected static final long TICK_RESOLUTION = TimeUnit.NANOSECONDS.convert(5, TimeUnit.MILLISECONDS);
 
 	protected static final PacketHandlerRegistry<RakNetPacketReliabilityHandler, RakNetPacket> registry = new PacketHandlerRegistry<>();
@@ -39,9 +40,8 @@ public class RakNetPacketReliabilityHandler extends ChannelDuplexHandler {
 	protected final Channel channel;
 	protected final IntSortedSet nackSet = new IntRBTreeSet(IntComparators.NATURAL_COMPARATOR);
 	protected final IntSortedSet ackSet = new IntRBTreeSet(IntComparators.NATURAL_COMPARATOR);
-	protected final Int2ObjectOpenHashMap<RakNetEncapsulatedData> sentPackets = new Int2ObjectOpenHashMap<>();
+	protected final Int2ObjectMap<RakNetEncapsulatedData> sentPackets = new Int2ObjectOpenHashMap<>();
 
-	protected int maxPacketSize = 0;
 	protected int lastReceivedSeqId = 0;
 	protected int nextSendSeqId = 0;
 	protected long minRTT = TimeUnit.NANOSECONDS.convert(2, TimeUnit.SECONDS);
@@ -167,20 +167,21 @@ public class RakNetPacketReliabilityHandler extends ChannelDuplexHandler {
 			nackSet.clear();
 		}
 		for (ObjectIterator<RakNetEncapsulatedData> itr = sentPackets.values().iterator() ; itr.hasNext() ; ) {
-			RakNetEncapsulatedData packet = itr.next();
+			final RakNetEncapsulatedData packet = itr.next();
 			if (packet.resendTick(nTicks)) {
 				itr.remove();
 				sendPacket(packet); //resend
 			}
 		}
 		flushPacket();
+		if (sentPackets.size() > Constants.MAX_PACKET_LOSS) {
+			throw new DecoderException("Too big packet loss (resend queue)");
+		}
 	}
 
 	protected void queuePacket(EncapsulatedPacket packet) {
-		if (maxPacketSize == 0) {
-			maxPacketSize = channel.attr(RakNetConstants.MTU).get() - 100;
-		}
-		if(!queuedPacket.isEmpty() && (queuedPacket.getRoughPacketSize() + packet.getRoughPacketSize()) > maxPacketSize) {
+		final int maxPacketSize = channel.attr(RakNetConstants.MTU).get() - 100;
+		if (!queuedPacket.isEmpty() && (queuedPacket.getRoughPacketSize() + packet.getRoughPacketSize()) > maxPacketSize) {
 			flushPacket();
 		}
 		queuedPacket.getPackets().add(packet);
@@ -195,7 +196,7 @@ public class RakNetPacketReliabilityHandler extends ChannelDuplexHandler {
 	}
 
 	protected void flushPacket() {
-		if(!queuedPacket.isEmpty()) {
+		if (!queuedPacket.isEmpty()) {
 			sendPacket(queuedPacket);
 			queuedPacket = new RakNetEncapsulatedData();
 		}
