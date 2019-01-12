@@ -12,6 +12,7 @@ import it.unimi.dsi.fastutil.ints.IntSortedSet;
 import it.unimi.dsi.fastutil.ints.Int2ObjectMap;
 import it.unimi.dsi.fastutil.ints.IntComparators;
 import it.unimi.dsi.fastutil.objects.ObjectIterator;
+import raknetserver.RakNetServer;
 import raknetserver.packet.EncapsulatedPacket;
 import raknetserver.packet.RakNetConstants;
 import raknetserver.packet.raknet.RakNetEncapsulatedData;
@@ -38,6 +39,7 @@ public class RakNetPacketReliabilityHandler extends ChannelDuplexHandler {
 	}
 
 	protected final Channel channel;
+	protected final RakNetServer.Metrics metrics;
 	protected final IntSortedSet nackSet = new IntRBTreeSet(IntComparators.NATURAL_COMPARATOR);
 	protected final IntSortedSet ackSet = new IntRBTreeSet(IntComparators.NATURAL_COMPARATOR);
 	protected final Int2ObjectMap<RakNetEncapsulatedData> sentPackets = new Int2ObjectOpenHashMap<>();
@@ -49,8 +51,9 @@ public class RakNetPacketReliabilityHandler extends ChannelDuplexHandler {
 	protected long lastTickAccum = System.nanoTime();
 	protected RakNetEncapsulatedData queuedPacket = new RakNetEncapsulatedData();
 
-	public RakNetPacketReliabilityHandler(Channel channel) {
+	public RakNetPacketReliabilityHandler(Channel channel, RakNetServer.Metrics metrics) {
 		this.channel = channel;
+		this.metrics = metrics;
 		startCoarseTickTimer();
 	}
 
@@ -85,6 +88,7 @@ public class RakNetPacketReliabilityHandler extends ChannelDuplexHandler {
 			}
 		}
 		packet.getPackets().forEach(ctx::fireChannelRead); //read encapsulated packets
+		metrics.incrInPacket(1);
 	}
 
 	protected void handleAck(RakNetACK ack) {
@@ -95,6 +99,7 @@ public class RakNetPacketReliabilityHandler extends ChannelDuplexHandler {
 			if (idDiff > Constants.MAX_PACKET_LOSS) {
 				throw new DecoderException("Too big packet loss (ack confirm range)");
 			}
+			metrics.incrAckRecv(idDiff + 1);
 			for (int i = 0; i <= idDiff; i++) {
 				final int packetId = UINT.B3.plus(idStart, i);
 				RakNetEncapsulatedData packet = sentPackets.remove(packetId);
@@ -116,6 +121,7 @@ public class RakNetPacketReliabilityHandler extends ChannelDuplexHandler {
 			if (idDiff > Constants.MAX_PACKET_LOSS) {
 				throw new DecoderException("Too big packet loss (nack resend range)");
 			}
+			metrics.incrNackRecv(idDiff + 1);
 			for (int i = 0; i <= idDiff; i++) {
 				final RakNetEncapsulatedData packet = sentPackets.get(UINT.B3.plus(idStart, i));
 				if (packet != null) {
@@ -126,7 +132,7 @@ public class RakNetPacketReliabilityHandler extends ChannelDuplexHandler {
 	}
 
 	@Override
-	public void write(ChannelHandlerContext ctx, Object msg, ChannelPromise promise) throws Exception {
+	public void write(ChannelHandlerContext ctx, Object msg, ChannelPromise promise) {
 		if (msg instanceof EncapsulatedPacket) {
 			if (sentPackets.size() > Constants.MAX_PACKET_LOSS) {
 				throw new DecoderException("Too big packet loss (unconfirmed sent packets)");
@@ -134,6 +140,7 @@ public class RakNetPacketReliabilityHandler extends ChannelDuplexHandler {
 			maybeTick();
 			queuePacket((EncapsulatedPacket) msg);
 			promise.trySuccess();
+			metrics.incrOutPacket(1);
 		} else {
 			ctx.writeAndFlush(msg, promise);
 		}
@@ -159,10 +166,12 @@ public class RakNetPacketReliabilityHandler extends ChannelDuplexHandler {
 	protected void tick(int nTicks) {
 		//all data flushed in order of priority
 		if (!ackSet.isEmpty()) {
+			metrics.incrAckSend(ackSet.size());
 			channel.writeAndFlush(new RakNetACK(ackSet)).addListener(ChannelFutureListener.FIRE_EXCEPTION_ON_FAILURE);
 			ackSet.clear();
 		}
 		if (!nackSet.isEmpty()) {
+			metrics.incrNackSend(ackSet.size());
 			channel.writeAndFlush(new RakNetNACK(nackSet)).addListener(ChannelFutureListener.FIRE_EXCEPTION_ON_FAILURE);
 			nackSet.clear();
 		}
@@ -171,6 +180,7 @@ public class RakNetPacketReliabilityHandler extends ChannelDuplexHandler {
 			if (packet.resendTick(nTicks)) {
 				itr.remove();
 				sendPacket(packet); //resend
+				metrics.incrResend(1);
 			}
 		}
 		flushPacket();
@@ -185,6 +195,9 @@ public class RakNetPacketReliabilityHandler extends ChannelDuplexHandler {
 			flushPacket();
 		}
 		queuedPacket.getPackets().add(packet);
+		if (queuedPacket.getPackets().size() > 1) {
+			metrics.incrJoin(1);
+		}
 	}
 
 	protected void sendPacket(RakNetEncapsulatedData packet) {
@@ -193,6 +206,7 @@ public class RakNetPacketReliabilityHandler extends ChannelDuplexHandler {
 		sentPackets.put(packet.getSeqId(), packet);
 		packet.refreshResend((int) (minRTT / TICK_RESOLUTION)); // number of ticks per RTT
 		channel.writeAndFlush(packet).addListener(ChannelFutureListener.FIRE_EXCEPTION_ON_FAILURE);
+		metrics.incrSend(1);
 	}
 
 	protected void flushPacket() {

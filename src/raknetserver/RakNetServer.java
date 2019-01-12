@@ -24,6 +24,7 @@ import raknetserver.pipeline.raknet.RakNetPacketDecoder;
 import raknetserver.pipeline.raknet.RakNetPacketEncoder;
 import raknetserver.pipeline.raknet.RakNetPacketReliabilityHandler;
 import raknetserver.utils.Constants;
+import raknetserver.utils.DefaultMetrics;
 import udpserversocketchannel.channel.UdpServerChannel;
 
 public class RakNetServer {
@@ -32,34 +33,35 @@ public class RakNetServer {
 	protected final PingHandler pinghandler;
 	protected final UserChannelInitializer userinit;
 	protected final int userPacketId;
+	protected final Metrics metrics;
 
-	public RakNetServer(InetSocketAddress local, PingHandler pinghandler, UserChannelInitializer init, int userPacketId) {
+	private ChannelFuture channel = null;
+
+	public RakNetServer(InetSocketAddress local, PingHandler pinghandler, UserChannelInitializer init, int userPacketId, Metrics metrics) {
 		this.local = local;
 		this.pinghandler = pinghandler;
 		this.userinit = init;
 		this.userPacketId = userPacketId;
+		this.metrics = metrics;
 	}
 
-	private ChannelFuture channel = null;
+	public RakNetServer(InetSocketAddress local, PingHandler pinghandler, UserChannelInitializer init, int userPacketId) {
+		this(local, pinghandler, init, userPacketId, new DefaultMetrics());
+	}
 
 	public void start() {
 		ServerBootstrap bootstrap = new ServerBootstrap()
 		.group(new DefaultEventLoopGroup())
-		.channelFactory(new ChannelFactory<ServerChannel>() {
-			@Override
-			public ServerChannel newChannel() {
-				return new UdpServerChannel(Constants.UDP_IO_THREADS);
-			}
-		})
+		.channelFactory(() -> new UdpServerChannel(Constants.UDP_IO_THREADS))
 		.childHandler(new ChannelInitializer<Channel>() {
 			@Override
-			protected void initChannel(Channel channel) throws Exception {
+			protected void initChannel(Channel channel) {
 				channel.pipeline()
 				.addLast("rns-timeout", new ReadTimeoutHandler(10))
 				.addLast("rns-rn-encoder", new RakNetPacketEncoder())
 				.addLast("rns-rn-decoder", new RakNetPacketDecoder())
 				.addLast("rns-rn-connect", new RakNetPacketConnectionEstablishHandler(pinghandler))
-				.addLast("rns-rn-reliability", new RakNetPacketReliabilityHandler(channel))
+				.addLast("rns-rn-reliability", new RakNetPacketReliabilityHandler(channel, metrics))
 				.addLast("rns-e-ru", new EncapsulatedPacketUnsplitter())
 				.addLast("rns-e-ro", new EncapsulatedPacketInboundOrderer())
 				.addLast("rns-e-ws", new EncapsulatedPacketSplitter())
@@ -81,8 +83,20 @@ public class RakNetServer {
 		}
 	}
 
-	public static interface UserChannelInitializer {
-		public void init(Channel channel);
+	public interface UserChannelInitializer {
+		void init(Channel channel);
+	}
+
+	public interface Metrics {
+		void incrOutPacket(int n);
+		void incrInPacket(int n);
+		void incrJoin(int n);
+		void incrSend(int n);
+		void incrResend(int n);
+		void incrAckSend(int n);
+		void incrNackSend(int n);
+		void incrAckRecv(int n);
+		void incrNackRecv(int n);
 	}
 
 }

@@ -16,9 +16,6 @@ public class RakNetEncapsulatedData implements RakNetPacket {
 	private long sentTime = -1;
 	private final ArrayList<EncapsulatedPacket> packets = new ArrayList<>();
 
-	public RakNetEncapsulatedData() {
-	}
-
 	@Override
 	public void decode(ByteBuf buf) {
 		seqId = buf.readUnsignedMediumLE();
