@@ -3,6 +3,7 @@ package raknetserver.utils;
 import raknetserver.RakNetServer;
 
 public final class DefaultMetrics implements RakNetServer.Metrics {
+
     @Override
     public void incrOutPacket(int n) {}
 
@@ -29,4 +30,5 @@ public final class DefaultMetrics implements RakNetServer.Metrics {
 
     @Override
     public void incrNackRecv(int n) {}
+
 }
