@@ -102,7 +102,7 @@ public class RakNetPacketReliabilityHandler extends ChannelDuplexHandler {
 			metrics.incrAckRecv(idDiff + 1);
 			for (int i = 0; i <= idDiff; i++) {
 				final int packetId = UINT.B3.plus(idStart, i);
-				RakNetEncapsulatedData packet = sentPackets.remove(packetId);
+				final RakNetEncapsulatedData packet = sentPackets.remove(packetId);
 				if (packet != null) {
 					final long rtt = Math.max(packet.timeSinceSend(), TICK_RESOLUTION);
 					if (rtt < minRTT) {
