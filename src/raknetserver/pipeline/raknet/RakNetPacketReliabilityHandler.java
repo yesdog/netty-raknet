@@ -99,7 +99,7 @@ public class RakNetPacketReliabilityHandler extends ChannelDuplexHandler {
                 final RakNetEncapsulatedData packet = sentPackets.remove(id);
                 if (packet != null) {
                     final long rtt = Math.max(packet.timeSinceSend(), TICK_RESOLUTION);
-                    if (packet.getSendAttempts() <= 2) {
+                    if (rtt <= Constants.MAX_RTT) {
                         avgRTT = (avgRTT * 7 + rtt) / 8;
                     }
                     metrics.measureRTTns(rtt);

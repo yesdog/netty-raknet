@@ -1,5 +1,7 @@
 package raknetserver.utils;
 
+import java.util.concurrent.TimeUnit;
+
 public class Constants {
 
 	public static final int MAX_PACKET_LOSS = Integer.parseInt(System.getProperty("raknetserver.maxPacketLoss", "8192"));
@@ -7,5 +9,7 @@ public class Constants {
 	public static final int UDP_IO_THREADS = Integer.parseInt(System.getProperty("raknetserver.udpIOThreads", "4"));
 	public static final int RETRY_TICK_OFFSET = Integer.parseInt(System.getProperty("raknetserver.retryTickOffset", "2"));
 	public static final int RESEND_PER_TICK = Integer.parseInt(System.getProperty("raknetserver.resendPerTick", "5"));
+	public static final long MAX_RTT = TimeUnit.NANOSECONDS.convert(
+			Integer.parseInt(System.getProperty("raknetserver.maxRTTms", "2000")), TimeUnit.MILLISECONDS);
 
 }
