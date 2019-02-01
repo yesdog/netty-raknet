@@ -5,30 +5,63 @@ import raknetserver.RakNetServer;
 public final class DefaultMetrics implements RakNetServer.Metrics {
 
     @Override
-    public void incrOutPacket(int n) {}
+    public void incrSend(int n) {
+
+    }
 
     @Override
-    public void incrInPacket(int n) {}
+    public void incrOutPacket(int n) {
+
+    }
 
     @Override
-    public void incrJoin(int n) {}
+    public void incrRecv(int n) {
+
+    }
 
     @Override
-    public void incrSend(int n) {}
+    public void incrInPacket(int n) {
+
+    }
 
     @Override
-    public void incrResend(int n) {}
+    public void incrJoin(int n) {
+
+    }
 
     @Override
-    public void incrAckSend(int n) {}
+    public void incrResend(int n) {
+
+    }
 
     @Override
-    public void incrNackSend(int n) {}
+    public void incrAckSend(int n) {
+
+    }
 
     @Override
-    public void incrAckRecv(int n) {}
+    public void incrNackSend(int n) {
+
+    }
 
     @Override
-    public void incrNackRecv(int n) {}
+    public void incrAckRecv(int n) {
+
+    }
+
+    @Override
+    public void incrNackRecv(int n) {
+
+    }
+
+    @Override
+    public void measureSendAttempts(int n) {
+
+    }
+
+    @Override
+    public void measureRTTns(long n) {
+
+    }
 
 }

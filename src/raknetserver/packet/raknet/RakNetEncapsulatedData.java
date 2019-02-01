@@ -4,14 +4,14 @@ import java.util.ArrayList;
 
 import io.netty.buffer.ByteBuf;
 import raknetserver.packet.EncapsulatedPacket;
+import raknetserver.utils.Constants;
 
 public class RakNetEncapsulatedData implements RakNetPacket {
 
-	protected static final int RETRY_TICK_OFFSET = 2;
 	protected static final byte[] FIBONACCI = new byte[] { 1, 1, 2, 3, 5, 8, 13, 21 }; //used for retry backoff
 
 	private int seqId;
-	private int resendTicks;
+	private int resendTicks = 0;
 	private int sendAttempts = 0;
 	private long sentTime = -1;
 	private final ArrayList<EncapsulatedPacket> packets = new ArrayList<>();
@@ -38,7 +38,7 @@ public class RakNetEncapsulatedData implements RakNetPacket {
 		if (sentTime == -1) {
 			sentTime = System.nanoTime(); //only set on first attempt
 		}
-		resendTicks = FIBONACCI[Math.min(sendAttempts++, FIBONACCI.length - 1)] * scale + RETRY_TICK_OFFSET;
+		resendTicks = FIBONACCI[Math.min(sendAttempts++, FIBONACCI.length - 1)] * scale + Constants.RETRY_TICK_OFFSET;
 	}
 
 	public void scheduleResend() {
@@ -48,6 +48,10 @@ public class RakNetEncapsulatedData implements RakNetPacket {
 	public boolean resendTick(int nTicks) {
 		resendTicks -= nTicks;
 		return resendTicks <= 0; //returns true if resend needed
+	}
+
+	public int getSendAttempts() {
+		return sendAttempts;
 	}
 
 	public long timeSinceSend() {

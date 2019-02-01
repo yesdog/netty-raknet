@@ -88,15 +88,18 @@ public class RakNetServer {
 	}
 
 	public interface Metrics {
+		void incrSend(int n);
 		void incrOutPacket(int n);
+		void incrRecv(int n);
 		void incrInPacket(int n);
 		void incrJoin(int n);
-		void incrSend(int n);
 		void incrResend(int n);
 		void incrAckSend(int n);
 		void incrNackSend(int n);
 		void incrAckRecv(int n);
 		void incrNackRecv(int n);
+		void measureSendAttempts(int n);
+		void measureRTTns(long n);
 	}
 
 }
