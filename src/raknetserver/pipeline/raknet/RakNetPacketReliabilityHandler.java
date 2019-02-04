@@ -9,7 +9,6 @@ import io.netty.handler.codec.DecoderException;
 import it.unimi.dsi.fastutil.ints.IntRBTreeSet;
 import it.unimi.dsi.fastutil.ints.IntSortedSet;
 import it.unimi.dsi.fastutil.ints.Int2ObjectRBTreeMap;
-import it.unimi.dsi.fastutil.ints.IntComparators;
 import it.unimi.dsi.fastutil.objects.ObjectIterator;
 import raknetserver.RakNetServer;
 import raknetserver.packet.EncapsulatedPacket;
@@ -27,10 +26,14 @@ import java.util.concurrent.TimeUnit;
 
 public class RakNetPacketReliabilityHandler extends ChannelDuplexHandler {
 
+    public static final String NAME = "rns-rn-reliability";
+
+    protected static final int RTT_WEIGHT = 8;
     protected static final long TICK_RESOLUTION = TimeUnit.NANOSECONDS.convert(5, TimeUnit.MILLISECONDS);
     protected static final long COARSE_TIMER_RESOLUTION = 50; //in ms, limited by netty timer resolution
 
     protected static final PacketHandlerRegistry<RakNetPacketReliabilityHandler, RakNetPacket> registry = new PacketHandlerRegistry<>();
+
     static {
         registry.register(RakNetEncapsulatedData.class, (ctx, handler, packet) -> handler.handleEncapsulatedData(ctx, packet));
         registry.register(RakNetACK.class, (ctx, handler, packet) -> handler.handleAck(packet));
@@ -39,8 +42,8 @@ public class RakNetPacketReliabilityHandler extends ChannelDuplexHandler {
 
     protected final Channel channel;
     protected final RakNetServer.Metrics metrics;
-    protected final IntSortedSet nackSet = new IntRBTreeSet(IntComparators.NATURAL_COMPARATOR);
-    protected final IntSortedSet ackSet = new IntRBTreeSet(IntComparators.NATURAL_COMPARATOR);
+    protected final IntSortedSet nackSet = new IntRBTreeSet(UINT.B3.COMPARATOR);
+    protected final IntSortedSet ackSet = new IntRBTreeSet(UINT.B3.COMPARATOR);
     protected final Int2ObjectRBTreeMap<RakNetEncapsulatedData> sentPackets = new Int2ObjectRBTreeMap<>(UINT.B3.COMPARATOR);
 
     protected int lastReceivedSeqId = 0;
@@ -48,6 +51,7 @@ public class RakNetPacketReliabilityHandler extends ChannelDuplexHandler {
     protected long avgRTT = TimeUnit.NANOSECONDS.convert(400, TimeUnit.MILLISECONDS);
     protected long tickAccum = 0;
     protected long lastTickAccum = System.nanoTime();
+    protected boolean backPressureActive = false;
     protected RakNetEncapsulatedData queuedPacket = new RakNetEncapsulatedData();
 
     public RakNetPacketReliabilityHandler(Channel channel, RakNetServer.Metrics metrics) {
@@ -100,7 +104,7 @@ public class RakNetPacketReliabilityHandler extends ChannelDuplexHandler {
                 if (packet != null) {
                     final long rtt = Math.max(packet.timeSinceSend(), TICK_RESOLUTION);
                     if (rtt <= Constants.MAX_RTT) {
-                        avgRTT = (avgRTT * 7 + rtt) / 8;
+                        avgRTT = (avgRTT * (RTT_WEIGHT - 1) + rtt) / RTT_WEIGHT;
                     }
                     metrics.measureRTTns(rtt);
                     metrics.measureSendAttempts(packet.getSendAttempts());
@@ -190,6 +194,10 @@ public class RakNetPacketReliabilityHandler extends ChannelDuplexHandler {
         }
         if (sentPackets.size() > Constants.MAX_PACKET_LOSS) {
             throw new DecoderException("Too big packet loss (resend queue)");
+        } else if (sentPackets.size() > Constants.BACK_PRESSURE_HIGH_WATERMARK) {
+            updateBackPressure(true);
+        } else if (sentPackets.size() < Constants.BACK_PRESSURE_LOW_WATERMARK) {
+            updateBackPressure(false);
         }
     }
 
@@ -222,4 +230,14 @@ public class RakNetPacketReliabilityHandler extends ChannelDuplexHandler {
             queuedPacket = new RakNetEncapsulatedData();
         }
     }
+
+    protected void updateBackPressure(boolean enabled) {
+        if (backPressureActive == enabled) {
+            return;
+        }
+        backPressureActive = enabled;
+        channel.pipeline().context(NAME).fireChannelRead(
+                backPressureActive ? RakNetServer.BackPressure.ON : RakNetServer.BackPressure.OFF);
+    }
+
 }

@@ -4,11 +4,9 @@ import java.net.InetSocketAddress;
 
 import io.netty.bootstrap.ServerBootstrap;
 import io.netty.channel.Channel;
-import io.netty.channel.ChannelFactory;
 import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelInitializer;
 import io.netty.channel.DefaultEventLoopGroup;
-import io.netty.channel.ServerChannel;
 import io.netty.handler.timeout.ReadTimeoutHandler;
 import raknetserver.pipeline.encapsulated.EncapsulatedPacketInboundOrderer;
 import raknetserver.pipeline.encapsulated.EncapsulatedPacketOutboundOrder;
@@ -61,7 +59,7 @@ public class RakNetServer {
 				.addLast("rns-rn-encoder", new RakNetPacketEncoder())
 				.addLast("rns-rn-decoder", new RakNetPacketDecoder())
 				.addLast("rns-rn-connect", new RakNetPacketConnectionEstablishHandler(pinghandler))
-				.addLast("rns-rn-reliability", new RakNetPacketReliabilityHandler(channel, metrics))
+				.addLast(RakNetPacketReliabilityHandler.NAME, new RakNetPacketReliabilityHandler(channel, metrics))
 				.addLast("rns-e-ru", new EncapsulatedPacketUnsplitter())
 				.addLast("rns-e-ro", new EncapsulatedPacketInboundOrderer())
 				.addLast("rns-e-ws", new EncapsulatedPacketSplitter())
@@ -81,6 +79,10 @@ public class RakNetServer {
 			channel.channel().close();
 			channel = null;
 		}
+	}
+
+	public enum BackPressure {
+		ON, OFF;
 	}
 
 	public interface UserChannelInitializer {

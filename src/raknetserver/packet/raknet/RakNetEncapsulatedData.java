@@ -14,7 +14,7 @@ public class RakNetEncapsulatedData implements RakNetPacket {
 	private int resendTicks = 0;
 	private int sendAttempts = 0;
 	private long sentTime = -1;
-	private final ArrayList<EncapsulatedPacket> packets = new ArrayList<>();
+	private final ArrayList<EncapsulatedPacket> packets = new ArrayList<>(8);
 
 	@Override
 	public void decode(ByteBuf buf) {
