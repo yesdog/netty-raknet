@@ -16,6 +16,7 @@ import raknetserver.pipeline.internal.InternalPacketDecoder;
 import raknetserver.pipeline.internal.InternalPacketEncoder;
 import raknetserver.pipeline.internal.InternalPacketReadHandler;
 import raknetserver.pipeline.internal.InternalPacketWriteHandler;
+import raknetserver.pipeline.internal.InternalTickManager;
 import raknetserver.pipeline.raknet.RakNetPacketConnectionEstablishHandler;
 import raknetserver.pipeline.raknet.RakNetPacketConnectionEstablishHandler.PingHandler;
 import raknetserver.pipeline.raknet.RakNetPacketDecoder;
@@ -59,7 +60,7 @@ public class RakNetServer {
 				.addLast("rns-rn-encoder", new RakNetPacketEncoder())
 				.addLast("rns-rn-decoder", new RakNetPacketDecoder())
 				.addLast("rns-rn-connect", new RakNetPacketConnectionEstablishHandler(pinghandler))
-				.addLast(RakNetPacketReliabilityHandler.NAME, new RakNetPacketReliabilityHandler(channel, metrics))
+				.addLast("rns-rn-reliability", new RakNetPacketReliabilityHandler(metrics))
 				.addLast("rns-e-ru", new EncapsulatedPacketUnsplitter())
 				.addLast("rns-e-ro", new EncapsulatedPacketInboundOrderer())
 				.addLast("rns-e-ws", new EncapsulatedPacketSplitter())
@@ -69,6 +70,7 @@ public class RakNetServer {
 				.addLast("rns-i-readh", new InternalPacketReadHandler())
 				.addLast("rns-i-writeh", new InternalPacketWriteHandler());
 				userinit.init(channel);
+				channel.pipeline().addLast("rns-i-tick", new InternalTickManager());
 			}
 		});
 		channel = bootstrap.bind(local).syncUninterruptibly();
@@ -82,7 +84,7 @@ public class RakNetServer {
 	}
 
 	public enum BackPressure {
-		ON, OFF;
+		ON, OFF
 	}
 
 	public interface UserChannelInitializer {
@@ -102,6 +104,10 @@ public class RakNetServer {
 		void incrNackRecv(int n);
 		void measureSendAttempts(int n);
 		void measureRTTns(long n);
+	}
+
+	public interface Tick {
+		int getTicks();
 	}
 
 }

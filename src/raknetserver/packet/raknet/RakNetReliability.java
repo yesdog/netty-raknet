@@ -69,6 +69,8 @@ public class RakNetReliability implements RakNetPacket {
 		return entries;
 	}
 
+    //TODO: iterator
+
 	public static class REntry {
 		public final int idStart;
 		public final int idFinish;
@@ -88,6 +90,7 @@ public class RakNetReliability implements RakNetPacket {
 			super(ids);
 		}
 	}
+
 	public static class RakNetNACK extends RakNetReliability {
 		public RakNetNACK() {
 		}

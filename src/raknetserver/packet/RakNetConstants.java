@@ -3,6 +3,7 @@ package raknetserver.packet;
 import java.net.InetSocketAddress;
 
 import io.netty.util.AttributeKey;
+import raknetserver.RakNetServer;
 
 public final class RakNetConstants {
 
