@@ -15,7 +15,7 @@ public class InternalPacketEncoder extends MessageToByteEncoder<InternalPacket> 
 	}
 
 	@Override
-	protected void encode(ChannelHandlerContext ctx, InternalPacket packet, ByteBuf buf) throws Exception {
+	protected void encode(ChannelHandlerContext ctx, InternalPacket packet, ByteBuf buf) {
 		int packetId = packet instanceof InternalUserData ? userPacketId : InternalPacketRegistry.getId(packet);
 		buf.writeByte(packetId);
 		packet.encode(buf);

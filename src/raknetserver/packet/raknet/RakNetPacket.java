@@ -4,8 +4,8 @@ import io.netty.buffer.ByteBuf;
 
 public interface RakNetPacket {
 
-	public void decode(ByteBuf buf);
+	void decode(ByteBuf buf);
 
-	public void encode(ByteBuf buf);
+	void encode(ByteBuf buf);
 
 }

@@ -2,66 +2,85 @@ package raknetserver.pipeline.encapsulated;
 
 import java.util.List;
 
-import io.netty.buffer.Unpooled;
+import io.netty.buffer.ByteBuf;
+import io.netty.buffer.ByteBufAllocator;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.codec.MessageToMessageDecoder;
 import it.unimi.dsi.fastutil.ints.Int2ObjectOpenHashMap;
 import raknetserver.packet.EncapsulatedPacket;
-import raknetserver.utils.Constants;
-import raknetserver.utils.Utils;
 
 public class EncapsulatedPacketUnsplitter extends MessageToMessageDecoder<EncapsulatedPacket> {
 
-	private final Int2ObjectOpenHashMap<SplittedPacket> notFullPackets = new Int2ObjectOpenHashMap<>();
+	//TODO: stashed reference teardown on remove
+
+	protected final Int2ObjectOpenHashMap<UnSplitPacket> pendingPackets = new Int2ObjectOpenHashMap<>();
 
 	@Override
-	protected void decode(ChannelHandlerContext ctx, EncapsulatedPacket packet, List<Object> list) throws Exception {
+	protected void decode(ChannelHandlerContext ctx, EncapsulatedPacket packet, List<Object> list) {
+		packet.retain();
 		if (!packet.hasSplit()) {
 			list.add(packet);
 		} else {
-			int splitID = packet.getSplitId();
-			SplittedPacket partial = notFullPackets.get(splitID);
+			final int splitID = packet.getSplitId();
+			final UnSplitPacket partial = pendingPackets.get(splitID);
 			if (partial == null) {
-				notFullPackets.put(splitID, new SplittedPacket(packet));
+				pendingPackets.put(splitID, UnSplitPacket.create(ctx.alloc(), packet));
 			} else {
-				partial.appendData(packet);
-				if (partial.isComplete()) {
-					notFullPackets.remove(splitID);
-					list.add(partial.getFullPacket());
+				partial.add(packet);
+				if (partial.isDone()) {
+					pendingPackets.remove(splitID);
+					list.add(partial);
 				}
 			}
 		}
 	}
 
-	private static final class SplittedPacket {
+	protected static final class UnSplitPacket extends EncapsulatedPacket {
 
-		private int receivedSplits = 0;
-		private final EncapsulatedPacket startpacket;
-		private final byte[][] packets;
+		private static UnSplitPacket create(ByteBufAllocator alloc, EncapsulatedPacket packet) {
+			final UnSplitPacket unSplit = new UnSplitPacket();
+			unSplit.init(alloc, packet);
+			return unSplit;
+		}
 
-		public SplittedPacket(EncapsulatedPacket startpacket) {
-			if (startpacket.getSplitCount() > Constants.MAX_PACKET_SPLITS) {
-				throw new IllegalStateException("Too many splits for single packet, max: " + Constants.MAX_PACKET_SPLITS + ", packet: " + startpacket.getSplitCount());
+		private Int2ObjectOpenHashMap<EncapsulatedPacket> queue = new Int2ObjectOpenHashMap<>();
+		private int splitIdx = 0;
+		private int splitCount = 0;
+
+		private void init(ByteBufAllocator alloc, EncapsulatedPacket packet) {
+			assert data == null;
+			data = alloc.ioBuffer(2048);
+			orderChannel = packet.getOrderChannel();
+			orderIndex = packet.getOrderIndex();
+			splitCount = packet.getSplitCount();
+			reliability = 3;
+			messageIndex = 0;
+			add(packet);
+		}
+
+		private void add(EncapsulatedPacket packet) {
+			assert packet.getOrderChannel() == orderChannel;
+			assert packet.getOrderIndex() == orderIndex;
+			queue.put(packet.getSplitIndex(), packet);
+			update();
+		}
+
+		private void update() {
+			EncapsulatedPacket packet;
+			while((packet = queue.remove(splitIdx)) != null) {
+				final ByteBuf newData = packet.retainedData();
+				try {
+					data.writeBytes(newData);
+				} finally {
+					newData.release();
+					packet.release();
+				}
+				splitIdx++;
 			}
-			this.startpacket = startpacket;
-			this.packets = new byte[startpacket.getSplitCount()][];
-			this.packets[0] = startpacket.getData();
 		}
 
-		public void appendData(EncapsulatedPacket packet) {
-			if (packets[packet.getSplitIndex()] != null) {
-				return;
-			}
-			receivedSplits++;
-			packets[packet.getSplitIndex()] = packet.getData();
-		}
-
-		public boolean isComplete() {
-			return (packets.length - receivedSplits) == 1;
-		}
-
-		public EncapsulatedPacket getFullPacket() {
-			return new EncapsulatedPacket(Utils.readBytes(Unpooled.wrappedBuffer(packets)), 0, startpacket.getOrderChannel(), startpacket.getOrderIndex());
+		private boolean isDone() {
+			return splitIdx == splitCount;
 		}
 
 	}

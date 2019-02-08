@@ -2,7 +2,6 @@ package raknetserver.pipeline.internal;
 
 import java.net.InetSocketAddress;
 
-import io.netty.buffer.Unpooled;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.SimpleChannelInboundHandler;
 import raknetserver.packet.internal.InternalClientHandshake;
@@ -28,7 +27,7 @@ public class InternalPacketReadHandler extends SimpleChannelInboundHandler<Inter
 	}
 
 	@Override
-	protected void channelRead0(ChannelHandlerContext ctx, InternalPacket packet) throws Exception {
+	protected void channelRead0(ChannelHandlerContext ctx, InternalPacket packet) {
 		registry.handle(ctx, this, packet);
 	}
 
@@ -44,10 +43,11 @@ public class InternalPacketReadHandler extends SimpleChannelInboundHandler<Inter
 	}
 
 	protected void handlePong(ChannelHandlerContext ctx, InternalPong packet) {
+		//TODO: RTT from ping?
 	}
 
 	protected void handleUserData(ChannelHandlerContext ctx, InternalUserData packet) {
-		ctx.fireChannelRead(Unpooled.wrappedBuffer(packet.getData()));
+		ctx.fireChannelRead(packet.retainedData());
 	}
 
 	protected void handleDisconnect(ChannelHandlerContext ctx, InternalDisconnect packet) {

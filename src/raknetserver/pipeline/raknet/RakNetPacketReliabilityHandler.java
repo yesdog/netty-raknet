@@ -47,6 +47,8 @@ public class RakNetPacketReliabilityHandler extends ChannelDuplexHandler {
     protected boolean backPressureActive = false;
     protected RakNetEncapsulatedData queuedPacket = new RakNetEncapsulatedData();
 
+    //TODO: stashed reference teardown on remove
+
     public RakNetPacketReliabilityHandler(RakNetServer.Metrics metrics) {
         this.metrics = metrics;
     }
@@ -90,9 +92,9 @@ public class RakNetPacketReliabilityHandler extends ChannelDuplexHandler {
                 lastReceivedSeqId = UINT.B3.plus(lastReceivedSeqId, 1);
             }
         }
-        packet.getPackets().forEach(ctx::fireChannelRead); //read encapsulated packets
         metrics.incrRecv(1);
         metrics.incrInPacket(packet.getPackets().size());
+        packet.getPackets().forEach(data -> ctx.fireChannelRead(data.retain()));
     }
 
     protected void handleAck(RakNetACK ack) {
@@ -107,6 +109,7 @@ public class RakNetPacketReliabilityHandler extends ChannelDuplexHandler {
                     if (rtt <= Constants.MAX_RTT) {
                         avgRTT = (avgRTT * (RTT_WEIGHT - 1) + rtt) / RTT_WEIGHT;
                     }
+                    packet.release();
                     metrics.measureRTTns(rtt);
                     metrics.measureSendAttempts(packet.getSendAttempts());
                     nAck++;
@@ -193,7 +196,7 @@ public class RakNetPacketReliabilityHandler extends ChannelDuplexHandler {
 
     protected void sendPacketRaw(ChannelHandlerContext ctx, RakNetEncapsulatedData packet) {
         packet.refreshResend((int) (avgRTT / InternalTickManager.TICK_RESOLUTION)); // number of ticks per RTT
-        ctx.writeAndFlush(packet).addListener(ChannelFutureListener.FIRE_EXCEPTION_ON_FAILURE);
+        ctx.writeAndFlush(packet.retain()).addListener(ChannelFutureListener.FIRE_EXCEPTION_ON_FAILURE);
         metrics.incrSend(1);
     }
 

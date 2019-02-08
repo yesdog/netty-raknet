@@ -15,7 +15,7 @@ public class InternalTickManager extends ChannelDuplexHandler {
     protected static final long COARSE_TIMER_RESOLUTION = 50; //in ms, limited by netty timer resolution
 
     public static void checkTick(ChannelHandlerContext ctx) {
-        //TODO: can make this fire more directly?
+        //TODO: fire on tick context directly
         //dummy object will trigger maybeTick when it gets to InternalTickManager#channelRead
         ctx.fireChannelRead(CheckTick.INSTANCE);
     }

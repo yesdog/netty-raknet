@@ -3,10 +3,12 @@ package raknetserver.packet.raknet;
 import java.util.ArrayList;
 
 import io.netty.buffer.ByteBuf;
+import io.netty.util.AbstractReferenceCounted;
+import io.netty.util.ReferenceCounted;
 import raknetserver.packet.EncapsulatedPacket;
 import raknetserver.utils.Constants;
 
-public class RakNetEncapsulatedData implements RakNetPacket {
+public class RakNetEncapsulatedData extends AbstractReferenceCounted implements RakNetPacket {
 
 	protected static final byte[] FIBONACCI = new byte[] { 1, 1, 2, 3, 5, 8, 13, 21 }; //used for retry backoff
 
@@ -18,6 +20,7 @@ public class RakNetEncapsulatedData implements RakNetPacket {
 
 	@Override
 	public void decode(ByteBuf buf) {
+		assert packets.isEmpty();
 		seqId = buf.readUnsignedMediumLE();
 		while (buf.isReadable()) {
 			EncapsulatedPacket packet = new EncapsulatedPacket();
@@ -32,6 +35,25 @@ public class RakNetEncapsulatedData implements RakNetPacket {
 		for (EncapsulatedPacket packet : packets) {
 			packet.encode(buf);
 		}
+	}
+
+	@Override
+	protected void deallocate() {
+		packets.forEach(packet -> packet.release());
+		packets.clear();
+	}
+
+	@Override
+	public ReferenceCounted touch(Object hint) {
+		return this;
+	}
+
+	@Override
+	public void finalize() throws Throwable {
+		if (!packets.isEmpty()) {
+			System.err.println("RakNetEncapsulatedData data leak");
+		}
+		super.finalize();
 	}
 
 	public void refreshResend(int scale) {

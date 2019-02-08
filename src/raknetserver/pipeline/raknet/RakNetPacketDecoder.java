@@ -12,11 +12,11 @@ import raknetserver.packet.raknet.RakNetPacketRegistry;
 public class RakNetPacketDecoder extends MessageToMessageDecoder<ByteBuf> {
 
 	@Override
-	protected void decode(ChannelHandlerContext ctx, ByteBuf buffer, List<Object> list) throws Exception {
+	protected void decode(ChannelHandlerContext ctx, ByteBuf buffer, List<Object> list) {
 		if (!buffer.isReadable()) {
 			return;
 		}
-		RakNetPacket packet = RakNetPacketRegistry.getPacket(buffer.readUnsignedByte());
+		final RakNetPacket packet = RakNetPacketRegistry.getPacket(buffer.readUnsignedByte());
 		packet.decode(buffer);
 		if (buffer.readableBytes() > 0) {
 			throw new DecoderException(buffer.readableBytes() + " bytes left after decoding packet " + packet.getClass());

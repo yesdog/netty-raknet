@@ -2,7 +2,6 @@ package raknetserver.pipeline.encapsulated;
 
 import java.util.List;
 
-import io.netty.buffer.Unpooled;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.codec.DecoderException;
 import io.netty.handler.codec.MessageToMessageDecoder;
@@ -23,9 +22,9 @@ public class EncapsulatedPacketInboundOrderer extends MessageToMessageDecoder<En
 	@Override
 	protected void decode(ChannelHandlerContext ctx, EncapsulatedPacket packet, List<Object> list) {
 		if (packet.getReliability() == 3) {
-			channels[packet.getOrderChannel()].decodeOrdered(packet, list);
+			channels[packet.getOrderChannel()].decodeOrdered(packet.retain(), list);
 		} else {
-			list.add(Unpooled.wrappedBuffer(packet.getData()));
+			list.add(packet.retainedData());
 		}
 	}
 
@@ -39,7 +38,8 @@ public class EncapsulatedPacketInboundOrderer extends MessageToMessageDecoder<En
 			if (indexDiff == 1) { //got next packet in line
 				do { //process this packet, and any queued packets following in sequence
 					lastReceivedIndex = packet.getOrderIndex();
-					list.add(Unpooled.wrappedBuffer(packet.getData()));
+					list.add(packet.retainedData());
+					packet.release();
 					packet = queue.remove(UINT.B3.plus(packet.getOrderIndex(), 1));
 				} while (packet != null);
 			} else if (indexDiff > 1) { // only future data goes in the queue

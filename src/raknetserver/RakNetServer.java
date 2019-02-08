@@ -67,8 +67,8 @@ public class RakNetServer {
 				.addLast("rns-e-wo", new EncapsulatedPacketOutboundOrder())
 				.addLast("rns-i-encoder", new InternalPacketEncoder(userPacketId))
 				.addLast("rns-i-decoder", new InternalPacketDecoder(userPacketId))
-				.addLast("rns-i-readh", new InternalPacketReadHandler())
-				.addLast("rns-i-writeh", new InternalPacketWriteHandler());
+				.addLast("rns-i-writeh", new InternalPacketWriteHandler())
+				.addLast("rns-i-readh", new InternalPacketReadHandler());
 				userinit.init(channel);
 				channel.pipeline().addLast("rns-i-tick", new InternalTickManager());
 			}

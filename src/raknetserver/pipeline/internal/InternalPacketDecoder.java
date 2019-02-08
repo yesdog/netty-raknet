@@ -18,11 +18,11 @@ public class InternalPacketDecoder extends MessageToMessageDecoder<ByteBuf> {
 	}
 
 	@Override
-	protected void decode(ChannelHandlerContext ctx, ByteBuf buf, List<Object> list) throws Exception {
+	protected void decode(ChannelHandlerContext ctx, ByteBuf buf, List<Object> list) {
 		if (!buf.isReadable()) {
 			return;
 		}
-		int packetId = buf.readUnsignedByte();
+		final int packetId = buf.readUnsignedByte();
 		InternalPacket packet = packetId == userPacketId ? new InternalUserData() : InternalPacketRegistry.getPacket(packetId);
 		packet.decode(buf);
 		if (buf.readableBytes() > 0) {
