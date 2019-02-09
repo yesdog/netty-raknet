@@ -6,29 +6,27 @@ import io.netty.buffer.ByteBuf;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.codec.DecoderException;
 import io.netty.handler.codec.MessageToMessageDecoder;
+import io.netty.util.ReferenceCountUtil;
 import raknetserver.packet.internal.InternalPacket;
 import raknetserver.packet.internal.InternalPacketRegistry;
-import raknetserver.packet.internal.InternalUserData;
+import raknetserver.packet.internal.InternalPacketData;
 
-public class InternalPacketDecoder extends MessageToMessageDecoder<ByteBuf> {
+public class InternalPacketDecoder extends MessageToMessageDecoder<InternalPacketData> {
 
-	private final int userPacketId;
-	public InternalPacketDecoder(int userPacketId) {
-		this.userPacketId = userPacketId;
-	}
-
-	@Override
-	protected void decode(ChannelHandlerContext ctx, ByteBuf buf, List<Object> list) {
-		if (!buf.isReadable()) {
-			return;
+	protected void decode(ChannelHandlerContext ctx, InternalPacketData inPacket, List<Object> list) {
+		//TODO: reliability and order ID ?
+		final InternalPacket packet = InternalPacketRegistry.getPacket(inPacket.getPacketId());
+		final ByteBuf data = inPacket.retainedData();
+		try {
+			packet.decode(data);
+			if (data.readableBytes() > 0) {
+				ReferenceCountUtil.release(packet);
+				throw new DecoderException(data.readableBytes() + " bytes left after decoding packet " + packet.getClass());
+			}
+			list.add(packet);
+		} finally {
+			data.release();
 		}
-		final int packetId = buf.readUnsignedByte();
-		InternalPacket packet = packetId == userPacketId ? new InternalUserData() : InternalPacketRegistry.getPacket(packetId);
-		packet.decode(buf);
-		if (buf.readableBytes() > 0) {
-			throw new DecoderException(buf.readableBytes() + " bytes left after decoding packet " + packet.getClass());
-		}
-		list.add(packet);
 	}
 
 }

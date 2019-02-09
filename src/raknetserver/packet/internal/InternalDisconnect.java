@@ -2,7 +2,7 @@ package raknetserver.packet.internal;
 
 import io.netty.buffer.ByteBuf;
 
-public class InternalDisconnect implements InternalPacket {
+public class InternalDisconnect extends AbstractInternalPacket {
 
 	@Override
 	public void decode(ByteBuf buf) {

@@ -1,69 +1,154 @@
 package raknetserver.packet;
 
 import io.netty.buffer.ByteBuf;
+import io.netty.buffer.ByteBufAllocator;
+import io.netty.buffer.CompositeByteBuf;
 import io.netty.util.AbstractReferenceCounted;
 import io.netty.util.ReferenceCounted;
+import io.netty.util.ResourceLeakDetector;
+import io.netty.util.ResourceLeakDetectorFactory;
+import io.netty.util.ResourceLeakTracker;
+import raknetserver.packet.internal.InternalPacket;
+import raknetserver.packet.internal.InternalPacketData;
+import raknetserver.utils.UINT;
 
+import java.util.List;
+
+//TODO: not really a packet, its a frame
 public class EncapsulatedPacket extends AbstractReferenceCounted {
 
-	//TODO: flag statics
+	private static final ResourceLeakDetector leakDetector =
+			ResourceLeakDetectorFactory.instance().newResourceLeakDetector(EncapsulatedPacket.class);
 
-	protected int reliability;
+	protected static final int SPLIT_FLAG = 0x10;
+
+	public static EncapsulatedPacket read(ByteBuf buf) {
+		final EncapsulatedPacket out = createRaw();
+		out.decode(buf);
+		return out;
+	}
+
+	public static EncapsulatedPacket create(InternalPacketData packet) {
+		assert !packet.getReliability().isOrdered;
+		final EncapsulatedPacket out = createRaw();
+		out.packet = packet.retain();
+		return out;
+	}
+
+	public static EncapsulatedPacket createOrdered(InternalPacketData packet, int orderIndex) {
+		assert packet.getReliability().isOrdered;
+		final EncapsulatedPacket out = createRaw();
+		out.packet = packet.retain();
+		out.orderIndex = orderIndex;
+		return out;
+	}
+
+	private static EncapsulatedPacket createRaw() {
+		final EncapsulatedPacket out = new EncapsulatedPacket();
+		out.reset();
+		out.createTracker();
+		return out;
+	}
+
 	protected boolean hasSplit;
 
-	protected int messageIndex;
+	protected int reliableIndex;
+	protected int sequenceIndex;
 
-	protected int orderChannel;
 	protected int orderIndex;
 
 	protected int splitCount;
 	protected int splitID;
 	protected int splitIndex;
 
-	protected ByteBuf data = null; //assumed reference held
+	protected InternalPacketData packet = null;
+	protected ResourceLeakTracker<EncapsulatedPacket> tracker = null;
 
-	public EncapsulatedPacket() {
-	}
+	protected EncapsulatedPacket() {
 
-	public EncapsulatedPacket(ByteBuf data, int messageIndex, int orderChannel, int orderIndex) {
-		this.data = data;
-		this.reliability = 3;
-		this.messageIndex = messageIndex;
-		this.orderChannel = orderChannel;
-		this.orderIndex = orderIndex;
-	}
-
-	public EncapsulatedPacket(ByteBuf data, int messageIndex, int orderChannel, int orderIndex, int splitID, int splitCount, int splitIndex) {
-		this(data, messageIndex, orderChannel, orderIndex);
-		this.hasSplit = true;
-		this.splitID = splitID;
-		this.splitCount = splitCount;
-		this.splitIndex = splitIndex;
 	}
 
 	@Override
 	protected void deallocate() {
-		if (data != null) {
-			data.release();
-			data = null;
+		if (packet != null) {
+			packet.release();
+			packet = null;
+		}
+		if (tracker != null) {
+			tracker.close(this);
+			tracker = null;
 		}
 	}
 
 	@Override
 	public ReferenceCounted touch(Object hint) {
+		if (tracker != null) {
+			tracker.record(hint);
+		}
 		return this;
 	}
 
-	@Override
-	public void finalize() throws Throwable {
-		if (data != null) {
-			System.err.println(String.format("EncapsulatedPacket data leak length: %s, reliability: %s, class: %s", data.readableBytes(), reliability, getClass()));
-		}
-		super.finalize();
+	private void reset() {
+		assert packet == null;
+		hasSplit = false;
+		reliableIndex = sequenceIndex = orderIndex = splitCount = splitID = splitIndex = 0;
 	}
 
-	public ByteBuf retainedData() {
-		return data.retainedDuplicate();
+	public EncapsulatedPacket completeFragment(ByteBuf fullData) {
+		assert packet.isFragment();
+		final EncapsulatedPacket out = createRaw();
+		out.reliableIndex = reliableIndex;
+		out.sequenceIndex = sequenceIndex;
+		out.orderIndex = orderIndex;
+		out.packet = InternalPacketData.read(fullData);
+		out.packet.setOrderId(getOrderChannel());
+		out.packet.setReliability(getReliability());
+		return out;
+	}
+
+	public int fragment(ByteBufAllocator alloc, List<Object> outList, int splitID, int splitSize, int reliableIndex) {
+		final CompositeByteBuf data = alloc.compositeDirectBuffer(2).addComponents(
+				true, alloc.ioBuffer(1).writeByte(packet.getPacketId()), packet.retainedData());
+		try {
+			final int splitCount = (data.readableBytes() + splitSize - 1) / splitSize; //round up
+			for (int splitIndex = 0; splitIndex < splitCount; splitIndex++) {
+				final int length = Math.min(splitSize, data.readableBytes());
+				final EncapsulatedPacket out = createRaw();
+				out.reliableIndex = reliableIndex;
+				out.sequenceIndex = sequenceIndex;
+				out.orderIndex = orderIndex;
+				out.splitCount = splitCount;
+				out.splitID = splitID;
+				out.splitIndex = splitIndex;
+				out.hasSplit = true;
+				out.packet = InternalPacketData.readFragment(data, length);
+				out.packet.setOrderId(getOrderChannel());
+				out.packet.setReliability(getReliability());
+				assert out.packet.isFragment();
+				reliableIndex = UINT.B3.plus(reliableIndex, 1);
+				outList.add(out);
+			}
+			assert !data.isReadable();
+			return splitCount;
+		} finally {
+			data.release();
+		}
+	}
+
+	@SuppressWarnings("unchecked")
+	protected void createTracker() {
+		assert tracker == null;
+		tracker = leakDetector.track(this);
+	}
+
+	public InternalPacketData retainedPacket() {
+		assert !packet.isFragment();
+		return packet.retain();
+	}
+
+	public ByteBuf retainedFragmentData() {
+		assert packet.isFragment();
+		return packet.retainedData();
 	}
 
 	public EncapsulatedPacket retain() {
@@ -74,65 +159,79 @@ public class EncapsulatedPacket extends AbstractReferenceCounted {
 		final int flags = buf.readUnsignedByte();
 		final int bitLength = buf.readUnsignedShort();
 		final int length = (bitLength + 7) / 8; //round up
+		int orderChannel = 0;
 
-		reliability = flags >> 5;
-		hasSplit = (flags & 0x10) != 0;
+		InternalPacket.Reliability reliability = InternalPacket.Reliability.get(flags >> 5);
+		hasSplit = (flags & SPLIT_FLAG) != 0;
 
-		if (reliability > 0) {
-			if (reliability >= 2 && reliability != 5) {
-				messageIndex = buf.readUnsignedMediumLE();
-			}
-			if (reliability <= 4 && reliability != 2) {
-				orderIndex = buf.readUnsignedMediumLE();
-				orderChannel = buf.readUnsignedByte();
-			}
+		if (reliability.isReliable) {
+			reliableIndex = buf.readUnsignedMediumLE();
 		}
-
+		if (reliability.isSequenced) {
+			sequenceIndex = buf.readUnsignedMediumLE();
+		}
+		if (reliability.isOrdered) {
+			orderIndex = buf.readUnsignedMediumLE();
+			orderChannel = buf.readUnsignedByte();
+		}
 		if (hasSplit) {
 			splitCount = buf.readInt();
 			splitID = buf.readUnsignedShort();
 			splitIndex = buf.readInt();
 		}
 
-		assert data == null;
-		data = buf.readRetainedSlice(length);
+		assert packet == null;
+		if (hasSplit) {
+			packet = InternalPacketData.readFragment(buf, length);
+		} else{
+			packet = InternalPacketData.read(buf, length);
+		}
+		packet.setReliability(reliability);
+		packet.setOrderId(orderChannel);
 	}
 
 	public void encode(ByteBuf buf) {
-		buf.writeByte((reliability << 5) | (hasSplit ? 0x10 : 0));
-		buf.writeShort(data.readableBytes() * 8);
+		buf.writeByte((getReliability().code() << 5) | (hasSplit ? SPLIT_FLAG : 0));
+		buf.writeShort(packet.getDataSize() * 8);
 
-		if (reliability > 0) {
-			if (reliability >= 2 && reliability != 5) {
-				buf.writeMediumLE(messageIndex);
-			}
-			if (reliability <= 4 && reliability != 2) {
-				buf.writeMediumLE(orderIndex);
-				buf.writeByte(orderChannel);
-			}
+		if (getReliability().isReliable) {
+			buf.writeMediumLE(reliableIndex);
 		}
-
+		if (getReliability().isSequenced) {
+			buf.writeMediumLE(sequenceIndex);
+		}
+		if (getReliability().isOrdered) {
+			buf.writeMediumLE(orderIndex);
+			buf.writeByte(getOrderChannel());
+		}
 		if (hasSplit) {
 			buf.writeInt(splitCount);
 			buf.writeShort(splitID);
 			buf.writeInt(splitIndex);
 		}
-
-		data.markReaderIndex();
-		buf.writeBytes(data);
-		data.resetReaderIndex();
+		final int preWriterIndex = buf.writerIndex();
+		if (hasSplit) {
+			packet.encode(buf);
+		} else {
+			packet.encodeFull(buf);
+		}
+		assert buf.writerIndex() - preWriterIndex == packet.getDataSize();
 	}
 
-	public int getReliability() {
-		return reliability;
+	public InternalPacket.Reliability getReliability() {
+		return packet.getReliability();
 	}
 
-	public int getMessageIndex() {
-		return messageIndex;
+	public int getReliableIndex() {
+		return reliableIndex;
+	}
+
+	public int getSequenceIndex() {
+		return sequenceIndex;
 	}
 
 	public int getOrderChannel() {
-		return orderChannel;
+		return packet.getOrderId();
 	}
 
 	public int getOrderIndex() {
@@ -156,11 +255,19 @@ public class EncapsulatedPacket extends AbstractReferenceCounted {
 	}
 
 	public int getDataSize() {
-		return data.readableBytes();
+		return packet.getDataSize();
 	}
 
 	public int getRoughPacketSize() {
 		return getDataSize() + 18;
+	}
+
+	public void setReliableIndex(int reliableIndex) {
+		this.reliableIndex = reliableIndex;
+	}
+
+	public void setSequenceIndex(int sequenceIndex) {
+		this.sequenceIndex = sequenceIndex;
 	}
 
 }

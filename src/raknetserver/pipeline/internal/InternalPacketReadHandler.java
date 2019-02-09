@@ -4,6 +4,7 @@ import java.net.InetSocketAddress;
 
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.SimpleChannelInboundHandler;
+import raknetserver.RakNetServer;
 import raknetserver.packet.internal.InternalClientHandshake;
 import raknetserver.packet.internal.InternalConnectionRequest;
 import raknetserver.packet.internal.InternalDisconnect;
@@ -11,7 +12,7 @@ import raknetserver.packet.internal.InternalPacket;
 import raknetserver.packet.internal.InternalPing;
 import raknetserver.packet.internal.InternalPong;
 import raknetserver.packet.internal.InternalServerHandshake;
-import raknetserver.packet.internal.InternalUserData;
+import raknetserver.packet.internal.InternalPacketData;
 import raknetserver.utils.PacketHandlerRegistry;
 
 public class InternalPacketReadHandler extends SimpleChannelInboundHandler<InternalPacket> {
@@ -22,7 +23,7 @@ public class InternalPacketReadHandler extends SimpleChannelInboundHandler<Inter
 		registry.register(InternalClientHandshake.class, (ctx, handler, packet) -> handler.handleHandshake(ctx, packet));
 		registry.register(InternalPing.class, (ctx, handler, packet) -> handler.handlePing(ctx, packet));
 		registry.register(InternalPong.class, (ctx, handler, packet) -> handler.handlePong(ctx, packet));
-		registry.register(InternalUserData.class, (ctx, handler, packet) -> handler.handleUserData(ctx, packet));
+		registry.register(InternalPacketData.class, (ctx, handler, packet) -> handler.handleUserData(ctx, packet));
 		registry.register(InternalDisconnect.class, (ctx, handler, packet) -> handler.handleDisconnect(ctx, packet));
 	}
 
@@ -46,8 +47,14 @@ public class InternalPacketReadHandler extends SimpleChannelInboundHandler<Inter
 		//TODO: RTT from ping?
 	}
 
-	protected void handleUserData(ChannelHandlerContext ctx, InternalUserData packet) {
-		ctx.fireChannelRead(packet.retainedData());
+	protected void handleUserData(ChannelHandlerContext ctx, InternalPacketData packet) {
+		assert !packet.isFragment();
+		final Integer userDataId = ctx.channel().attr(RakNetServer.USER_DATA_ID).get();
+		if (userDataId != null && userDataId.intValue() == packet.getPacketId()) {
+			ctx.fireChannelRead(packet.retainedData());
+		} else {
+			ctx.fireChannelRead(packet.retain());
+		}
 	}
 
 	protected void handleDisconnect(ChannelHandlerContext ctx, InternalDisconnect packet) {

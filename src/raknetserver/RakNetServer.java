@@ -8,6 +8,7 @@ import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelInitializer;
 import io.netty.channel.DefaultEventLoopGroup;
 import io.netty.handler.timeout.ReadTimeoutHandler;
+import io.netty.util.AttributeKey;
 import raknetserver.pipeline.encapsulated.EncapsulatedPacketInboundOrderer;
 import raknetserver.pipeline.encapsulated.EncapsulatedPacketOutboundOrder;
 import raknetserver.pipeline.encapsulated.EncapsulatedPacketSplitter;
@@ -27,6 +28,9 @@ import raknetserver.utils.DefaultMetrics;
 import udpserversocketchannel.channel.UdpServerChannel;
 
 public class RakNetServer {
+
+	public static final AttributeKey<Integer> MTU = AttributeKey.valueOf("MTU");
+	public static final AttributeKey<Integer> USER_DATA_ID = AttributeKey.valueOf("USER_DATA_ID");
 
 	protected final InetSocketAddress local;
 	protected final PingHandler pinghandler;
@@ -48,6 +52,13 @@ public class RakNetServer {
 		this(local, pinghandler, init, userPacketId, new DefaultMetrics());
 	}
 
+	/* TODO:
+	 userPacketId to channel attribute
+	 InternalUserData converted to something generic for all unknown raknet packets
+	 move tick manager to top/first
+	 API for sending data with: specific raknet packet ID, reliability, channel
+	 constants to channel attrs? still default to env vars with defaults?
+	*/
 	public void start() {
 		ServerBootstrap bootstrap = new ServerBootstrap()
 		.group(new DefaultEventLoopGroup())
@@ -55,6 +66,7 @@ public class RakNetServer {
 		.childHandler(new ChannelInitializer<Channel>() {
 			@Override
 			protected void initChannel(Channel channel) {
+				channel.attr(RakNetServer.USER_DATA_ID).set(userPacketId);
 				channel.pipeline()
 				.addLast("rns-timeout", new ReadTimeoutHandler(10))
 				.addLast("rns-rn-encoder", new RakNetPacketEncoder())
@@ -65,8 +77,8 @@ public class RakNetServer {
 				.addLast("rns-e-ro", new EncapsulatedPacketInboundOrderer())
 				.addLast("rns-e-ws", new EncapsulatedPacketSplitter())
 				.addLast("rns-e-wo", new EncapsulatedPacketOutboundOrder())
-				.addLast("rns-i-encoder", new InternalPacketEncoder(userPacketId))
-				.addLast("rns-i-decoder", new InternalPacketDecoder(userPacketId))
+				.addLast("rns-i-encoder", new InternalPacketEncoder())
+				.addLast("rns-i-decoder", new InternalPacketDecoder())
 				.addLast("rns-i-writeh", new InternalPacketWriteHandler())
 				.addLast("rns-i-readh", new InternalPacketReadHandler());
 				userinit.init(channel);

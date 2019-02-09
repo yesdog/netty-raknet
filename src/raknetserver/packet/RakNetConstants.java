@@ -3,7 +3,6 @@ package raknetserver.packet;
 import java.net.InetSocketAddress;
 
 import io.netty.util.AttributeKey;
-import raknetserver.RakNetServer;
 
 public final class RakNetConstants {
 
@@ -30,7 +29,5 @@ public final class RakNetConstants {
 	public static final int ID_I_SERVER_HANDSHAKE = 0x10;
 	public static final int ID_I_CLIENT_HANDSHAKE = 0x13;
 	public static final int ID_I_CLIENT_DISCONNECT = 0x15;
-
-	public static final AttributeKey<Integer> MTU = AttributeKey.valueOf("MTU");
 
 }

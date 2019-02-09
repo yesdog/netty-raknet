@@ -7,7 +7,7 @@ import io.netty.channel.ChannelFutureListener;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.SimpleChannelInboundHandler;
 import io.netty.util.concurrent.ScheduledFuture;
-import raknetserver.packet.RakNetConstants;
+import raknetserver.RakNetServer;
 import raknetserver.packet.internal.InternalPing;
 import raknetserver.packet.raknet.RakNetConnectionFailed;
 import raknetserver.packet.raknet.RakNetConnectionReply1;
@@ -80,7 +80,7 @@ public class RakNetPacketConnectionEstablishHandler extends SimpleChannelInbound
 			state = State.CONNECTED;
 			guid = nguid;
 			Channel channel = ctx.channel();
-			channel.attr(RakNetConstants.MTU).set(connectionRequest2.getMtu());
+			channel.attr(RakNetServer.MTU).set(connectionRequest2.getMtu());
 			ctx.writeAndFlush(new RakNetConnectionReply2(connectionRequest2.getMtu())).addListener(ChannelFutureListener.FIRE_EXCEPTION_ON_FAILURE);
 			pingTask = channel.eventLoop().scheduleAtFixedRate(() -> {
 				channel.writeAndFlush(new InternalPing()).addListener(ChannelFutureListener.FIRE_EXCEPTION_ON_FAILURE);
@@ -89,7 +89,7 @@ public class RakNetPacketConnectionEstablishHandler extends SimpleChannelInbound
 			//if guid matches then it means that reply2 packet didn't arrive to the clients
 			//otherwise it means that it is actually a new client connecting using already taken ip+port
 			if (guid == nguid) {
-				ctx.writeAndFlush(new RakNetConnectionReply2(ctx.channel().attr(RakNetConstants.MTU).get())).addListener(ChannelFutureListener.FIRE_EXCEPTION_ON_FAILURE);
+				ctx.writeAndFlush(new RakNetConnectionReply2(ctx.channel().attr(RakNetServer.MTU).get())).addListener(ChannelFutureListener.FIRE_EXCEPTION_ON_FAILURE);
 			} else {
 				ctx.writeAndFlush(new RakNetConnectionFailed()).addListener(ChannelFutureListener.CLOSE);
 			}

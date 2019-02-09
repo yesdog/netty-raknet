@@ -6,7 +6,7 @@ import io.netty.buffer.ByteBuf;
 import raknetserver.packet.RakNetConstants;
 import raknetserver.packet.RakNetDataSerializer;
 
-public class InternalServerHandshake implements InternalPacket {
+public class InternalServerHandshake extends AbstractInternalPacket {
 
 	private final InetSocketAddress clientAddr;
 	private final long timestamp;

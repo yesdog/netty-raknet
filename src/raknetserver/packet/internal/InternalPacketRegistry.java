@@ -29,10 +29,10 @@ public class InternalPacketRegistry {
 		register(RakNetConstants.ID_I_PONG, InternalPong.class);
 	}
 
-	public static int getId(InternalPacket packet) {
-		Integer packetId = packetToId.get(packet.getClass());
+	public static int getId(Class<? extends InternalPacket> clz) {
+		Integer packetId = packetToId.get(clz);
 		if (packetId == null) {
-			throw new IllegalArgumentException("internal packet class " + packet.getClass().getName() + " is not registered");
+			throw new IllegalArgumentException("internal packet class " + clz.getName() + " is not registered");
 		}
 		return packetId;
 	}
@@ -40,7 +40,7 @@ public class InternalPacketRegistry {
 	public static InternalPacket getPacket(int id) {
 		Constructor<? extends InternalPacket> constr = idToPacket[id];
 		if (constr == null) {
-			throw new IllegalArgumentException(id + " is not a known(registered) RakNet internal packet");
+			return InternalPacketData.createEmpty(id);
 		}
 		try {
 			return constr.newInstance();

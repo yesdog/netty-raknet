@@ -39,6 +39,10 @@ task updateLibs(type: DefaultTask) {doLast{
 	})
 }}
 
+tasks.withType(JavaCompile) {
+	options.compilerArgs << "-Xlint:unchecked" << "-Werror" << "-Xlint:deprecation"
+}
+
 
 sourceSets {
 	main {

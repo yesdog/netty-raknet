@@ -2,7 +2,7 @@ package raknetserver.packet.internal;
 
 import io.netty.buffer.ByteBuf;
 
-public class InternalConnectionRequest implements InternalPacket {
+public class InternalConnectionRequest extends AbstractInternalPacket {
 
 	private long timestamp;
 

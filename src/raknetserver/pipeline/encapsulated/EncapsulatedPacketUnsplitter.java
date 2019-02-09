@@ -4,83 +4,115 @@ import java.util.List;
 
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.ByteBufAllocator;
+import io.netty.buffer.CompositeByteBuf;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.codec.MessageToMessageDecoder;
 import it.unimi.dsi.fastutil.ints.Int2ObjectOpenHashMap;
 import raknetserver.packet.EncapsulatedPacket;
+import raknetserver.packet.internal.InternalPacketData;
 
 public class EncapsulatedPacketUnsplitter extends MessageToMessageDecoder<EncapsulatedPacket> {
 
-	//TODO: stashed reference teardown on remove
+	//TODO: limits checks
 
-	protected final Int2ObjectOpenHashMap<UnSplitPacket> pendingPackets = new Int2ObjectOpenHashMap<>();
+	//TODO: this is also the reliability layer for real...
+
+	protected final Int2ObjectOpenHashMap<Defragmenter> pendingPackets = new Int2ObjectOpenHashMap<>();
+
+	@Override
+	public void handlerRemoved(ChannelHandlerContext ctx) throws Exception {
+		super.handlerRemoved(ctx);
+		pendingPackets.values().forEach(unsplit -> unsplit.release());
+		pendingPackets.clear();
+	}
 
 	@Override
 	protected void decode(ChannelHandlerContext ctx, EncapsulatedPacket packet, List<Object> list) {
-		packet.retain();
 		if (!packet.hasSplit()) {
-			list.add(packet);
+			list.add(packet.retain());
 		} else {
 			final int splitID = packet.getSplitId();
-			final UnSplitPacket partial = pendingPackets.get(splitID);
+			final Defragmenter partial = pendingPackets.get(splitID);
 			if (partial == null) {
-				pendingPackets.put(splitID, UnSplitPacket.create(ctx.alloc(), packet));
+				pendingPackets.put(splitID, Defragmenter.create(ctx.alloc(), packet));
 			} else {
 				partial.add(packet);
 				if (partial.isDone()) {
 					pendingPackets.remove(splitID);
-					list.add(partial);
+					list.add(partial.finish());
 				}
 			}
 		}
 	}
 
-	protected static final class UnSplitPacket extends EncapsulatedPacket {
+	protected static final class Defragmenter {
 
-		private static UnSplitPacket create(ByteBufAllocator alloc, EncapsulatedPacket packet) {
-			final UnSplitPacket unSplit = new UnSplitPacket();
-			unSplit.init(alloc, packet);
-			return unSplit;
+		protected final Int2ObjectOpenHashMap<ByteBuf> queue = new Int2ObjectOpenHashMap<>(8);
+		protected EncapsulatedPacket samplePacket;
+		protected CompositeByteBuf data;
+		protected int splitIdx;
+		protected int orderId;
+		protected InternalPacketData.Reliability reliability;
+
+		protected static Defragmenter create(ByteBufAllocator alloc, EncapsulatedPacket packet) {
+			final Defragmenter out = new Defragmenter();
+			out.init(alloc, packet);
+			return out;
 		}
 
-		private Int2ObjectOpenHashMap<EncapsulatedPacket> queue = new Int2ObjectOpenHashMap<>();
-		private int splitIdx = 0;
-		private int splitCount = 0;
-
-		private void init(ByteBufAllocator alloc, EncapsulatedPacket packet) {
+		void init(ByteBufAllocator alloc, EncapsulatedPacket packet) {
 			assert data == null;
-			data = alloc.ioBuffer(2048);
-			orderChannel = packet.getOrderChannel();
-			orderIndex = packet.getOrderIndex();
-			splitCount = packet.getSplitCount();
-			reliability = 3;
-			messageIndex = 0;
+			splitIdx = 0;
+			data = alloc.compositeDirectBuffer(packet.getSplitCount());
+			orderId = packet.getOrderChannel();
+			reliability = packet.getReliability();
+			samplePacket = packet.retain();
 			add(packet);
 		}
 
-		private void add(EncapsulatedPacket packet) {
-			assert packet.getOrderChannel() == orderChannel;
-			assert packet.getOrderIndex() == orderIndex;
-			queue.put(packet.getSplitIndex(), packet);
-			update();
+		void add(EncapsulatedPacket packet) {
+			assert packet.getReliability().equals(samplePacket.getReliability());
+			assert packet.getOrderChannel() == samplePacket.getOrderChannel();
+			assert packet.getOrderIndex() == samplePacket.getOrderIndex();
+			if (!queue.containsKey(packet.getSplitIndex()) && packet.getSplitIndex() >= splitIdx) {
+				queue.put(packet.getSplitIndex(), packet.retainedFragmentData());
+				update();
+			}
 		}
 
-		private void update() {
-			EncapsulatedPacket packet;
-			while((packet = queue.remove(splitIdx)) != null) {
-				final ByteBuf newData = packet.retainedData();
-				try {
-					data.writeBytes(newData);
-				} finally {
-					newData.release();
-					packet.release();
-				}
+		void update() {
+			ByteBuf fragment;
+			while((fragment = queue.remove(splitIdx)) != null) {
+				data.addComponent(true, fragment);
 				splitIdx++;
 			}
 		}
 
-		private boolean isDone() {
-			return splitIdx == splitCount;
+		EncapsulatedPacket finish() {
+			assert isDone();
+			try {
+				return samplePacket.completeFragment(data.consolidate());
+			} finally {
+				release();
+			}
+		}
+
+		boolean isDone() {
+			assert samplePacket.getSplitCount() >= splitIdx;
+			return samplePacket.getSplitCount() == splitIdx;
+		}
+
+		void release() {
+			if (data != null) {
+				data.release();
+				data = null;
+			}
+			if (samplePacket != null) {
+				samplePacket.release();
+				samplePacket = null;
+			}
+			queue.values().forEach(buf -> buf.release());
+			queue.clear();
 		}
 
 	}

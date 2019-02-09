@@ -3,7 +3,7 @@ package raknetserver.packet.internal;
 import io.netty.buffer.ByteBuf;
 import raknetserver.packet.RakNetDataSerializer;
 
-public class InternalClientHandshake implements InternalPacket {
+public class InternalClientHandshake extends AbstractInternalPacket {
 
 	@Override
 	public void decode(ByteBuf buf) {

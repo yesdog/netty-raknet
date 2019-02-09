@@ -3,29 +3,39 @@ package raknetserver.packet.raknet;
 import java.util.ArrayList;
 
 import io.netty.buffer.ByteBuf;
+import io.netty.channel.ChannelHandlerContext;
 import io.netty.util.AbstractReferenceCounted;
 import io.netty.util.ReferenceCounted;
+import io.netty.util.ResourceLeakDetector;
+import io.netty.util.ResourceLeakDetectorFactory;
+import io.netty.util.ResourceLeakTracker;
+
 import raknetserver.packet.EncapsulatedPacket;
 import raknetserver.utils.Constants;
 
 public class RakNetEncapsulatedData extends AbstractReferenceCounted implements RakNetPacket {
 
 	protected static final byte[] FIBONACCI = new byte[] { 1, 1, 2, 3, 5, 8, 13, 21 }; //used for retry backoff
+	private static final ResourceLeakDetector leakDetector =
+			ResourceLeakDetectorFactory.instance().newResourceLeakDetector(RakNetEncapsulatedData.class);
 
-	private int seqId;
-	private int resendTicks = 0;
-	private int sendAttempts = 0;
-	private long sentTime = -1;
-	private final ArrayList<EncapsulatedPacket> packets = new ArrayList<>(8);
+	protected final ArrayList<EncapsulatedPacket> packets = new ArrayList<>(8);
+	protected int seqId;
+	protected int resendTicks = 0;
+	protected int sendAttempts = 0;
+	protected long sentTime = -1;
+	protected ResourceLeakTracker<RakNetEncapsulatedData> tracker = null;
+
+	public RakNetEncapsulatedData() {
+		createTracker();
+	}
 
 	@Override
 	public void decode(ByteBuf buf) {
 		assert packets.isEmpty();
 		seqId = buf.readUnsignedMediumLE();
 		while (buf.isReadable()) {
-			EncapsulatedPacket packet = new EncapsulatedPacket();
-			packet.decode(buf);
-			packets.add(packet);
+			packets.add(EncapsulatedPacket.read(buf));
 		}
 	}
 
@@ -34,6 +44,7 @@ public class RakNetEncapsulatedData extends AbstractReferenceCounted implements 
 		buf.writeMediumLE(seqId);
 		for (EncapsulatedPacket packet : packets) {
 			packet.encode(buf);
+			//System.out.println(packet.getReliability() + " fragment: " + packet.hasSplit());
 		}
 	}
 
@@ -41,19 +52,24 @@ public class RakNetEncapsulatedData extends AbstractReferenceCounted implements 
 	protected void deallocate() {
 		packets.forEach(packet -> packet.release());
 		packets.clear();
+		if (tracker != null) {
+			tracker.close(this);
+			tracker = null;
+		}
 	}
 
 	@Override
 	public ReferenceCounted touch(Object hint) {
+		if (tracker != null) {
+			tracker.record(hint);
+		}
 		return this;
 	}
 
-	@Override
-	public void finalize() throws Throwable {
-		if (!packets.isEmpty()) {
-			System.err.println("RakNetEncapsulatedData data leak");
-		}
-		super.finalize();
+	@SuppressWarnings("unchecked")
+	protected void createTracker() {
+		assert tracker == null;
+		tracker = leakDetector.track(this);
 	}
 
 	public void refreshResend(int scale) {
@@ -88,8 +104,17 @@ public class RakNetEncapsulatedData extends AbstractReferenceCounted implements 
 		this.seqId = seqId;
 	}
 
-	public ArrayList<EncapsulatedPacket> getPackets() {
-		return packets;
+	public int getNumPackets() {
+		return packets.size();
+	}
+
+	public void addPacket(EncapsulatedPacket packet) {
+		packets.add(packet);
+		packet.retain();
+	}
+
+	public void readTo(ChannelHandlerContext ctx) {
+		packets.forEach(data -> ctx.fireChannelRead(data.retain()));
 	}
 
 	public int getRoughPacketSize() {
