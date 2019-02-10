@@ -50,6 +50,18 @@ public interface InternalPacket {
         public int code() {
             return ordinal();
         }
+
+        public Reliability makeReliable() {
+            if (isReliable) {
+                return this;
+            }
+            switch (this) {
+                case UNRELIABLE: return RELIABLE;
+                case UNRELIABLE_SEQUENCED: return RELIABLE_SEQUENCED;
+                case UNRELIABLE_ACK: return RELIABLE_ACK;
+                default: throw new RuntimeException("No reliable form of " + this);
+            }
+        }
     }
 
 }

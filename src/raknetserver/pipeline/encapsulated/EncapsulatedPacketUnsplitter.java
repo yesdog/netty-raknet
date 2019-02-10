@@ -45,7 +45,7 @@ public class EncapsulatedPacketUnsplitter extends MessageToMessageDecoder<Encaps
 		}
 	}
 
-	protected static final class Defragmenter {
+	protected static class Defragmenter {
 
 		protected final Int2ObjectOpenHashMap<ByteBuf> queue = new Int2ObjectOpenHashMap<>(8);
 		protected EncapsulatedPacket samplePacket;
@@ -90,6 +90,7 @@ public class EncapsulatedPacketUnsplitter extends MessageToMessageDecoder<Encaps
 
 		EncapsulatedPacket finish() {
 			assert isDone();
+			assert queue.isEmpty();
 			try {
 				return samplePacket.completeFragment(data.consolidate());
 			} finally {

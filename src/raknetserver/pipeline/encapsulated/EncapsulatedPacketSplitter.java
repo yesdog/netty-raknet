@@ -2,7 +2,6 @@ package raknetserver.pipeline.encapsulated;
 
 import java.util.List;
 
-import io.netty.buffer.ByteBuf;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.codec.MessageToMessageEncoder;
 import io.netty.util.ReferenceCountUtil;
@@ -21,7 +20,6 @@ public class EncapsulatedPacketSplitter extends MessageToMessageEncoder<Encapsul
 	protected void encode(ChannelHandlerContext ctx, EncapsulatedPacket packet, List<Object> list) {
 		final int mtu = ctx.channel().attr(RakNetServer.MTU).get();
 		//TODO: real MTU values?
-		//TODO: upgrade reliability on split?
 		if (packet.getRoughPacketSize() > mtu - 100) {
 			try {
 				final int splitSize = mtu - 200;

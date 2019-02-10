@@ -123,7 +123,7 @@ public class EncapsulatedPacket extends AbstractReferenceCounted {
 				out.hasSplit = true;
 				out.packet = InternalPacketData.readFragment(data, length);
 				out.packet.setOrderId(getOrderChannel());
-				out.packet.setReliability(getReliability());
+				out.packet.setReliability(getReliability().makeReliable()); //reliable form only
 				assert out.packet.isFragment();
 				reliableIndex = UINT.B3.plus(reliableIndex, 1);
 				outList.add(out);
@@ -164,6 +164,8 @@ public class EncapsulatedPacket extends AbstractReferenceCounted {
 		InternalPacket.Reliability reliability = InternalPacket.Reliability.get(flags >> 5);
 		hasSplit = (flags & SPLIT_FLAG) != 0;
 
+		assert !(hasSplit && !reliability.isReliable);
+
 		if (reliability.isReliable) {
 			reliableIndex = buf.readUnsignedMediumLE();
 		}
@@ -193,6 +195,8 @@ public class EncapsulatedPacket extends AbstractReferenceCounted {
 	public void encode(ByteBuf buf) {
 		buf.writeByte((getReliability().code() << 5) | (hasSplit ? SPLIT_FLAG : 0));
 		buf.writeShort(packet.getDataSize() * 8);
+
+		assert !(hasSplit && !getReliability().isReliable);
 
 		if (getReliability().isReliable) {
 			buf.writeMediumLE(reliableIndex);
