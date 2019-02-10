@@ -15,6 +15,7 @@ public class InternalPacketWriteHandler extends MessageToMessageEncoder<ByteBuf>
 		if (!buf.isReadable()) {
 			return;
 		}
+		//TODO: default order channel?
 		final Integer userDataId = ctx.channel().attr(RakNetServer.USER_DATA_ID).get();
 		if (userDataId != null) {
 			list.add(InternalPacketData.createRead(userDataId.intValue(), buf));

@@ -10,6 +10,7 @@ public class InternalServerHandshake extends AbstractInternalPacket {
 
 	private final InetSocketAddress clientAddr;
 	private final long timestamp;
+	protected Reliability reliability = Reliability.RELIABLE;
 
 	public InternalServerHandshake(InetSocketAddress clientAddr, long timestamp) {
 		this.clientAddr = clientAddr;

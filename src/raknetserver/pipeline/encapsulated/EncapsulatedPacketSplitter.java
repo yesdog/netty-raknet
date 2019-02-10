@@ -13,12 +13,14 @@ public class EncapsulatedPacketSplitter extends MessageToMessageEncoder<Encapsul
 
 	protected int nextSplitId = 0;
 	protected int nextReliableId = 0;
-
-	//TODO: this *is* the reliability layer...
+	protected int nextSequenceId = 0;
 
 	@Override
 	protected void encode(ChannelHandlerContext ctx, EncapsulatedPacket packet, List<Object> list) {
 		final int mtu = ctx.channel().attr(RakNetServer.MTU).get();
+		if (packet.getReliability().isSequenced) {
+		    packet.setSequenceIndex(getNextSequenceId());
+        }
 		//TODO: real MTU values?
 		if (packet.getRoughPacketSize() > mtu - 100) {
 			try {
@@ -26,7 +28,7 @@ public class EncapsulatedPacketSplitter extends MessageToMessageEncoder<Encapsul
 				final int splits = packet.fragment(ctx.alloc(), list, getNextSplitID(), splitSize, nextReliableId);
 				nextReliableId = UINT.B3.plus(nextReliableId, splits);
 			} catch (Throwable t) {
-				list.forEach(x -> ReferenceCountUtil.release(x));
+				list.forEach(ReferenceCountUtil::release);
 				list.clear();
 				throw t;
 			}
@@ -45,9 +47,15 @@ public class EncapsulatedPacketSplitter extends MessageToMessageEncoder<Encapsul
 	}
 
 	protected int getNextReliableId() {
-		final int messageIndex = nextReliableId;
+		final int reliableIndex = nextReliableId;
 		nextReliableId = UINT.B3.plus(nextReliableId, 1);
-		return messageIndex;
+		return reliableIndex;
 	}
+
+    protected int getNextSequenceId() {
+        final int sequenceIndex = nextSequenceId;
+        nextSequenceId = UINT.B3.plus(nextSequenceId, 1);
+        return sequenceIndex;
+    }
 
 }

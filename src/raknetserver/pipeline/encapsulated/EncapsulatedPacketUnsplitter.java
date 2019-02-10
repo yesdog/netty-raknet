@@ -6,10 +6,12 @@ import io.netty.buffer.ByteBuf;
 import io.netty.buffer.ByteBufAllocator;
 import io.netty.buffer.CompositeByteBuf;
 import io.netty.channel.ChannelHandlerContext;
+import io.netty.handler.codec.DecoderException;
 import io.netty.handler.codec.MessageToMessageDecoder;
 import it.unimi.dsi.fastutil.ints.Int2ObjectOpenHashMap;
 import raknetserver.packet.EncapsulatedPacket;
 import raknetserver.packet.internal.InternalPacketData;
+import raknetserver.utils.Constants;
 
 public class EncapsulatedPacketUnsplitter extends MessageToMessageDecoder<EncapsulatedPacket> {
 
@@ -34,6 +36,9 @@ public class EncapsulatedPacketUnsplitter extends MessageToMessageDecoder<Encaps
 			final int splitID = packet.getSplitId();
 			final Defragmenter partial = pendingPackets.get(splitID);
 			if (partial == null) {
+				if (packet.getSplitCount() > Constants.MAX_PACKET_LOSS) {
+					throw new DecoderException("Too big packet loss (resend queue)");
+				}
 				pendingPackets.put(splitID, Defragmenter.create(ctx.alloc(), packet));
 			} else {
 				partial.add(packet);

@@ -14,11 +14,12 @@ import raknetserver.packet.internal.InternalPacketData;
 public class InternalPacketDecoder extends MessageToMessageDecoder<InternalPacketData> {
 
 	protected void decode(ChannelHandlerContext ctx, InternalPacketData inPacket, List<Object> list) {
-		//TODO: reliability and order ID ?
 		final InternalPacket packet = InternalPacketRegistry.getPacket(inPacket.getPacketId());
 		final ByteBuf data = inPacket.retainedData();
 		try {
 			packet.decode(data);
+			packet.setReliability(inPacket.getReliability());
+			packet.setOrderChannel(inPacket.getOrderChannel());
 			if (data.readableBytes() > 0) {
 				ReferenceCountUtil.release(packet);
 				throw new DecoderException(data.readableBytes() + " bytes left after decoding packet " + packet.getClass());

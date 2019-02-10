@@ -15,7 +15,7 @@ public class EncapsulatedPacketOutboundOrder extends MessageToMessageEncoder<Int
 	@Override
 	protected void encode(ChannelHandlerContext ctx, InternalPacketData data, List<Object> list) {
 		if (data.getReliability().isOrdered) {
-			list.add(EncapsulatedPacket.createOrdered(data, getNextOrderIndex(data.getOrderId())));
+			list.add(EncapsulatedPacket.createOrdered(data, getNextOrderIndex(data.getOrderChannel())));
 		} else {
 			list.add(EncapsulatedPacket.create(data));
 		}

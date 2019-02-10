@@ -7,8 +7,7 @@ public class InternalPong extends AbstractInternalPacket {
 	private long pingTimestamp;
 	private long pongTimestamp;
 
-	public InternalPong() {
-	}
+	protected Reliability reliability = Reliability.UNRELIABLE_SEQUENCED;
 
 	public InternalPong(long pingTimestamp) {
 		this.pingTimestamp = pingTimestamp;
@@ -23,7 +22,7 @@ public class InternalPong extends AbstractInternalPacket {
 
 	@Override
 	public void encode(ByteBuf buf) {
-		buf.writeLong(pingTimestamp);
+		buf.writeLong(pingTimestamp); //TODO: wtf is with different decode/encode?
 	}
 
 	public long getPingTimestamp() {

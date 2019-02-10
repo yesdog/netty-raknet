@@ -168,6 +168,7 @@ public class RakNetPacketReliabilityHandler extends ChannelDuplexHandler {
         final int maxResend = Constants.RESEND_PER_TICK * nTicks;
         final ObjectIterator<RakNetEncapsulatedData> packetItr = sentPackets.values().iterator();
         int nSent = 0;
+        //TODO: remove unreliable?
         while (packetItr.hasNext()) {
             final RakNetEncapsulatedData packet = packetItr.next();
             //always evaluate resendTick

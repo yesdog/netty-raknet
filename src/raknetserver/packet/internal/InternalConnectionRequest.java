@@ -4,7 +4,8 @@ import io.netty.buffer.ByteBuf;
 
 public class InternalConnectionRequest extends AbstractInternalPacket {
 
-	private long timestamp;
+	protected long timestamp;
+	protected Reliability reliability = Reliability.RELIABLE;
 
 	@Override
 	public void decode(ByteBuf buf) {

@@ -101,7 +101,7 @@ public class EncapsulatedPacket extends AbstractReferenceCounted {
 		out.sequenceIndex = sequenceIndex;
 		out.orderIndex = orderIndex;
 		out.packet = InternalPacketData.read(fullData);
-		out.packet.setOrderId(getOrderChannel());
+		out.packet.setOrderChannel(getOrderChannel());
 		out.packet.setReliability(getReliability());
 		return out;
 	}
@@ -122,7 +122,7 @@ public class EncapsulatedPacket extends AbstractReferenceCounted {
 				out.splitIndex = splitIndex;
 				out.hasSplit = true;
 				out.packet = InternalPacketData.readFragment(data, length);
-				out.packet.setOrderId(getOrderChannel());
+				out.packet.setOrderChannel(getOrderChannel());
 				out.packet.setReliability(getReliability().makeReliable()); //reliable form only
 				assert out.packet.isFragment();
 				reliableIndex = UINT.B3.plus(reliableIndex, 1);
@@ -189,7 +189,7 @@ public class EncapsulatedPacket extends AbstractReferenceCounted {
 			packet = InternalPacketData.read(buf, length);
 		}
 		packet.setReliability(reliability);
-		packet.setOrderId(orderChannel);
+		packet.setOrderChannel(orderChannel);
 	}
 
 	public void encode(ByteBuf buf) {
@@ -235,7 +235,7 @@ public class EncapsulatedPacket extends AbstractReferenceCounted {
 	}
 
 	public int getOrderChannel() {
-		return packet.getOrderId();
+		return packet.getOrderChannel();
 	}
 
 	public int getOrderIndex() {

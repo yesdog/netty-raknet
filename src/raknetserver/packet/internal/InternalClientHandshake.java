@@ -5,6 +5,8 @@ import raknetserver.packet.RakNetDataSerializer;
 
 public class InternalClientHandshake extends AbstractInternalPacket {
 
+	protected Reliability reliability = Reliability.RELIABLE;
+
 	@Override
 	public void decode(ByteBuf buf) {
 		for (int i = 0; i < 21; i++) {

@@ -139,12 +139,12 @@ public final class InternalPacketData extends AbstractReferenceCounted implement
 		this.reliability = reliability;
 	}
 
-	public int getOrderId() {
+	public int getOrderChannel() {
 		return orderId;
 	}
 
-	public void setOrderId(int orderId) {
-		this.orderId = orderId;
+	public void setOrderChannel(int orderChannel) {
+		this.orderId = orderChannel;
 	}
 
 	public int getDataSize() {

@@ -4,7 +4,8 @@ import io.netty.buffer.ByteBuf;
 
 public class InternalPing extends AbstractInternalPacket {
 
-	private long timestamp;
+	protected long timestamp;
+	protected Reliability reliability = Reliability.UNRELIABLE_SEQUENCED;
 
 	public InternalPing() {
 		timestamp = System.currentTimeMillis();

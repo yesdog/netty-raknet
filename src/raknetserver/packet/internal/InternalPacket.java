@@ -7,9 +7,13 @@ public interface InternalPacket {
 
 	int getPacketId();
 
+    void setReliability(Reliability reliability);
+
     Reliability getReliability();
 
-    int getOrderId();
+    void setOrderChannel(int orderChannel);
+
+    int getOrderChannel();
 
     void decode(ByteBuf buf);
 

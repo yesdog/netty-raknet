@@ -8,6 +8,7 @@ import raknetserver.RakNetServer;
 
 import java.util.concurrent.TimeUnit;
 
+//TODO: bad namespace >.<
 public class InternalTickManager extends ChannelDuplexHandler {
 
     public static final long TICK_RESOLUTION = TimeUnit.NANOSECONDS.convert(5, TimeUnit.MILLISECONDS);

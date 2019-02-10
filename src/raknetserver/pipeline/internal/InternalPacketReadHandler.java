@@ -33,6 +33,7 @@ public class InternalPacketReadHandler extends SimpleChannelInboundHandler<Inter
 	}
 
 	protected void handleConnectionRequest(ChannelHandlerContext ctx, InternalConnectionRequest packet) {
+		//TODO: limit new connections here...
 		ctx.writeAndFlush(new InternalServerHandshake((InetSocketAddress) ctx.channel().remoteAddress(), packet.getTimeStamp()));
 	}
 

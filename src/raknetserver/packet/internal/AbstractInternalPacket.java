@@ -6,7 +6,7 @@ import io.netty.buffer.ByteBufAllocator;
 public abstract class AbstractInternalPacket implements InternalPacket {
 
     protected Reliability reliability = Reliability.RELIABLE_ORDERED;
-    protected int orderId = 0;
+    protected int orderChannel = 0;
 
     public int getPacketId() {
         //TODO: cache?
@@ -21,12 +21,12 @@ public abstract class AbstractInternalPacket implements InternalPacket {
         this.reliability = reliability;
     }
 
-    public int getOrderId() {
-        return orderId;
+    public int getOrderChannel() {
+        return orderChannel;
     }
 
-    public void setOrderId(int orderId) {
-        this.orderId = orderId;
+    public void setOrderChannel(int orderChannel) {
+        this.orderChannel = orderChannel;
     }
 
     public void encodeFull(ByteBuf buf) {
@@ -40,6 +40,7 @@ public abstract class AbstractInternalPacket implements InternalPacket {
             encodeFull(buf);
             final InternalPacketData out = InternalPacketData.read(buf);
             out.setReliability(getReliability());
+            out.setOrderChannel(getOrderChannel());
             return out;
         } finally {
             buf.release();
