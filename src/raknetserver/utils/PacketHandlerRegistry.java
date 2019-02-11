@@ -22,4 +22,8 @@ public class PacketHandlerRegistry<TManager, TPacket> {
 		handler.handlePacket(ctx, manager, packet);
 	}
 
+	public boolean hasHandler(TPacket packet) {
+		return registry.get(packet.getClass()) != null;
+	}
+
 }

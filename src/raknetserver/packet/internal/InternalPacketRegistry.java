@@ -17,6 +17,7 @@ public class InternalPacketRegistry {
 		try {
 			idToPacket[packetId] = packetClass.getConstructor();
 		} catch (NoSuchMethodException | SecurityException e) {
+			e.printStackTrace();
 		}
 	}
 
@@ -40,6 +41,7 @@ public class InternalPacketRegistry {
 	public static InternalPacket getPacket(int id) {
 		Constructor<? extends InternalPacket> constr = idToPacket[id];
 		if (constr == null) {
+			if (id != 0xFE) System.out.println("odd encapsulated id " + String.format("0x%08X", id) + " " + id);
 			return InternalPacketData.createEmpty(id);
 		}
 		try {

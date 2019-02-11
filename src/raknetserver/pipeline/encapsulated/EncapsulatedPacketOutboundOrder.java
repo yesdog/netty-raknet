@@ -11,11 +11,14 @@ import raknetserver.utils.UINT;
 public class EncapsulatedPacketOutboundOrder extends MessageToMessageEncoder<InternalPacketData> {
 
 	protected int[] nextOrderIndex = new int[8];
+	protected int[] nextSequenceIndex = new int[8];
 
 	@Override
 	protected void encode(ChannelHandlerContext ctx, InternalPacketData data, List<Object> list) {
 		if (data.getReliability().isOrdered) {
-			list.add(EncapsulatedPacket.createOrdered(data, getNextOrderIndex(data.getOrderChannel())));
+			final int channel = data.getOrderChannel();
+			final int sequenceIndex = data.getReliability().isSequenced ? getNextSequenceIndex(channel) : 0;
+			list.add(EncapsulatedPacket.createOrdered(data, getNextOrderIndex(channel), sequenceIndex));
 		} else {
 			list.add(EncapsulatedPacket.create(data));
 		}
@@ -25,6 +28,12 @@ public class EncapsulatedPacketOutboundOrder extends MessageToMessageEncoder<Int
 		final int orderIndex = nextOrderIndex[channel];
 		nextOrderIndex[channel] = UINT.B3.plus(nextOrderIndex[channel], 1);
 		return orderIndex;
+	}
+
+	protected int getNextSequenceIndex(int channel) {
+		final int sequenceIndex = nextSequenceIndex[channel];
+		nextSequenceIndex[channel] = UINT.B3.plus(nextSequenceIndex[channel], 1);
+		return sequenceIndex;
 	}
 
 }

@@ -8,9 +8,13 @@ import raknetserver.packet.RakNetDataSerializer;
 
 public class InternalServerHandshake extends AbstractInternalPacket {
 
-	private final InetSocketAddress clientAddr;
-	private final long timestamp;
+	private InetSocketAddress clientAddr;
+	private long timestamp;
 	protected Reliability reliability = Reliability.RELIABLE;
+
+	public InternalServerHandshake() {
+
+	}
 
 	public InternalServerHandshake(InetSocketAddress clientAddr, long timestamp) {
 		this.clientAddr = clientAddr;
@@ -19,7 +23,8 @@ public class InternalServerHandshake extends AbstractInternalPacket {
 
 	@Override
 	public void decode(ByteBuf buf) {
-		throw new UnsupportedOperationException();
+		//TODO: real decode
+		buf.skipBytes(buf.readableBytes());
 	}
 
 	@Override

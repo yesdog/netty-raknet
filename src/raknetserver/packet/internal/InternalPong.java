@@ -7,7 +7,16 @@ public class InternalPong extends AbstractInternalPacket {
 	private long pingTimestamp;
 	private long pongTimestamp;
 
-	protected Reliability reliability = Reliability.UNRELIABLE_SEQUENCED;
+	protected Reliability reliability = Reliability.UNRELIABLE;
+
+	public InternalPong() {
+
+	}
+
+	public InternalPong(long pingTimestamp, Reliability reliability) {
+		this(pingTimestamp);
+		this.reliability = reliability;
+	}
 
 	public InternalPong(long pingTimestamp) {
 		this.pingTimestamp = pingTimestamp;

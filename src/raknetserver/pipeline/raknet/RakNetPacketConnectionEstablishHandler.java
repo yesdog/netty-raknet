@@ -109,15 +109,15 @@ public class RakNetPacketConnectionEstablishHandler extends SimpleChannelInbound
 		ctx.fireChannelRead(packet);
 	}
 
-	protected static enum State {
+	protected enum State {
 		NEW, CONNECTED
 	}
 
-	public static interface PingHandler {
+	public interface PingHandler {
 
-		public void executeHandler(Runnable runnable);
+		void executeHandler(Runnable runnable);
 
-		public String getServerInfo(Channel channel);
+		String getServerInfo(Channel channel);
 
 	}
 

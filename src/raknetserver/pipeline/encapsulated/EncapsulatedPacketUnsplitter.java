@@ -15,16 +15,12 @@ import raknetserver.utils.Constants;
 
 public class EncapsulatedPacketUnsplitter extends MessageToMessageDecoder<EncapsulatedPacket> {
 
-	//TODO: limits checks
-
-	//TODO: this is also the reliability layer for real...
-
 	protected final Int2ObjectOpenHashMap<Defragmenter> pendingPackets = new Int2ObjectOpenHashMap<>();
 
 	@Override
 	public void handlerRemoved(ChannelHandlerContext ctx) throws Exception {
 		super.handlerRemoved(ctx);
-		pendingPackets.values().forEach(unsplit -> unsplit.release());
+		pendingPackets.values().forEach(Defragmenter::release);
 		pendingPackets.clear();
 	}
 
@@ -36,9 +32,7 @@ public class EncapsulatedPacketUnsplitter extends MessageToMessageDecoder<Encaps
 			final int splitID = packet.getSplitId();
 			final Defragmenter partial = pendingPackets.get(splitID);
 			if (partial == null) {
-				if (packet.getSplitCount() > Constants.MAX_PACKET_LOSS) {
-					throw new DecoderException("Too big packet loss (resend queue)");
-				}
+				Constants.packetLossCheck(packet.getSplitCount(), "packet defragment");
 				pendingPackets.put(splitID, Defragmenter.create(ctx.alloc(), packet));
 			} else {
 				partial.add(packet);
@@ -83,6 +77,7 @@ public class EncapsulatedPacketUnsplitter extends MessageToMessageDecoder<Encaps
 				queue.put(packet.getSplitIndex(), packet.retainedFragmentData());
 				update();
 			}
+			Constants.packetLossCheck(queue.size(), "packet defragment queue");
 		}
 
 		void update() {

@@ -16,6 +16,7 @@ public class RakNetPacketDecoder extends MessageToMessageDecoder<ByteBuf> {
 		if (!buffer.isReadable()) {
 			return;
 		}
+		//TODO: default to reading as unreliable InternalPacketData ?
 		final RakNetPacket packet = RakNetPacketRegistry.getPacket(buffer.readUnsignedByte());
 		packet.decode(buffer);
 		if (buffer.readableBytes() > 0) {

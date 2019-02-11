@@ -4,6 +4,7 @@ import java.net.InetSocketAddress;
 
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.SimpleChannelInboundHandler;
+import io.netty.util.ReferenceCountUtil;
 import raknetserver.RakNetServer;
 import raknetserver.packet.internal.InternalClientHandshake;
 import raknetserver.packet.internal.InternalConnectionRequest;
@@ -29,7 +30,11 @@ public class InternalPacketReadHandler extends SimpleChannelInboundHandler<Inter
 
 	@Override
 	protected void channelRead0(ChannelHandlerContext ctx, InternalPacket packet) {
-		registry.handle(ctx, this, packet);
+		if (registry.hasHandler(packet)) {
+			registry.handle(ctx, this, packet);
+		} else {
+			ctx.fireChannelRead(ReferenceCountUtil.retain(packet));
+		}
 	}
 
 	protected void handleConnectionRequest(ChannelHandlerContext ctx, InternalConnectionRequest packet) {
@@ -41,7 +46,7 @@ public class InternalPacketReadHandler extends SimpleChannelInboundHandler<Inter
 	}
 
 	protected void handlePing(ChannelHandlerContext ctx, InternalPing packet) {
-		ctx.writeAndFlush(new InternalPong(packet.getTimestamp()));
+		ctx.writeAndFlush(new InternalPong(packet.getTimestamp(), packet.getReliability()));
 	}
 
 	protected void handlePong(ChannelHandlerContext ctx, InternalPong packet) {

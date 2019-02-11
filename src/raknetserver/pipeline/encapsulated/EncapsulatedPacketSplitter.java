@@ -13,14 +13,10 @@ public class EncapsulatedPacketSplitter extends MessageToMessageEncoder<Encapsul
 
 	protected int nextSplitId = 0;
 	protected int nextReliableId = 0;
-	protected int nextSequenceId = 0;
 
 	@Override
 	protected void encode(ChannelHandlerContext ctx, EncapsulatedPacket packet, List<Object> list) {
 		final int mtu = ctx.channel().attr(RakNetServer.MTU).get();
-		if (packet.getReliability().isSequenced) {
-		    packet.setSequenceIndex(getNextSequenceId());
-        }
 		//TODO: real MTU values?
 		if (packet.getRoughPacketSize() > mtu - 100) {
 			try {
@@ -51,11 +47,5 @@ public class EncapsulatedPacketSplitter extends MessageToMessageEncoder<Encapsul
 		nextReliableId = UINT.B3.plus(nextReliableId, 1);
 		return reliableIndex;
 	}
-
-    protected int getNextSequenceId() {
-        final int sequenceIndex = nextSequenceId;
-        nextSequenceId = UINT.B3.plus(nextSequenceId, 1);
-        return sequenceIndex;
-    }
 
 }

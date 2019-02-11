@@ -17,7 +17,7 @@ import raknetserver.pipeline.internal.InternalPacketDecoder;
 import raknetserver.pipeline.internal.InternalPacketEncoder;
 import raknetserver.pipeline.internal.InternalPacketReadHandler;
 import raknetserver.pipeline.internal.InternalPacketWriteHandler;
-import raknetserver.pipeline.internal.InternalTickManager;
+import raknetserver.pipeline.tick.FlushTickDriver;
 import raknetserver.pipeline.raknet.RakNetPacketConnectionEstablishHandler;
 import raknetserver.pipeline.raknet.RakNetPacketConnectionEstablishHandler.PingHandler;
 import raknetserver.pipeline.raknet.RakNetPacketDecoder;
@@ -82,7 +82,7 @@ public class RakNetServer {
 				.addLast("rns-i-writeh", new InternalPacketWriteHandler())
 				.addLast("rns-i-readh", new InternalPacketReadHandler());
 				userinit.init(channel);
-				channel.pipeline().addLast("rns-i-tick", new InternalTickManager());
+				channel.pipeline().addLast("rns-i-tick", new FlushTickDriver());
 			}
 		});
 		channel = bootstrap.bind(local).syncUninterruptibly();

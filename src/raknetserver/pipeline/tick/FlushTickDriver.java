@@ -1,4 +1,4 @@
-package raknetserver.pipeline.internal;
+package raknetserver.pipeline.tick;
 
 import io.netty.channel.ChannelDuplexHandler;
 import io.netty.channel.ChannelFutureListener;
@@ -8,8 +8,7 @@ import raknetserver.RakNetServer;
 
 import java.util.concurrent.TimeUnit;
 
-//TODO: bad namespace >.<
-public class InternalTickManager extends ChannelDuplexHandler {
+public class FlushTickDriver extends ChannelDuplexHandler {
 
     public static final long TICK_RESOLUTION = TimeUnit.NANOSECONDS.convert(5, TimeUnit.MILLISECONDS);
 

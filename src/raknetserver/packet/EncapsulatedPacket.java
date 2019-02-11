@@ -35,11 +35,12 @@ public class EncapsulatedPacket extends AbstractReferenceCounted {
 		return out;
 	}
 
-	public static EncapsulatedPacket createOrdered(InternalPacketData packet, int orderIndex) {
+	public static EncapsulatedPacket createOrdered(InternalPacketData packet, int orderIndex, int sequenceIndex) {
 		assert packet.getReliability().isOrdered;
 		final EncapsulatedPacket out = createRaw();
 		out.packet = packet.retain();
 		out.orderIndex = orderIndex;
+		out.sequenceIndex = sequenceIndex;
 		return out;
 	}
 
