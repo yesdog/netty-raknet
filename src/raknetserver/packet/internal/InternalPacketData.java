@@ -123,6 +123,7 @@ public final class InternalPacketData extends AbstractReferenceCounted implement
 		if (tracker != null) {
 			tracker.record(hint);
 		}
+		data.touch(hint);
 		return this;
 	}
 

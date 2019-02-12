@@ -50,7 +50,7 @@ public class InternalPacketReadHandler extends SimpleChannelInboundHandler<Inter
 	}
 
 	protected void handlePong(ChannelHandlerContext ctx, InternalPong packet) {
-		//TODO: RTT from ping?
+		//TODO: RTT here when we can handle unreliable packets faster
 	}
 
 	protected void handleUserData(ChannelHandlerContext ctx, InternalPacketData packet) {

@@ -6,8 +6,8 @@ import io.netty.buffer.ByteBuf;
 import io.netty.buffer.ByteBufAllocator;
 import io.netty.buffer.CompositeByteBuf;
 import io.netty.channel.ChannelHandlerContext;
-import io.netty.handler.codec.DecoderException;
 import io.netty.handler.codec.MessageToMessageDecoder;
+import io.netty.util.ReferenceCountUtil;
 import it.unimi.dsi.fastutil.ints.Int2ObjectOpenHashMap;
 import raknetserver.packet.EncapsulatedPacket;
 import raknetserver.packet.internal.InternalPacketData;
@@ -27,10 +27,12 @@ public class EncapsulatedPacketUnsplitter extends MessageToMessageDecoder<Encaps
 	@Override
 	protected void decode(ChannelHandlerContext ctx, EncapsulatedPacket packet, List<Object> list) {
 		if (!packet.hasSplit()) {
+			packet.touch("Not split");
 			list.add(packet.retain());
 		} else {
 			final int splitID = packet.getSplitId();
 			final Defragmenter partial = pendingPackets.get(splitID);
+			packet.touch("Is split");
 			if (partial == null) {
 				Constants.packetLossCheck(packet.getSplitCount(), "packet defragment");
 				pendingPackets.put(splitID, Defragmenter.create(ctx.alloc(), packet));
@@ -92,7 +94,7 @@ public class EncapsulatedPacketUnsplitter extends MessageToMessageDecoder<Encaps
 			assert isDone();
 			assert queue.isEmpty();
 			try {
-				return samplePacket.completeFragment(data.consolidate());
+				return samplePacket.completeFragment(data);
 			} finally {
 				release();
 			}
@@ -112,7 +114,7 @@ public class EncapsulatedPacketUnsplitter extends MessageToMessageDecoder<Encaps
 				samplePacket.release();
 				samplePacket = null;
 			}
-			queue.values().forEach(buf -> buf.release());
+			queue.values().forEach(ReferenceCountUtil::release);
 			queue.clear();
 		}
 

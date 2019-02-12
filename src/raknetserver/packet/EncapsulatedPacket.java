@@ -86,6 +86,7 @@ public class EncapsulatedPacket extends AbstractReferenceCounted {
 		if (tracker != null) {
 			tracker.record(hint);
 		}
+		packet.touch(hint);
 		return this;
 	}
 

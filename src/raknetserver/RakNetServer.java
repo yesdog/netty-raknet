@@ -30,7 +30,9 @@ import udpserversocketchannel.channel.UdpServerChannel;
 public class RakNetServer {
 
 	public static final AttributeKey<Integer> MTU = AttributeKey.valueOf("MTU");
+	public static final AttributeKey<Long> RTT = AttributeKey.valueOf("RTT");
 	public static final AttributeKey<Integer> USER_DATA_ID = AttributeKey.valueOf("USER_DATA_ID");
+	public static final AttributeKey<RakNetServer.Metrics> RN_METRICS = AttributeKey.valueOf("RN_METRICS");
 
 	protected final InetSocketAddress local;
 	protected final PingHandler pinghandler;
@@ -52,13 +54,6 @@ public class RakNetServer {
 		this(local, pinghandler, init, userPacketId, new DefaultMetrics());
 	}
 
-	/* TODO:
-	 userPacketId to channel attribute
-	 InternalUserData converted to something generic for all unknown raknet packets
-	 move tick manager to top/first
-	 API for sending data with: specific raknet packet ID, reliability, channel
-	 constants to channel attrs? still default to env vars with defaults?
-	*/
 	public void start() {
 		ServerBootstrap bootstrap = new ServerBootstrap()
 		.group(new DefaultEventLoopGroup())
@@ -67,12 +62,13 @@ public class RakNetServer {
 			@Override
 			protected void initChannel(Channel channel) {
 				channel.attr(RakNetServer.USER_DATA_ID).set(userPacketId);
+				channel.attr(RakNetServer.RN_METRICS).set(metrics);
 				channel.pipeline()
 				.addLast("rns-timeout", new ReadTimeoutHandler(10))
 				.addLast("rns-rn-encoder", new RakNetPacketEncoder())
 				.addLast("rns-rn-decoder", new RakNetPacketDecoder())
 				.addLast("rns-rn-connect", new RakNetPacketConnectionEstablishHandler(pinghandler))
-				.addLast("rns-rn-reliability", new RakNetPacketReliabilityHandler(metrics))
+				.addLast("rns-rn-reliability", new RakNetPacketReliabilityHandler())
 				.addLast("rns-e-ru", new EncapsulatedPacketUnsplitter())
 				.addLast("rns-e-ro", new EncapsulatedPacketInboundOrderer())
 				.addLast("rns-e-ws", new EncapsulatedPacketSplitter())
@@ -95,8 +91,20 @@ public class RakNetServer {
 		}
 	}
 
+	/**
+	 * Sent down pipeline when backpressure should be
+	 * applied or removed.
+	 */
 	public enum BackPressure {
 		ON, OFF
+	}
+
+	/**
+	 * Influences stream control.
+	 * SYNC - Send up the pipeline to block new frames until all pending ones are ACKd.
+	 */
+	public enum StreamControl {
+		SYNC
 	}
 
 	public interface UserChannelInitializer {

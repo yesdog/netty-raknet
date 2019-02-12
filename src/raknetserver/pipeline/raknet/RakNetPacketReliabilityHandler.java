@@ -4,7 +4,7 @@ import io.netty.channel.ChannelDuplexHandler;
 import io.netty.channel.ChannelFutureListener;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelPromise;
-import io.netty.handler.codec.DecoderException;
+import io.netty.util.ReferenceCountUtil;
 import it.unimi.dsi.fastutil.ints.IntRBTreeSet;
 import it.unimi.dsi.fastutil.ints.IntSortedSet;
 import it.unimi.dsi.fastutil.ints.Int2ObjectRBTreeMap;
@@ -47,7 +47,6 @@ public class RakNetPacketReliabilityHandler extends ChannelDuplexHandler {
         registry.register(RakNetNACK.class, (ctx, handler, packet) -> handler.handleNack(packet));
     }
 
-    protected final RakNetServer.Metrics metrics;
     protected final IntSortedSet nackSet = new IntRBTreeSet(UINT.B3.COMPARATOR);
     protected final IntSortedSet ackSet = new IntRBTreeSet(UINT.B3.COMPARATOR);
     protected final Int2ObjectRBTreeMap<RakNetEncapsulatedData> sentPackets = new Int2ObjectRBTreeMap<>(UINT.B3.COMPARATOR);
@@ -57,9 +56,13 @@ public class RakNetPacketReliabilityHandler extends ChannelDuplexHandler {
     protected long avgRTT = TimeUnit.NANOSECONDS.convert(DEFAULT_RTT_MS, TimeUnit.MILLISECONDS);
     protected boolean backPressureActive = false;
     protected RakNetEncapsulatedData queuedPacket = new RakNetEncapsulatedData();
+    protected RakNetServer.Metrics metrics;
 
-    public RakNetPacketReliabilityHandler(RakNetServer.Metrics metrics) {
-        this.metrics = metrics;
+    @Override
+    public void handlerAdded(ChannelHandlerContext ctx) throws Exception {
+        super.handlerAdded(ctx);
+        metrics = ctx.channel().attr(RakNetServer.RN_METRICS).get();
+        assert metrics != null;
     }
 
     @Override
@@ -67,7 +70,7 @@ public class RakNetPacketReliabilityHandler extends ChannelDuplexHandler {
         super.handlerRemoved(ctx);
         queuedPacket.release();
         queuedPacket = null;
-        sentPackets.values().forEach(packet -> packet.release());
+        sentPackets.values().forEach(ReferenceCountUtil::release);
         sentPackets.clear();
     }
 
@@ -76,6 +79,7 @@ public class RakNetPacketReliabilityHandler extends ChannelDuplexHandler {
         if (msg instanceof RakNetPacket) {
             registry.handle(ctx, this, (RakNetPacket) msg);
             FlushTickDriver.checkTick(ctx);
+            ReferenceCountUtil.release(msg);
         } else {
             ctx.fireChannelRead(msg);
         }
@@ -126,13 +130,11 @@ public class RakNetPacketReliabilityHandler extends ChannelDuplexHandler {
             for (int id = entry.idStart ; id != max ; id = UINT.B3.plus(id, 1)) {
                 final RakNetEncapsulatedData packet = sentPackets.remove(id);
                 if (packet != null) {
-                    final long rtt = Math.max(packet.timeSinceSend(), FlushTickDriver.TICK_RESOLUTION);
-                    if (rtt <= Constants.MAX_RTT) {
-                        avgRTT = (avgRTT * (RTT_WEIGHT - 1) + rtt) / RTT_WEIGHT;
-                    }
-                    packet.release();
+                    final long rtt = Math.max(packet.timeSinceLastSend(), FlushTickDriver.TICK_RESOLUTION);
+                    avgRTT = (avgRTT * (RTT_WEIGHT - 1) + rtt) / RTT_WEIGHT;
                     metrics.measureRTTns(rtt);
                     metrics.measureSendAttempts(packet.getSendAttempts());
+                    packet.release();
                     nAck++;
                 }
                 Constants.packetLossCheck(nIterations++, "ack confirm range");
@@ -158,6 +160,9 @@ public class RakNetPacketReliabilityHandler extends ChannelDuplexHandler {
         metrics.incrNackRecv(nNack);
     }
 
+    //TODO: frame lock support! special call that makes sure no frames are sent until all current frames are ackd
+    //on lock, flush flames so everything is queued and sent at least once, set lock, then block all frames with
+    //resend count of 0, until non-0 frames are sent
     protected void tick(ChannelHandlerContext ctx, int nTicks) {
         //all data flushed in order of priority
         if (!ackSet.isEmpty()) {

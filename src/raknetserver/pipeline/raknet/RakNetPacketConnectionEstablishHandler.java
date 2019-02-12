@@ -6,6 +6,7 @@ import io.netty.channel.Channel;
 import io.netty.channel.ChannelFutureListener;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.SimpleChannelInboundHandler;
+import io.netty.util.ReferenceCountUtil;
 import io.netty.util.concurrent.ScheduledFuture;
 import raknetserver.RakNetServer;
 import raknetserver.packet.internal.InternalPing;
@@ -106,7 +107,7 @@ public class RakNetPacketConnectionEstablishHandler extends SimpleChannelInbound
 		if (state != State.CONNECTED) {
 			throw new IllegalStateException("Can't handle packet " + packet.getClass() + ", connection is not established yet");
 		}
-		ctx.fireChannelRead(packet);
+		ctx.fireChannelRead(ReferenceCountUtil.retain(packet));
 	}
 
 	protected enum State {

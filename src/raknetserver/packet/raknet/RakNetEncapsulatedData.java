@@ -63,6 +63,7 @@ public class RakNetEncapsulatedData extends AbstractReferenceCounted implements 
 		if (tracker != null) {
 			tracker.record(hint);
 		}
+		packets.forEach(packet -> packet.touch(hint));
 		return this;
 	}
 
@@ -73,9 +74,7 @@ public class RakNetEncapsulatedData extends AbstractReferenceCounted implements 
 	}
 
 	public void refreshResend(int scale) {
-		if (sentTime == -1) {
-			sentTime = System.nanoTime(); //only set on first attempt
-		}
+		sentTime = System.nanoTime();
 		resendTicks = FIBONACCI[Math.min(sendAttempts++, FIBONACCI.length - 1)] * scale + Constants.RETRY_TICK_OFFSET;
 	}
 
@@ -92,7 +91,7 @@ public class RakNetEncapsulatedData extends AbstractReferenceCounted implements 
 		return sendAttempts;
 	}
 
-	public long timeSinceSend() {
+	public long timeSinceLastSend() {
 		return System.nanoTime() - sentTime;
 	}
 

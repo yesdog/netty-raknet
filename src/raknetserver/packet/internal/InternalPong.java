@@ -26,12 +26,15 @@ public class InternalPong extends AbstractInternalPacket {
 	@Override
 	public void decode(ByteBuf buf) {
 		pingTimestamp = buf.readLong();
-		pongTimestamp = buf.readLong();
+		if (buf.isReadable()) {
+			pongTimestamp = buf.readLong();
+		}
 	}
 
 	@Override
 	public void encode(ByteBuf buf) {
-		buf.writeLong(pingTimestamp); //TODO: wtf is with different decode/encode?
+		buf.writeLong(pingTimestamp);
+		buf.writeLong(pongTimestamp);
 	}
 
 	public long getPingTimestamp() {
@@ -40,6 +43,10 @@ public class InternalPong extends AbstractInternalPacket {
 
 	public long getPongTimestamp() {
 		return pongTimestamp;
+	}
+
+	public long getRTT() {
+		return System.currentTimeMillis() - pingTimestamp;
 	}
 
 }
