@@ -9,29 +9,16 @@ import io.netty.channel.ChannelInitializer;
 import io.netty.channel.DefaultEventLoopGroup;
 import io.netty.handler.timeout.ReadTimeoutHandler;
 import io.netty.util.AttributeKey;
-import raknetserver.pipeline.encapsulated.EncapsulatedPacketInboundOrderer;
-import raknetserver.pipeline.encapsulated.EncapsulatedPacketOutboundOrder;
-import raknetserver.pipeline.encapsulated.EncapsulatedPacketSplitter;
-import raknetserver.pipeline.encapsulated.EncapsulatedPacketUnsplitter;
-import raknetserver.pipeline.internal.InternalPacketDecoder;
-import raknetserver.pipeline.internal.InternalPacketEncoder;
-import raknetserver.pipeline.internal.InternalPacketReadHandler;
-import raknetserver.pipeline.internal.InternalPacketWriteHandler;
-import raknetserver.pipeline.tick.FlushTickDriver;
-import raknetserver.pipeline.raknet.RakNetPacketConnectionEstablishHandler;
-import raknetserver.pipeline.raknet.RakNetPacketConnectionEstablishHandler.PingHandler;
-import raknetserver.pipeline.raknet.RakNetPacketDecoder;
-import raknetserver.pipeline.raknet.RakNetPacketEncoder;
-import raknetserver.pipeline.raknet.RakNetPacketReliabilityHandler;
+import raknetserver.pipeline.*;
 import raknetserver.utils.Constants;
 import raknetserver.utils.DefaultMetrics;
 import udpserversocketchannel.channel.UdpServerChannel;
 
 public class RakNetServer {
 
-	public static final AttributeKey<Integer> MTU = AttributeKey.valueOf("MTU");
-	public static final AttributeKey<Long> RTT = AttributeKey.valueOf("RTT");
-	public static final AttributeKey<Integer> USER_DATA_ID = AttributeKey.valueOf("USER_DATA_ID");
+	public static final AttributeKey<Integer> MTU = AttributeKey.valueOf("RN_MTU");
+	public static final AttributeKey<Long> RTT = AttributeKey.valueOf("RN_RTT");
+	public static final AttributeKey<Integer> USER_DATA_ID = AttributeKey.valueOf("RN_USER_DATA_ID");
 	public static final AttributeKey<RakNetServer.Metrics> RN_METRICS = AttributeKey.valueOf("RN_METRICS");
 
 	protected final InetSocketAddress local;
@@ -64,21 +51,20 @@ public class RakNetServer {
 				channel.attr(RakNetServer.USER_DATA_ID).set(userPacketId);
 				channel.attr(RakNetServer.RN_METRICS).set(metrics);
 				channel.pipeline()
-				.addLast("rns-timeout", new ReadTimeoutHandler(10))
-				.addLast("rns-rn-encoder", new RakNetPacketEncoder())
-				.addLast("rns-rn-decoder", new RakNetPacketDecoder())
-				.addLast("rns-rn-connect", new RakNetPacketConnectionEstablishHandler(pinghandler))
-				.addLast("rns-rn-reliability", new RakNetPacketReliabilityHandler())
-				.addLast("rns-e-ru", new EncapsulatedPacketUnsplitter())
-				.addLast("rns-e-ro", new EncapsulatedPacketInboundOrderer())
-				.addLast("rns-e-ws", new EncapsulatedPacketSplitter())
-				.addLast("rns-e-wo", new EncapsulatedPacketOutboundOrder())
-				.addLast("rns-i-encoder", new InternalPacketEncoder())
-				.addLast("rns-i-decoder", new InternalPacketDecoder())
-				.addLast("rns-i-writeh", new InternalPacketWriteHandler())
-				.addLast("rns-i-readh", new InternalPacketReadHandler());
+				.addLast("rn-timeout",        new ReadTimeoutHandler(10))
+				.addLast(PacketEncoder.NAME,        PacketEncoder.INSTANCE)
+				.addLast(PacketDecoder.NAME,        PacketDecoder.INSTANCE)
+				.addLast(ConnectionHandler.NAME,    new ConnectionHandler(pinghandler))
+				.addLast(ReliabilityHandler.NAME,   new ReliabilityHandler())
+				.addLast(FrameJoiner.NAME,          new FrameJoiner())
+				.addLast(FrameOrderIn.NAME,         new FrameOrderIn())
+				.addLast(FrameSplitter.NAME,        new FrameSplitter())
+				.addLast(FrameOrderOut.NAME,        new FrameOrderOut())
+				.addLast(WriteHandler.NAME,         WriteHandler.INSTANCE)
+				.addLast(ReadHandler.NAME,          new ReadHandler());
 				userinit.init(channel);
-				channel.pipeline().addLast("rns-i-tick", new FlushTickDriver());
+				channel.pipeline().addLast(
+				         FlushTickDriver.NAME,      new FlushTickDriver());
 			}
 		});
 		channel = bootstrap.bind(local).syncUninterruptibly();
@@ -109,6 +95,11 @@ public class RakNetServer {
 
 	public interface UserChannelInitializer {
 		void init(Channel channel);
+	}
+
+	public interface PingHandler {
+		void executeHandler(Runnable runnable);
+		String getServerInfo(Channel channel);
 	}
 
 	public interface Metrics {
