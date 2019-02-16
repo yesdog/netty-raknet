@@ -5,7 +5,7 @@ targeting unreliable and rate-limited client connections.
 
 This implementation uses [Netty](https://github.com/netty/netty) 
 channels to provide a fast and effective [RakNet](http://www.raknet.net) server, 
-offering the full feature set of the transport protocol while providing
+offering the full feature set of the transport protocol, while providing
 room for extension with any plugins or custom behavior. 
 
 ## Features:
@@ -19,7 +19,7 @@ room for extension with any plugins or custom behavior.
 * Easy-to-use data streaming interface
   * Configurable packet ID used for raw ByteBuf writing and reading.
   * Extensible to allow for multiple packet ID and channel configurations.
-  * True to netty form, the pipeline can be modified and augmented as needed.
+  * True to Netty form, the pipeline can be modified and augmented as needed.
 
 # License:
 
