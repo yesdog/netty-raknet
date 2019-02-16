@@ -8,6 +8,7 @@ import raknetserver.RakNetServer;
 
 import java.util.concurrent.TimeUnit;
 
+//TODO: inner class that lives at the 'last' part of the pipeline?
 public class FlushTickDriver extends ChannelDuplexHandler {
 
     public static final String NAME = "rn-tick";

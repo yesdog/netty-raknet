@@ -27,40 +27,45 @@ public class FrameJoiner extends MessageToMessageDecoder<Frame> {
 	}
 
 	@Override
-	protected void decode(ChannelHandlerContext ctx, Frame packet, List<Object> list) {
-		if (!packet.hasSplit()) {
-			packet.touch("Not split");
-			list.add(packet.retain());
+	protected void decode(ChannelHandlerContext ctx, Frame frame, List<Object> list) {
+		if (!frame.hasSplit()) {
+			frame.touch("Not split");
+			list.add(frame.retain());
 		} else {
-			final int splitID = packet.getSplitId();
+			final int splitID = frame.getSplitId();
 			final Builder partial = pendingPackets.get(splitID);
-			packet.touch("Is split");
+			frame.touch("Is split");
 			if (partial == null) {
-				Constants.packetLossCheck(packet.getSplitCount(), "packet defragment");
-				pendingPackets.put(splitID, Builder.create(ctx.alloc(), packet));
+				Constants.packetLossCheck(frame.getSplitCount(), "frame join elements");
+				pendingPackets.put(splitID, Builder.create(ctx.alloc(), frame));
 			} else {
-				partial.add(packet);
+				partial.add(frame);
 				if (partial.isDone()) {
 					pendingPackets.remove(splitID);
 					list.add(partial.finish());
 				}
 			}
+			Constants.packetLossCheck(pendingPackets.size(), "pending frame joins");
 		}
 	}
 
-	protected static class Builder {
+	protected static final class Builder {
 
-		protected final Int2ObjectOpenHashMap<ByteBuf> queue = new Int2ObjectOpenHashMap<>(8);
+		protected final Int2ObjectOpenHashMap<ByteBuf> queue;
 		protected Frame samplePacket;
 		protected CompositeByteBuf data;
 		protected int splitIdx;
 		protected int orderId;
 		protected PacketData.Reliability reliability;
 
-		protected static Builder create(ByteBufAllocator alloc, Frame packet) {
-			final Builder out = new Builder();
-			out.init(alloc, packet);
+		private static Builder create(ByteBufAllocator alloc, Frame frame) {
+			final Builder out = new Builder(frame.getSplitCount());
+			out.init(alloc, frame);
 			return out;
+		}
+
+		private Builder(int size) {
+			queue = new Int2ObjectOpenHashMap<>(size);
 		}
 
 		void init(ByteBufAllocator alloc, Frame packet) {

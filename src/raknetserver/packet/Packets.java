@@ -108,7 +108,7 @@ public final class Packets
         register(INVALID_VERSION,           InvalidVersion.class,       InvalidVersion::new);
         register(UNCONNECTED_PONG,          UnconnectedPong.class);
         for (int i = FRAME_DATA_START ; i <= FRAME_DATA_END ; i++) {
-            register(i,                     FramedData.class,           FramedData::read);
+            register(i,                     FrameSet.class,           FrameSet::read);
         }
         register(NACK,                      Reliability.NACK.class,     decodeSimple(Reliability.NACK::new));
         register(ACK,                       Reliability.ACK.class,      decodeSimple(Reliability.ACK::new));

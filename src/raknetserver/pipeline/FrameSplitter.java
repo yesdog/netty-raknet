@@ -7,6 +7,7 @@ import io.netty.handler.codec.MessageToMessageEncoder;
 import io.netty.util.ReferenceCountUtil;
 import raknetserver.frame.Frame;
 import raknetserver.RakNetServer;
+import raknetserver.packet.FrameSet;
 import raknetserver.utils.UINT;
 
 public class FrameSplitter extends MessageToMessageEncoder<Frame> {
@@ -19,11 +20,10 @@ public class FrameSplitter extends MessageToMessageEncoder<Frame> {
 	@Override
 	protected void encode(ChannelHandlerContext ctx, Frame packet, List<Object> list) {
 		final int mtu = ctx.channel().attr(RakNetServer.MTU).get();
-		//TODO: real packet size values?
-		if (packet.getRoughPacketSize() > mtu - 100) {
+		final int maxSize = mtu - (2 * FrameSet.HEADER_SIZE + 2 * Frame.HEADER_SIZE);
+		if (packet.getRoughPacketSize() > maxSize) {
 			try {
-				final int splitSize = mtu - 200;
-				final int splits = packet.fragment(getNextSplitID(), splitSize, nextReliableId, list);
+				final int splits = packet.fragment(getNextSplitID(), maxSize, nextReliableId, list);
 				nextReliableId = UINT.B3.plus(nextReliableId, splits);
 			} catch (Throwable t) {
 				list.forEach(ReferenceCountUtil::release);

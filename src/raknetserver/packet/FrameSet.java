@@ -1,11 +1,12 @@
 package raknetserver.packet;
 
 import java.util.ArrayList;
+import java.util.Iterator;
+import java.util.function.Consumer;
 
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.ByteBufAllocator;
 import io.netty.buffer.CompositeByteBuf;
-import io.netty.channel.ChannelHandlerContext;
 import io.netty.util.AbstractReferenceCounted;
 import io.netty.util.Recycler;
 import io.netty.util.ReferenceCounted;
@@ -14,34 +15,33 @@ import io.netty.util.ResourceLeakDetectorFactory;
 import io.netty.util.ResourceLeakTracker;
 
 import raknetserver.frame.Frame;
-import raknetserver.utils.Constants;
 
-public final class FramedData extends AbstractReferenceCounted implements Packet {
+public final class FrameSet extends AbstractReferenceCounted implements Packet {
 
-	protected static final byte[] FIBONACCI = new byte[] { 1, 1, 2, 3, 5, 8, 13, 21 };
+	public static final int HEADER_SIZE = 4;
 
 	private static final ResourceLeakDetector leakDetector =
-			ResourceLeakDetectorFactory.instance().newResourceLeakDetector(FramedData.class);
-	private static final Recycler<FramedData> recycler = new Recycler<FramedData>() {
+			ResourceLeakDetectorFactory.instance().newResourceLeakDetector(FrameSet.class);
+	private static final Recycler<FrameSet> recycler = new Recycler<FrameSet>() {
 		@Override
-		protected FramedData newObject(Handle<FramedData> handle) {
-			return new FramedData(handle);
+		protected FrameSet newObject(Handle<FrameSet> handle) {
+			return new FrameSet(handle);
 		}
 	};
 
 	@SuppressWarnings("unchecked")
-	public static FramedData create() {
-		final FramedData out = recycler.get();
+	public static FrameSet create() {
+		final FrameSet out = recycler.get();
 		assert out.refCnt() == 0;
 		assert out.tracker == null;
-		out.seqId = out.resendTicks = out.sendAttempts = 0;
-		out.setRefCnt(1);
+		out.seqId = out.pendingTicks = 0;
 		out.tracker = leakDetector.track(out);
+		out.setRefCnt(1);
 		return out;
 	}
 
-	public static FramedData read(ByteBuf buf) {
-		final FramedData out = create();
+	public static FrameSet read(ByteBuf buf) {
+		final FrameSet out = create();
 		buf.skipBytes(1);
 		out.seqId = buf.readUnsignedMediumLE();
 		while (buf.isReadable()) {
@@ -51,13 +51,12 @@ public final class FramedData extends AbstractReferenceCounted implements Packet
 	}
 
 	protected final ArrayList<Frame> frames = new ArrayList<>(8);
-	protected final Recycler.Handle<FramedData> handle;
+	protected final Recycler.Handle<FrameSet> handle;
 	protected int seqId;
-	protected int resendTicks;
-	protected int sendAttempts;
-	protected ResourceLeakTracker<FramedData> tracker;
+	protected int pendingTicks;
+	protected ResourceLeakTracker<FrameSet> tracker;
 
-	private FramedData(Recycler.Handle<FramedData> handle) {
+	private FrameSet(Recycler.Handle<FrameSet> handle) {
 		this.handle = handle;
 		setRefCnt(0);
 	}
@@ -67,6 +66,7 @@ public final class FramedData extends AbstractReferenceCounted implements Packet
 		final CompositeByteBuf out = alloc.compositeDirectBuffer(1 + frames.size());
 		header.writeByte(Packets.FRAME_DATA_START);
 		header.writeMediumLE(seqId);
+		assert header.readableBytes() <= HEADER_SIZE;
 		out.addComponent(true, header);
 		frames.forEach(frame -> out.addComponent(true, frame.createData(alloc)));
 		return out;
@@ -90,31 +90,9 @@ public final class FramedData extends AbstractReferenceCounted implements Packet
 		return this;
 	}
 
-	public void refreshResend(int scale) {
-		if (sendAttempts > 0) { //remove unreliable on resend
-			frames.removeIf(frame -> {
-				if (!frame.getReliability().isReliable) {
-					frame.release();
-					return true;
-				}
-				return false;
-			});
-		}
-		//TODO: what happens if its empty now?
-		resendTicks = FIBONACCI[Math.min(sendAttempts++, FIBONACCI.length - 1)] * scale + Constants.RETRY_TICK_OFFSET;
-	}
-
-	public void scheduleResend() {
-		resendTicks = 0; //resend asap
-	}
-
-	public boolean resendTick(int nTicks) {
-		resendTicks -= nTicks;
-		return resendTicks <= 0; //returns true if resend needed
-	}
-
-	public int getSendAttempts() {
-		return sendAttempts;
+	public int incrTick(int nTicks) {
+		pendingTicks += nTicks;
+		return pendingTicks;
 	}
 
 	public int getSeqId() {
@@ -131,15 +109,14 @@ public final class FramedData extends AbstractReferenceCounted implements Packet
 
 	public void addPacket(Frame packet) {
 		frames.add(packet);
-		packet.retain();
 	}
 
-	public void readTo(ChannelHandlerContext ctx) {
-		frames.forEach(data -> ctx.fireChannelRead(data.retain()));
+	public void createFrames(Consumer<Frame> consumer) {
+		frames.forEach(frame -> consumer.accept(frame.retain()));
 	}
 
 	public int getRoughPacketSize() {
-		int out = 3;
+		int out = HEADER_SIZE;
 		for (Frame packet : frames) {
 			out += packet.getRoughPacketSize();
 		}

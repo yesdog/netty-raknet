@@ -11,7 +11,6 @@ import java.util.List;
 public class PacketDecoder extends ByteToMessageDecoder {
 
     public static final String NAME = "rn-decoder";
-    public static final PacketDecoder INSTANCE = new PacketDecoder();
 
     protected void decode(ChannelHandlerContext ctx, ByteBuf in, List<Object> out) {
         out.add(Packets.decodeRaw(in));

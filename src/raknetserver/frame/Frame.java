@@ -18,6 +18,9 @@ import java.util.List;
 
 public final class Frame extends AbstractReferenceCounted {
 
+    public static Comparator COMPARATOR = new Comparator();
+    public static final int HEADER_SIZE = 24;
+
 	private static final ResourceLeakDetector leakDetector =
 			ResourceLeakDetectorFactory.instance().newResourceLeakDetector(Frame.class);
 	private static final Recycler<Frame> recycler = new Recycler<Frame>() {
@@ -213,6 +216,7 @@ public final class Frame extends AbstractReferenceCounted {
 			header.writeInt(splitIndex);
 		}
 
+		assert header.readableBytes() <= HEADER_SIZE;
 		out.addComponent(true, header);
 		final int preWriterIndex = out.writerIndex();
 		out.addComponent(true, packet.createData());
@@ -258,11 +262,25 @@ public final class Frame extends AbstractReferenceCounted {
 	}
 
 	public int getRoughPacketSize() {
-		return getDataSize() + 18;
+		return getDataSize() + HEADER_SIZE;
 	}
 
 	public void setReliableIndex(int reliableIndex) {
 		this.reliableIndex = reliableIndex;
 	}
+
+	//TODO: this comparator should drive priority in the future... somehow
+    protected static final class Comparator implements java.util.Comparator<Frame> {
+        @Override
+        public int compare(Frame a, Frame b) {
+            if (!a.getReliability().isReliable) {
+                return -1;
+            } else if (!b.getReliability().isReliable) {
+                return 1;
+            }
+            final int d = UINT.B3.minusWrap(a.reliableIndex, b.reliableIndex);
+            return d < 0 ? -1 : ((d == 0) ? 0 : 1);
+        }
+    }
 
 }

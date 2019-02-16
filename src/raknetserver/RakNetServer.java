@@ -52,15 +52,15 @@ public class RakNetServer {
 				channel.attr(RakNetServer.RN_METRICS).set(metrics);
 				channel.pipeline()
 				.addLast("rn-timeout",        new ReadTimeoutHandler(10))
-				.addLast(PacketEncoder.NAME,        PacketEncoder.INSTANCE)
-				.addLast(PacketDecoder.NAME,        PacketDecoder.INSTANCE)
+				.addLast(PacketEncoder.NAME,        new PacketEncoder())
+				.addLast(PacketDecoder.NAME,        new PacketDecoder())
 				.addLast(ConnectionHandler.NAME,    new ConnectionHandler(pinghandler))
 				.addLast(ReliabilityHandler.NAME,   new ReliabilityHandler())
 				.addLast(FrameJoiner.NAME,          new FrameJoiner())
 				.addLast(FrameOrderIn.NAME,         new FrameOrderIn())
 				.addLast(FrameSplitter.NAME,        new FrameSplitter())
 				.addLast(FrameOrderOut.NAME,        new FrameOrderOut())
-				.addLast(WriteHandler.NAME,         WriteHandler.INSTANCE)
+				.addLast(WriteHandler.NAME,         new WriteHandler())
 				.addLast(ReadHandler.NAME,          new ReadHandler());
 				userinit.init(channel);
 				channel.pipeline().addLast(

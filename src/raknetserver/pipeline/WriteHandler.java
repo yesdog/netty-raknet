@@ -11,7 +11,6 @@ import raknetserver.packet.PacketData;
 public class WriteHandler extends MessageToMessageEncoder<ByteBuf> {
 
 	public static final String NAME = "rn-write";
-	public static final WriteHandler INSTANCE = new WriteHandler();
 
 	protected void encode(ChannelHandlerContext ctx, ByteBuf buf, List<Object> list) {
 		if (!buf.isReadable()) {

@@ -9,7 +9,6 @@ import java.util.List;
 public class PacketEncoder extends MessageToMessageEncoder<Packet> {
 
     public static final String NAME = "rn-encoder";
-    public static final PacketEncoder INSTANCE = new PacketEncoder();
 
     protected void encode(ChannelHandlerContext ctx, Packet msg, List<Object> out) {
         out.add(msg.createData(ctx.alloc()));
