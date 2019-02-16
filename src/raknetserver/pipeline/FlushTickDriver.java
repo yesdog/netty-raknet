@@ -17,12 +17,11 @@ public class FlushTickDriver extends ChannelDuplexHandler {
     protected static final long COARSE_TIMER_RESOLUTION = 50; //in ms, limited by netty timer resolution
 
     public static void checkTick(ChannelHandlerContext ctx) {
-        //TODO: fire on tick context directly
-        //dummy object will trigger maybeTick when it gets to InternalTickManager#channelRead
+        //TODO: fire on tick context directly, or something better
+        //dummy object will trigger maybeTick
         ctx.fireChannelRead(CheckTick.INSTANCE);
     }
 
-    protected int references = 0;
     protected long tickAccum = 0;
     protected long lastTickAccum = System.nanoTime();
     protected boolean timerRunning = false;
@@ -30,15 +29,7 @@ public class FlushTickDriver extends ChannelDuplexHandler {
     @Override
     public void handlerAdded(ChannelHandlerContext ctx) throws Exception {
         super.handlerAdded(ctx);
-        references++;
-        assert references == 1; //only one context
         startCoarseTickTimer(ctx);
-    }
-
-    @Override
-    public void handlerRemoved(ChannelHandlerContext ctx) throws Exception {
-        super.handlerRemoved(ctx);
-        references--;
     }
 
     @Override
@@ -60,7 +51,7 @@ public class FlushTickDriver extends ChannelDuplexHandler {
         timerRunning = true;
         ctx.channel().eventLoop().schedule(() -> {
             timerRunning = false;
-            if (ctx.channel().isOpen() && references >= 0) {
+            if (ctx.channel().isOpen()) {
                 startCoarseTickTimer(ctx);
                 maybeTick(ctx);
             }

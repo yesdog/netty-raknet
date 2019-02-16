@@ -24,7 +24,7 @@ public class ReadHandler extends SimpleChannelInboundHandler<Packet> {
     protected static final int RTT_WEIGHT = 8;
     protected static final long DEFAULT_RTT_MS = 400;
 
-    protected RakNetServer.Metrics metrics;
+    protected RakNetServer.MetricsLogger metrics;
 
     @Override
     public void handlerAdded(ChannelHandlerContext ctx) throws Exception {

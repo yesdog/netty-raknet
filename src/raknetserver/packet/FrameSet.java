@@ -115,7 +115,7 @@ public final class FrameSet extends AbstractReferenceCounted implements Packet {
 		frames.forEach(frame -> consumer.accept(frame.retain()));
 	}
 
-	public int getRoughPacketSize() {
+	public int getRoughSize() {
 		int out = HEADER_SIZE;
 		for (Frame packet : frames) {
 			out += packet.getRoughPacketSize();

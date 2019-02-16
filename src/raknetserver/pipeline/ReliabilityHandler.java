@@ -23,30 +23,6 @@ import raknetserver.packet.Reliability.NACK;
 import raknetserver.utils.Constants;
 import raknetserver.utils.UINT;
 
-/*TODO:
-Pool EncapsulatedPackets in a big index, keep priority.
-On NACK or Resend of a RakNet data packet, prpogate to
-big index and have those packets reschedule themselves correctly.
-
-Use reschedule or nack of RNEncapData as event to individual packets?
-or on this event, we just retransmit the packet into the pipeline?
-
-*/
-
-//TODO: real rescheduling with priority
-
-/*
-TODO: new scheduling idea.
-sort by reliability ID of frames! it is the actual unique id we need to queue on!
-queue<reliabilityId, Frame>
-queue<...>
-
-flush until X framesets are pending?
-
-token counter for "no response"/nack vs ack ? could use as an offset for allowed number of pending sets. 'deficit' token?
-^ basically use as a ratio of the default rate that the client can accept
- */
-
 public class ReliabilityHandler extends ChannelDuplexHandler {
 
     public static final String NAME = "rn-reliability";
@@ -59,7 +35,7 @@ public class ReliabilityHandler extends ChannelDuplexHandler {
     protected int lastReceivedSeqId = 0;
     protected int nextSendSeqId = 0;
     protected boolean backPressureActive = false;
-    protected RakNetServer.Metrics metrics;
+    protected RakNetServer.MetricsLogger metrics;
 
     @Override
     public void handlerAdded(ChannelHandlerContext ctx) throws Exception {
@@ -99,7 +75,7 @@ public class ReliabilityHandler extends ChannelDuplexHandler {
     public void write(ChannelHandlerContext ctx, Object msg, ChannelPromise promise) {
         if (msg instanceof Frame) {
             promise.trySuccess(); //TODO: more accurate way to trigger these?
-            metrics.incrOutPacket(1);
+            //TODO: metric?
             queueFrame((Frame) msg);
         } else if (msg instanceof RakNetServer.Tick) {
             tick(ctx, ((RakNetServer.Tick) msg).getTicks());
@@ -125,43 +101,44 @@ public class ReliabilityHandler extends ChannelDuplexHandler {
                 lastReceivedSeqId = UINT.B3.plus(lastReceivedSeqId, 1);
             }
         }
-        metrics.incrRecv(1);
-        metrics.incrInPacket(frameSet.getNumPackets());
+        metrics.packetsIn(1);
+        metrics.framesIn(frameSet.getNumPackets());
+        metrics.bytesIn(frameSet.getRoughSize());
         frameSet.createFrames(ctx::fireChannelRead);
     }
 
     protected void readAck(ACK ack) {
-        int nAck = 0;
+        int ackdBytes = 0;
         int nIterations = 0;
         for (REntry entry : ack.getEntries()) {
             final int max = UINT.B3.plus(entry.idFinish, 1);
             for (int id = entry.idStart ; id != max ; id = UINT.B3.plus(id, 1)) {
                 final FrameSet packet = pendingFrameSets.remove(id);
                 if (packet != null) {
+                    ackdBytes += packet.getRoughSize();
                     packet.release();
-                    nAck++;
                 }
                 Constants.packetLossCheck(nIterations++, "ack confirm range");
             }
         }
-        metrics.incrAckRecv(nAck);
+        metrics.bytesACKd(ackdBytes);
     }
 
     protected void readNack(NACK nack) {
-        int nNack = 0;
+        int bytesNACKd = 0;
         int nIterations = 0;
         for (REntry entry : nack.getEntries()) {
             final int max = UINT.B3.plus(entry.idFinish, 1);
             for (int id = entry.idStart ; id != max ; id = UINT.B3.plus(id, 1)) {
                 final FrameSet frameSet = pendingFrameSets.remove(id);
                 if (frameSet != null) {
+                    bytesNACKd += frameSet.getRoughSize();
                     recallFrameSet(frameSet);
-                    nNack++;
                 }
                 Constants.packetLossCheck(nIterations++, "nack confirm range");
             }
         }
-        metrics.incrNackRecv(nNack);
+        metrics.bytesNACKd(bytesNACKd);
     }
 
     //TODO: frame lock support! special call that makes sure no frames are sent until all current frames are ackd
@@ -172,12 +149,12 @@ public class ReliabilityHandler extends ChannelDuplexHandler {
         //all data flushed in order of priority
         if (!ackSet.isEmpty()) {
             ctx.writeAndFlush(new ACK(ackSet)).addListener(ChannelFutureListener.FIRE_EXCEPTION_ON_FAILURE);
-            metrics.incrAckSend(ackSet.size());
+            metrics.acksSent(ackSet.size());
             ackSet.clear();
         }
         if (!nackSet.isEmpty()) {
             ctx.writeAndFlush(new NACK(nackSet)).addListener(ChannelFutureListener.FIRE_EXCEPTION_ON_FAILURE);
-            metrics.incrNackSend(nackSet.size());
+            metrics.nacksSent(nackSet.size());
             nackSet.clear();
         }
         final ObjectIterator<FrameSet> packetItr = pendingFrameSets.values().iterator();
@@ -208,7 +185,7 @@ public class ReliabilityHandler extends ChannelDuplexHandler {
         final FrameSet frameSet = FrameSet.create();
         while (itr.hasNext()) {
             final Frame frame = itr.next();
-            if (frameSet.getRoughPacketSize() + frame.getRoughPacketSize() > maxSize) {
+            if (frameSet.getRoughSize() + frame.getRoughPacketSize() > maxSize) {
                 if (frameSet.isEmpty()) {
                     throw new DecoderException("Finished frame larger than the MTU by " + (frame.getRoughPacketSize() - maxSize));
                 }
@@ -224,7 +201,9 @@ public class ReliabilityHandler extends ChannelDuplexHandler {
             ctx.writeAndFlush(frameSet.retain()).addListener(ChannelFutureListener.FIRE_EXCEPTION_ON_FAILURE);
             frameSet.touch("Added to pending frameset list");
             assert frameSet.refCnt() > 0;
-            metrics.incrSend(1);
+            metrics.packetsOut(1);
+            metrics.framesOut(frameSet.getNumPackets());
+            metrics.bytesOut(frameSet.getRoughSize());
         }
     }
 
@@ -241,6 +220,7 @@ public class ReliabilityHandler extends ChannelDuplexHandler {
 
     protected void recallFrameSet(FrameSet frameSet) {
         try {
+            metrics.bytesRecalled(frameSet.getRoughSize());
             frameSet.touch("Recalled");
             frameSet.createFrames(frame -> {
                 if (frame.getReliability().isReliable) {
@@ -252,7 +232,6 @@ public class ReliabilityHandler extends ChannelDuplexHandler {
         } finally {
             frameSet.release();
         }
-        metrics.incrResend(1);
     }
 
     protected void updateBackPressure(ChannelHandlerContext ctx, boolean enabled) {

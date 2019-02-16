@@ -11,25 +11,25 @@ import io.netty.handler.timeout.ReadTimeoutHandler;
 import io.netty.util.AttributeKey;
 import raknetserver.pipeline.*;
 import raknetserver.utils.Constants;
-import raknetserver.utils.DefaultMetrics;
-import udpserversocketchannel.channel.UdpServerChannel;
+import raknetserver.utils.DefaultMetricsLogger;
+import udpchannel.UdpServerChannel;
 
 public class RakNetServer {
 
 	public static final AttributeKey<Integer> MTU = AttributeKey.valueOf("RN_MTU");
 	public static final AttributeKey<Long> RTT = AttributeKey.valueOf("RN_RTT");
 	public static final AttributeKey<Integer> USER_DATA_ID = AttributeKey.valueOf("RN_USER_DATA_ID");
-	public static final AttributeKey<RakNetServer.Metrics> RN_METRICS = AttributeKey.valueOf("RN_METRICS");
+	public static final AttributeKey<MetricsLogger> RN_METRICS = AttributeKey.valueOf("RN_METRICS");
 
 	protected final InetSocketAddress local;
 	protected final PingHandler pinghandler;
 	protected final UserChannelInitializer userinit;
 	protected final int userPacketId;
-	protected final Metrics metrics;
+	protected final MetricsLogger metrics;
 
 	private ChannelFuture channel = null;
 
-	public RakNetServer(InetSocketAddress local, PingHandler pinghandler, UserChannelInitializer init, int userPacketId, Metrics metrics) {
+	public RakNetServer(InetSocketAddress local, PingHandler pinghandler, UserChannelInitializer init, int userPacketId, MetricsLogger metrics) {
 		this.local = local;
 		this.pinghandler = pinghandler;
 		this.userinit = init;
@@ -38,7 +38,7 @@ public class RakNetServer {
 	}
 
 	public RakNetServer(InetSocketAddress local, PingHandler pinghandler, UserChannelInitializer init, int userPacketId) {
-		this(local, pinghandler, init, userPacketId, new DefaultMetrics());
+		this(local, pinghandler, init, userPacketId, new DefaultMetricsLogger());
 	}
 
 	public void start() {
@@ -88,6 +88,7 @@ public class RakNetServer {
 	/**
 	 * Influences stream control.
 	 * SYNC - Send up the pipeline to block new frames until all pending ones are ACKd.
+	 * TODO: this...
 	 */
 	public enum StreamControl {
 		SYNC
@@ -102,18 +103,18 @@ public class RakNetServer {
 		String getServerInfo(Channel channel);
 	}
 
-	public interface Metrics {
-		void incrSend(int n);
-		void incrOutPacket(int n);
-		void incrRecv(int n);
-		void incrInPacket(int n);
-		void incrJoin(int n);
-		void incrResend(int n);
-		void incrAckSend(int n);
-		void incrNackSend(int n);
-		void incrAckRecv(int n);
-		void incrNackRecv(int n);
-		void measureSendAttempts(int n);
+	public interface MetricsLogger {
+		void packetsIn(int delta);
+		void framesIn(int delta);
+		void bytesIn(int delta);
+		void packetsOut(int delta);
+		void framesOut(int delta);
+		void bytesOut(int delta);
+		void bytesRecalled(int delta);
+		void bytesACKd(int delta);
+		void bytesNACKd(int delta);
+		void acksSent(int delta);
+		void nacksSent(int delta);
 		void measureRTTns(long n);
 	}
 
