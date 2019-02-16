@@ -21,6 +21,4 @@ room for extension with any plugins or custom behavior.
   * Extensible to allow for multiple packet ID and channel configurations.
   * True to Netty form, the pipeline can be modified and augmented as needed.
 
-# License
-
-GNU GPLv3
+# [License](./LICENSE)
