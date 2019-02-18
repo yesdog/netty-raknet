@@ -16,6 +16,7 @@ import raknetserver.utils.UINT;
 
 import java.util.List;
 
+//TODO: store and fulfill original netty promise
 public final class Frame extends AbstractReferenceCounted {
 
     public static Comparator COMPARATOR = new Comparator();

@@ -68,17 +68,16 @@ public class ReliabilityHandler extends ChannelDuplexHandler {
         } finally {
             ReferenceCountUtil.release(msg);
         }
-        FlushTickDriver.checkTick(ctx);
     }
 
     @Override
     public void write(ChannelHandlerContext ctx, Object msg, ChannelPromise promise) {
         if (msg instanceof Frame) {
-            promise.trySuccess(); //TODO: more accurate way to trigger these?
-            //TODO: metric?
             queueFrame((Frame) msg);
+            promise.trySuccess(); //TODO: more accurate way to trigger these?
         } else if (msg instanceof RakNetServer.Tick) {
             tick(ctx, ((RakNetServer.Tick) msg).getTicks());
+            promise.trySuccess();
         } else {
             ctx.writeAndFlush(msg, promise);
         }

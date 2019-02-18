@@ -47,10 +47,12 @@ public class RakNetServer {
 		.childHandler(new ChannelInitializer<Channel>() {
 			@Override
 			protected void initChannel(Channel channel) {
+			    final FlushTickDriver tickDriver = new FlushTickDriver();
 				channel.attr(RakNetServer.USER_DATA_ID).set(userPacketId);
 				channel.attr(RakNetServer.RN_METRICS).set(metrics);
 				channel.pipeline()
 				.addLast("rn-timeout",        new ReadTimeoutHandler(10))
+                .addLast(FlushTickDriver.NAME_IN,   tickDriver.inboundHandler)
 				.addLast(PacketEncoder.NAME,        new PacketEncoder())
 				.addLast(PacketDecoder.NAME,        new PacketDecoder())
 				.addLast(ConnectionHandler.NAME,    new ConnectionHandler(pinghandler))
@@ -63,7 +65,7 @@ public class RakNetServer {
 				.addLast(ReadHandler.NAME,          new ReadHandler());
 				userinit.init(channel);
 				channel.pipeline().addLast(
-				         FlushTickDriver.NAME,      new FlushTickDriver());
+				         FlushTickDriver.NAME_OUT,  tickDriver.outboundHandler);
 			}
 		});
 		channel = bootstrap.bind(local).syncUninterruptibly();

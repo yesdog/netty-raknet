@@ -17,6 +17,7 @@ public class FrameOrderOut extends MessageToMessageEncoder<FramedPacket> {
 	protected int[] nextSequenceIndex = new int[8];
 
 	protected void encode(ChannelHandlerContext ctx, FramedPacket packet, List<Object> list) {
+		//TODO: figure out way to reasonably handle promises
 		final PacketData data = PacketData.create(ctx.alloc(), packet);
 		try {
 			if (data.getReliability().isOrdered) {
