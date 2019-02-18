@@ -20,5 +20,8 @@ room for extension with any plugins or custom behavior.
   * Configurable packet ID used for raw ByteBuf writing and reading.
   * Extensible to allow for multiple packet ID and channel configurations.
   * True to Netty form, the pipeline can be modified and augmented as needed.
+* Advanced flow control
+  * Back pressure signals useful for buffer limiting during high transfer rate. 
+  * Pending frame-set limits reduce unnecessary resends during high transfer rate.
 
 # [License](./LICENSE)
