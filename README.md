@@ -21,7 +21,8 @@ room for extension with any plugins or custom behavior.
   * Extensible to allow for multiple packet ID and channel configurations.
   * True to Netty form, the pipeline can be modified and augmented as needed.
 * Advanced flow control
-  * Back pressure signals useful for buffer limiting during high transfer rate. 
-  * Pending frame-set limits reduce unnecessary resends during high transfer rate.
+  * Back pressure signals useful for buffer limiting when client is overloaded. 
+  * Pending frame-set limits reduce unnecessary resends during high transfer rates.
+  * Resend priority based on frame sequence so you get older packets faster.
 
 # [License](./LICENSE)
