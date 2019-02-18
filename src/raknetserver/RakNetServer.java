@@ -11,7 +11,6 @@ import io.netty.handler.timeout.ReadTimeoutHandler;
 import io.netty.util.AttributeKey;
 import raknetserver.pipeline.*;
 import raknetserver.utils.Constants;
-import raknetserver.utils.DefaultMetricsLogger;
 import udpchannel.UdpServerChannel;
 
 public class RakNetServer {
@@ -38,7 +37,7 @@ public class RakNetServer {
 	}
 
 	public RakNetServer(InetSocketAddress local, PingHandler pinghandler, UserChannelInitializer init, int userPacketId) {
-		this(local, pinghandler, init, userPacketId, new DefaultMetricsLogger());
+		this(local, pinghandler, init, userPacketId, MetricsLogger.DEFAULT);
 	}
 
 	public void start() {
@@ -104,18 +103,20 @@ public class RakNetServer {
 	}
 
 	public interface MetricsLogger {
-		void packetsIn(int delta);
-		void framesIn(int delta);
-		void bytesIn(int delta);
-		void packetsOut(int delta);
-		void framesOut(int delta);
-		void bytesOut(int delta);
-		void bytesRecalled(int delta);
-		void bytesACKd(int delta);
-		void bytesNACKd(int delta);
-		void acksSent(int delta);
-		void nacksSent(int delta);
-		void measureRTTns(long n);
+        MetricsLogger DEFAULT = new MetricsLogger() {};
+
+		default void packetsIn(int delta) {}
+		default void framesIn(int delta) {}
+		default void bytesIn(int delta) {}
+		default void packetsOut(int delta) {}
+		default void framesOut(int delta) {}
+		default void bytesOut(int delta) {}
+		default void bytesRecalled(int delta) {}
+		default void bytesACKd(int delta) {}
+		default void bytesNACKd(int delta) {}
+		default void acksSent(int delta) {}
+		default void nacksSent(int delta) {}
+		default void measureRTTns(long n) {}
 	}
 
 	public interface Tick {
