@@ -96,9 +96,11 @@ public class UdpChannel extends AbstractChannel {
 		final RecyclableArrayList list = RecyclableArrayList.newInstance();
 		boolean freeList = true;
 		try {
-			ByteBuf buf;
-			while ((buf = (ByteBuf) buffer.current()) != null) {
-				list.add(buf.retain());
+			Object obj;
+			while ((obj = buffer.current()) != null) {
+				if (obj instanceof ByteBuf) {
+					list.add(ReferenceCountUtil.retain(obj));
+				}
 				buffer.remove();
 			}
 			freeList = false;

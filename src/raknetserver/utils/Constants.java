@@ -6,9 +6,10 @@ import java.net.InetSocketAddress;
 
 public class Constants {
 
-	public static final int BACK_PRESSURE_HIGH_WATERMARK = Integer.parseInt(System.getProperty("raknetserver.backPressureHighWatermark", "256"));
-	public static final int BACK_PRESSURE_LOW_WATERMARK = Integer.parseInt(System.getProperty("raknetserver.backPressureLowWatermark", "128"));
-	public static final int MAX_PENDING_FRAME_SETS = Integer.parseInt(System.getProperty("raknetserver.maxPendingFrameSets", "64"));
+	public static final int BACK_PRESSURE_HIGH_WATERMARK = Integer.parseInt(System.getProperty("raknetserver.backPressureHighWatermark", "2048"));
+	public static final int BACK_PRESSURE_LOW_WATERMARK = Integer.parseInt(System.getProperty("raknetserver.backPressureLowWatermark", "1024"));
+	public static final int MAX_PENDING_FRAME_SETS = Integer.parseInt(System.getProperty("raknetserver.maxPendingFrameSets", "1024"));
+	public static final int DEFAULT_PENDING_FRAME_SETS = Integer.parseInt(System.getProperty("raknetserver.defaultPendingFrameSets", "64"));
 	public static final int MAX_PACKET_LOSS = Integer.parseInt(System.getProperty("raknetserver.maxPacketLoss", "8192"));
 	public static final int UDP_IO_THREADS = Integer.parseInt(System.getProperty("raknetserver.udpIOThreads", "4"));
 	public static final int RETRY_TICK_OFFSET = Integer.parseInt(System.getProperty("raknetserver.retryTickOffset", "2"));

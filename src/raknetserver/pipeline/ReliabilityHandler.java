@@ -34,6 +34,8 @@ public class ReliabilityHandler extends ChannelDuplexHandler {
 
     protected int lastReceivedSeqId = 0;
     protected int nextSendSeqId = 0;
+    protected int resendGauge = 0;
+    protected int burstTokens = 0;
     protected boolean backPressureActive = false;
     protected RakNetServer.MetricsLogger metrics;
 
@@ -84,10 +86,6 @@ public class ReliabilityHandler extends ChannelDuplexHandler {
         Constants.packetLossCheck(pendingFrameSets.size(), "unconfirmed sent packets");
     }
 
-    protected void queueFrame(Frame frame) {
-        frameQueue.add(frame);
-        Constants.packetLossCheck(frameQueue.size(), "frame queue");
-    }
 
     protected void readFrameSet(ChannelHandlerContext ctx, FrameSet frameSet) {
         final int packetSeqId = frameSet.getSeqId();
@@ -115,6 +113,7 @@ public class ReliabilityHandler extends ChannelDuplexHandler {
                 final FrameSet packet = pendingFrameSets.remove(id);
                 if (packet != null) {
                     ackdBytes += packet.getRoughSize();
+                    adjustResendGauge(1);
                     packet.release();
                 }
                 Constants.packetLossCheck(nIterations++, "ack confirm range");
@@ -140,12 +139,8 @@ public class ReliabilityHandler extends ChannelDuplexHandler {
         metrics.bytesNACKd(bytesNACKd);
     }
 
-    //TODO: frame lock support! special call that makes sure no frames are sent until all current frames are ackd
-    //on lock, flush flames so everything is queued and sent at least once, set lock, then block all frames with
-    //resend count of 0, until non-0 frames are sent
-    //^^^^^^ this can probably be done with the sequences.
     protected void tick(ChannelHandlerContext ctx, int nTicks) {
-        //all data flushed in order of priority
+        //all data sent in order of priority
         if (!ackSet.isEmpty()) {
             ctx.writeAndFlush(new ACK(ackSet)).addListener(ChannelFutureListener.FIRE_EXCEPTION_ON_FAILURE);
             metrics.acksSent(ackSet.size());
@@ -166,6 +161,7 @@ public class ReliabilityHandler extends ChannelDuplexHandler {
                 recallFrameSet(frameSet);
             }
         }
+        updateBurstTokens(nTicks);
         produceFrameSets(ctx);
         if (frameQueue.size() > Constants.BACK_PRESSURE_HIGH_WATERMARK) {
             updateBackPressure(ctx, true);
@@ -175,8 +171,9 @@ public class ReliabilityHandler extends ChannelDuplexHandler {
         Constants.packetLossCheck(pendingFrameSets.size(), "resend queue");
     }
 
-    protected boolean shouldMakeNewFrameSet() {
-        return pendingFrameSets.size() < Constants.MAX_PENDING_FRAME_SETS && !frameQueue.isEmpty();
+    protected void queueFrame(Frame frame) {
+        frameQueue.add(frame);
+        Constants.packetLossCheck(frameQueue.size(), "frame queue");
     }
 
     protected void produceFrameSet(ChannelHandlerContext ctx, int maxSize) {
@@ -206,19 +203,41 @@ public class ReliabilityHandler extends ChannelDuplexHandler {
         }
     }
 
+    protected void adjustResendGauge(int n) {
+        //clamped gauge, can rebound more easily
+        resendGauge = Math.max(
+                -Constants.DEFAULT_PENDING_FRAME_SETS,
+                Math.min(Constants.DEFAULT_PENDING_FRAME_SETS, resendGauge + n)
+        );
+    }
+
+    protected void updateBurstTokens(int nTicks) {
+        //gradual increment or decrement for burst tokens, unless unused
+        final boolean burstUnused = pendingFrameSets.size() < burstTokens / 2;
+        if (resendGauge > 1 && !burstUnused) {
+            burstTokens += nTicks;
+        } else if (resendGauge < -1 || burstUnused) {
+            burstTokens -= nTicks;
+        }
+        burstTokens = Math.max(Math.min(burstTokens, Constants.MAX_PENDING_FRAME_SETS), 0);
+        metrics.measureBurstTokens(burstTokens);
+    }
+
     protected void produceFrameSets(ChannelHandlerContext ctx) {
         final Integer storedMTU = ctx.channel().attr(RakNetServer.MTU).get();
         if (storedMTU == null) {
             return;
         }
         final int maxSize = storedMTU - FrameSet.HEADER_SIZE - Frame.HEADER_SIZE;
-        while (shouldMakeNewFrameSet()) {
+        final int maxPendingFrameSets = Constants.DEFAULT_PENDING_FRAME_SETS + burstTokens;
+        while (pendingFrameSets.size() < maxPendingFrameSets && !frameQueue.isEmpty()) {
             produceFrameSet(ctx, maxSize);
         }
     }
 
     protected void recallFrameSet(FrameSet frameSet) {
         try {
+            adjustResendGauge(-1);
             metrics.bytesRecalled(frameSet.getRoughSize());
             frameSet.touch("Recalled");
             frameSet.createFrames(frame -> {

@@ -119,6 +119,7 @@ public class RakNetServer {
 		default void acksSent(int delta) {}
 		default void nacksSent(int delta) {}
 		default void measureRTTns(long n) {}
+		default void measureBurstTokens(int n) {}
 	}
 
 	public interface Tick {
