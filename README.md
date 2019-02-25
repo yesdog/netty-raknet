@@ -1,4 +1,5 @@
 # RakNetServer
+[![Build Status](https://travis-ci.org/yesdog/RakNetServer.svg?branch=master)](https://travis-ci.org/yesdog/RakNetServer)
 
 High performance fork of [RakNetServer](https://github.com/Shevchik/RakNetServer) 
 targeting unreliable and rate-limited client connections.
