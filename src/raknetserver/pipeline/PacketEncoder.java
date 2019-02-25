@@ -1,17 +1,17 @@
 package raknetserver.pipeline;
 
+import io.netty.buffer.ByteBuf;
 import io.netty.channel.ChannelHandlerContext;
-import io.netty.handler.codec.MessageToMessageEncoder;
+import io.netty.handler.codec.MessageToByteEncoder;
+
 import raknetserver.packet.Packet;
 
-import java.util.List;
-
-public class PacketEncoder extends MessageToMessageEncoder<Packet> {
+public class PacketEncoder extends MessageToByteEncoder<Packet> {
 
     public static final String NAME = "rn-encoder";
 
-    protected void encode(ChannelHandlerContext ctx, Packet msg, List<Object> out) {
-        out.add(msg.createData(ctx.alloc()));
+    protected void encode(ChannelHandlerContext ctx, Packet msg, ByteBuf out) {
+        msg.write(out);
     }
 
 }

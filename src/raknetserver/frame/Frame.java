@@ -193,37 +193,44 @@ public final class Frame extends AbstractReferenceCounted {
         return (Frame) super.retain();
     }
 
+    public void write(ByteBuf out) {
+        writeHeader(out);
+        packet.write(out);
+    }
+
     public ByteBuf createData(ByteBufAllocator alloc) {
-        final ByteBuf header = alloc.ioBuffer(32);
+        final ByteBuf header = alloc.ioBuffer(HEADER_SIZE);
         final CompositeByteBuf out = alloc.compositeDirectBuffer(2);
-        header.writeByte((getReliability().code() << 5) | (hasSplit ? SPLIT_FLAG : 0));
-        header.writeShort(packet.getDataSize() * 8);
-
-        assert !(hasSplit && !getReliability().isReliable);
-
-        if (getReliability().isReliable) {
-            header.writeMediumLE(reliableIndex);
-        }
-        if (getReliability().isSequenced) {
-            header.writeMediumLE(sequenceIndex);
-        }
-        if (getReliability().isOrdered) {
-            header.writeMediumLE(orderIndex);
-            header.writeByte(getOrderChannel());
-        }
-        if (hasSplit) {
-            header.writeInt(splitCount);
-            header.writeShort(splitID);
-            header.writeInt(splitIndex);
-        }
-
+        writeHeader(header);
         assert header.readableBytes() <= HEADER_SIZE;
         out.addComponent(true, header);
         final int preWriterIndex = out.writerIndex();
         out.addComponent(true, packet.createData());
         assert out.writerIndex() - preWriterIndex == packet.getDataSize();
-
         return out;
+    }
+
+    protected void writeHeader(ByteBuf out) {
+        out.writeByte((getReliability().code() << 5) | (hasSplit ? SPLIT_FLAG : 0));
+        out.writeShort(packet.getDataSize() * 8);
+
+        assert !(hasSplit && !getReliability().isReliable);
+
+        if (getReliability().isReliable) {
+            out.writeMediumLE(reliableIndex);
+        }
+        if (getReliability().isSequenced) {
+            out.writeMediumLE(sequenceIndex);
+        }
+        if (getReliability().isOrdered) {
+            out.writeMediumLE(orderIndex);
+            out.writeByte(getOrderChannel());
+        }
+        if (hasSplit) {
+            out.writeInt(splitCount);
+            out.writeShort(splitID);
+            out.writeInt(splitIndex);
+        }
     }
 
     public FramedPacket.Reliability getReliability() {

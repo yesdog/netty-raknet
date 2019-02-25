@@ -24,13 +24,9 @@ public class ReadHandler extends SimpleChannelInboundHandler<Packet> {
     protected static final int RTT_WEIGHT = 8;
     protected static final long DEFAULT_RTT_MS = 400;
 
-    protected RakNetServer.MetricsLogger metrics;
-
     @Override
     public void handlerAdded(ChannelHandlerContext ctx) throws Exception {
         super.handlerAdded(ctx);
-        metrics = ctx.channel().attr(RakNetServer.RN_METRICS).get();
-        assert metrics != null;
         ctx.channel().attr(RakNetServer.RTT).set(TimeUnit.NANOSECONDS.convert(DEFAULT_RTT_MS, TimeUnit.MILLISECONDS));
     }
 
@@ -54,7 +50,7 @@ public class ReadHandler extends SimpleChannelInboundHandler<Packet> {
                 final long oldRTT = ctx.channel().attr(RakNetServer.RTT).get();
                 final long newRTT = (oldRTT * (RTT_WEIGHT - 1) + pongRTT) / RTT_WEIGHT;
                 ctx.channel().attr(RakNetServer.RTT).set(newRTT);
-                metrics.measureRTTns(newRTT);
+				ctx.channel().attr(RakNetServer.RN_METRICS).get().measureRTTns(newRTT);
             }
 		} else if (packet instanceof ConnectionRequest) {
 			ctx.writeAndFlush(new ServerHandshake(

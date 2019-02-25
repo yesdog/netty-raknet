@@ -37,14 +37,7 @@ public class ReliabilityHandler extends ChannelDuplexHandler {
     protected int resendGauge = 0;
     protected int burstTokens = 0;
     protected boolean backPressureActive = false;
-    protected RakNetServer.MetricsLogger metrics;
-
-    @Override
-    public void handlerAdded(ChannelHandlerContext ctx) throws Exception {
-        super.handlerAdded(ctx);
-        metrics = ctx.channel().attr(RakNetServer.RN_METRICS).get();
-        assert metrics != null;
-    }
+    protected RakNetServer.MetricsLogger metrics = RakNetServer.MetricsLogger.DEFAULT;
 
     @Override
     public void handlerRemoved(ChannelHandlerContext ctx) throws Exception {
@@ -77,15 +70,51 @@ public class ReliabilityHandler extends ChannelDuplexHandler {
         if (msg instanceof Frame) {
             queueFrame((Frame) msg);
             promise.trySuccess(); //TODO: more accurate way to trigger these?
-        } else if (msg instanceof RakNetServer.Tick) {
-            tick(ctx, ((RakNetServer.Tick) msg).getTicks());
-            promise.trySuccess();
         } else {
-            ctx.writeAndFlush(msg, promise);
+            ctx.write(msg, promise);
         }
         Constants.packetLossCheck(pendingFrameSets.size(), "unconfirmed sent packets");
     }
 
+    @Override
+    public void flush(ChannelHandlerContext ctx) throws Exception {
+        //all data sent in order of priority
+        if (!ackSet.isEmpty()) {
+            ctx.write(new ACK(ackSet)).addListener(ChannelFutureListener.FIRE_EXCEPTION_ON_FAILURE);
+            metrics.acksSent(ackSet.size());
+            ackSet.clear();
+        }
+        if (!nackSet.isEmpty()) {
+            ctx.write(new NACK(nackSet)).addListener(ChannelFutureListener.FIRE_EXCEPTION_ON_FAILURE);
+            metrics.nacksSent(nackSet.size());
+            nackSet.clear();
+        }
+        final ObjectIterator<FrameSet> packetItr = pendingFrameSets.values().iterator();
+        final long avgRTT = ctx.channel().attr(RakNetServer.RTT).get();
+        final long deadline = System.nanoTime() - avgRTT; //TODO: offset?
+        while (packetItr.hasNext()) {
+            final FrameSet frameSet = packetItr.next();
+            if (frameSet.getSentTime() < deadline) {
+                packetItr.remove();
+                recallFrameSet(frameSet);
+            } else {
+                //break; //TODO: FrameSets should be ordered by send time ultimately
+            }
+        }
+        updateBurstTokens();
+        produceFrameSets(ctx);
+        if (frameQueue.size() > Constants.BACK_PRESSURE_HIGH_WATERMARK) {
+            updateBackPressure(ctx, true);
+        } else if (frameQueue.size() < Constants.BACK_PRESSURE_LOW_WATERMARK) {
+            updateBackPressure(ctx, false);
+        }
+        Constants.packetLossCheck(pendingFrameSets.size(), "resend queue");
+        metrics = ctx.channel().attr(RakNetServer.RN_METRICS).get();
+        if (metrics == null) {
+            metrics = RakNetServer.MetricsLogger.DEFAULT;
+        }
+        super.flush(ctx);
+    }
 
     protected void readFrameSet(ChannelHandlerContext ctx, FrameSet frameSet) {
         final int packetSeqId = frameSet.getSeqId();
@@ -139,41 +168,29 @@ public class ReliabilityHandler extends ChannelDuplexHandler {
         metrics.bytesNACKd(bytesNACKd);
     }
 
-    protected void tick(ChannelHandlerContext ctx, int nTicks) {
-        //all data sent in order of priority
-        if (!ackSet.isEmpty()) {
-            ctx.writeAndFlush(new ACK(ackSet)).addListener(ChannelFutureListener.FIRE_EXCEPTION_ON_FAILURE);
-            metrics.acksSent(ackSet.size());
-            ackSet.clear();
-        }
-        if (!nackSet.isEmpty()) {
-            ctx.writeAndFlush(new NACK(nackSet)).addListener(ChannelFutureListener.FIRE_EXCEPTION_ON_FAILURE);
-            metrics.nacksSent(nackSet.size());
-            nackSet.clear();
-        }
-        final ObjectIterator<FrameSet> packetItr = pendingFrameSets.values().iterator();
-        final long avgRTT = ctx.channel().attr(RakNetServer.RTT).get();
-        final int maxTicks = (int) (avgRTT / FlushTickDriver.TICK_RESOLUTION) + Constants.RETRY_TICK_OFFSET;
-        while (packetItr.hasNext()) {
-            final FrameSet frameSet = packetItr.next();
-            if (frameSet.incrTick(nTicks) >= maxTicks) {
-                packetItr.remove();
-                recallFrameSet(frameSet);
-            }
-        }
-        updateBurstTokens(nTicks);
-        produceFrameSets(ctx);
-        if (frameQueue.size() > Constants.BACK_PRESSURE_HIGH_WATERMARK) {
-            updateBackPressure(ctx, true);
-        } else if (frameQueue.size() < Constants.BACK_PRESSURE_LOW_WATERMARK) {
-            updateBackPressure(ctx, false);
-        }
-        Constants.packetLossCheck(pendingFrameSets.size(), "resend queue");
-    }
-
     protected void queueFrame(Frame frame) {
         frameQueue.add(frame);
         Constants.packetLossCheck(frameQueue.size(), "frame queue");
+    }
+
+    protected void adjustResendGauge(int n) {
+        //clamped gauge, can rebound more easily
+        resendGauge = Math.max(
+                -Constants.DEFAULT_PENDING_FRAME_SETS,
+                Math.min(Constants.DEFAULT_PENDING_FRAME_SETS, resendGauge + n)
+        );
+    }
+
+    protected void updateBurstTokens() {
+        //gradual increment or decrement for burst tokens, unless unused
+        final boolean burstUnused = pendingFrameSets.size() < burstTokens / 2;
+        if (resendGauge > 1 && !burstUnused) {
+            burstTokens += 2;
+        } else if (resendGauge < -1 || burstUnused) {
+            burstTokens -= 2;
+        }
+        burstTokens = Math.max(Math.min(burstTokens, Constants.MAX_PENDING_FRAME_SETS), 0);
+        metrics.measureBurstTokens(burstTokens);
     }
 
     protected void produceFrameSet(ChannelHandlerContext ctx, int maxSize) {
@@ -194,33 +211,13 @@ public class ReliabilityHandler extends ChannelDuplexHandler {
             frameSet.setSeqId(nextSendSeqId);
             nextSendSeqId = UINT.B3.plus(nextSendSeqId, 1);
             pendingFrameSets.put(frameSet.getSeqId(), frameSet);
-            ctx.writeAndFlush(frameSet.retain()).addListener(ChannelFutureListener.FIRE_EXCEPTION_ON_FAILURE);
-            frameSet.touch("Added to pending frameset list");
-            assert frameSet.refCnt() > 0;
+            frameSet.touch("Added to pending FrameSet list");
+            ctx.write(frameSet.retain()).addListener(ChannelFutureListener.FIRE_EXCEPTION_ON_FAILURE);
             metrics.packetsOut(1);
             metrics.framesOut(frameSet.getNumPackets());
             metrics.bytesOut(frameSet.getRoughSize());
+            assert frameSet.refCnt() > 0;
         }
-    }
-
-    protected void adjustResendGauge(int n) {
-        //clamped gauge, can rebound more easily
-        resendGauge = Math.max(
-                -Constants.DEFAULT_PENDING_FRAME_SETS,
-                Math.min(Constants.DEFAULT_PENDING_FRAME_SETS, resendGauge + n)
-        );
-    }
-
-    protected void updateBurstTokens(int nTicks) {
-        //gradual increment or decrement for burst tokens, unless unused
-        final boolean burstUnused = pendingFrameSets.size() < burstTokens / 2;
-        if (resendGauge > 1 && !burstUnused) {
-            burstTokens += nTicks;
-        } else if (resendGauge < -1 || burstUnused) {
-            burstTokens -= nTicks;
-        }
-        burstTokens = Math.max(Math.min(burstTokens, Constants.MAX_PENDING_FRAME_SETS), 0);
-        metrics.measureBurstTokens(burstTokens);
     }
 
     protected void produceFrameSets(ChannelHandlerContext ctx) {
