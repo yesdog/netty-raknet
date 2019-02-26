@@ -8,10 +8,12 @@ import raknetserver.utils.DataSerializer;
 public class UnconnectedPong extends SimplePacket implements Packet {
 
 	private final long clientTime;
+	private final long serverId;
 	private final String info;
 
-	public UnconnectedPong(long clientTime, String info) {
+	public UnconnectedPong(long clientTime, long serverId, String info) {
 		this.clientTime = clientTime;
+		this.serverId = serverId;
 		this.info = info;
 	}
 
@@ -23,7 +25,7 @@ public class UnconnectedPong extends SimplePacket implements Packet {
 	@Override
 	public void encode(ByteBuf buf) {
 		buf.writeLong(clientTime);
-		buf.writeLong(Constants.SERVER_ID);
+		buf.writeLong(serverId);
 		buf.writeBytes(Constants.MAGIC);
 		DataSerializer.writeString(buf, info);
 	}

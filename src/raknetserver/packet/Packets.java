@@ -38,7 +38,8 @@ public final class Packets
     private static final IntOpenHashSet framedPacketIds = new IntOpenHashSet();
 
     public static Packet decodeRaw(ByteBuf buf) {
-        final Function<ByteBuf, ? extends Packet> decoder = decoders.get(buf.getUnsignedByte(buf.readerIndex()));
+        final int packetId = buf.getUnsignedByte(buf.readerIndex());
+        final Function<ByteBuf, ? extends Packet> decoder = decoders.get(packetId);
         if (decoder == null) {
             return PacketData.read(buf, buf.readableBytes(), false);
         }
@@ -62,8 +63,8 @@ public final class Packets
         }
     }
 
-    public static int packetIdFor(Class<?> clz) {
-        return idFromClass.getInt(clz);
+    public static int packetIdFor(Class<?> type) {
+        return idFromClass.getInt(type);
     }
 
     private static <T extends Packet> void register(int id, Class<?> clz, Function<ByteBuf, T> decoder) {
@@ -105,7 +106,7 @@ public final class Packets
         register(CONNECTION_FAILED,         ConnectionFailed.class,     ConnectionFailed::new);
         register(CLIENT_HANDSHAKE,          ClientHandshake.class,      ClientHandshake::new);
         register(CLIENT_DISCONNECT,         Disconnect.class,           Disconnect::new);
-        register(INVALID_VERSION,           InvalidVersion.class,       InvalidVersion::new);
+        register(INVALID_VERSION,           InvalidVersion.class);
         register(UNCONNECTED_PONG,          UnconnectedPong.class);
         for (int i = FRAME_DATA_START ; i <= FRAME_DATA_END ; i++) {
             register(i,                     FrameSet.class,           FrameSet::read);

@@ -1,6 +1,7 @@
 package raknetserver;
 
 import java.net.InetSocketAddress;
+import java.util.UUID;
 
 import io.netty.bootstrap.ServerBootstrap;
 import io.netty.channel.ChannelFuture;
@@ -11,12 +12,13 @@ import io.netty.util.AttributeKey;
 import raknetserver.pipeline.*;
 import raknetserver.udp.UdpChildChannel;
 import raknetserver.udp.UdpServerChannel;
-import raknetserver.udp.UdpChildHandler;
+import raknetserver.udp.UdpServerHandler;
 
 public class RakNetServer {
 
     public static final AttributeKey<Integer> MTU = AttributeKey.valueOf("RN_MTU");
     public static final AttributeKey<Long> RTT = AttributeKey.valueOf("RN_RTT");
+    public static final AttributeKey<Long> SERVER_ID = AttributeKey.valueOf("RN_SERVER_ID");
     public static final AttributeKey<Integer> USER_DATA_ID = AttributeKey.valueOf("RN_USER_DATA_ID");
     public static final AttributeKey<MetricsLogger> RN_METRICS = AttributeKey.valueOf("RN_METRICS");
 
@@ -37,8 +39,10 @@ public class RakNetServer {
         }
 
         protected void initChannel(UdpServerChannel channel) {
+            //globally unique consistent id
+            channel.attr(RakNetServer.SERVER_ID).set(UUID.randomUUID().getLeastSignificantBits());
             channel.pipeline()
-                    .addLast(new UdpChildHandler())
+                    .addLast(new UdpServerHandler())
                     .addLast(ConnectionInitializer.NAME, new ConnectionInitializer())
                     .addLast(ioInit);
         }
@@ -52,6 +56,7 @@ public class RakNetServer {
         }
 
         protected void initChannel(UdpChildChannel channel) {
+            channel.attr(RakNetServer.SERVER_ID).set(channel.parent().attr(RakNetServer.SERVER_ID).get());
             channel.attr(RakNetServer.RN_METRICS).set(MetricsLogger.DEFAULT);
             channel.pipeline()
                     .addLast("rn-timeout",        new ReadTimeoutHandler(5))
@@ -66,7 +71,7 @@ public class RakNetServer {
                     .addLast(WriteHandler.NAME,         new WriteHandler())
                     .addLast(ReadHandler.NAME,          new ReadHandler())
                     .addLast(childInit)
-                    .addLast(FlushTickDriver.NAME_OUT,  new FlushTickDriver());
+                    .addLast(FlushTickHandler.NAME_OUT,  new FlushTickHandler());
         }
     }
 

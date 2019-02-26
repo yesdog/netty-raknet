@@ -9,7 +9,7 @@ import java.net.SocketAddress;
 import java.util.HashMap;
 import java.util.Map;
 
-public class UdpChildHandler extends ChannelDuplexHandler {
+public class UdpServerHandler extends ChannelDuplexHandler {
 
     protected Map<SocketAddress, UdpChildChannel> childMap = new HashMap<>();
 

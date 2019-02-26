@@ -8,6 +8,7 @@ import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.SimpleChannelInboundHandler;
 import io.netty.util.ReferenceCountUtil;
 import io.netty.util.concurrent.ScheduledFuture;
+
 import raknetserver.RakNetServer;
 import raknetserver.packet.Ping;
 import raknetserver.packet.ConnectionFailed;
@@ -52,22 +53,24 @@ public class ConnectionHandler extends SimpleChannelInboundHandler<Packet> {
     @SuppressWarnings("unchecked")
     protected void handleConnectionRequest2(ChannelHandlerContext ctx, ConnectionRequest2 connectionRequest2) {
         final long nguid = connectionRequest2.getGUID();
+        final Channel channel = ctx.channel();
+        final long serverId = channel.attr(RakNetServer.SERVER_ID).get();
         if (!isConnected) {
             isConnected = true;
             guid = nguid;
-            Channel channel = ctx.channel();
             //TODO: verify server-side MTU?
             channel.attr(RakNetServer.MTU).set(connectionRequest2.getMtu());
-            ctx.writeAndFlush(new ConnectionReply2(connectionRequest2.getMtu()))
+            ctx.writeAndFlush(new ConnectionReply2(connectionRequest2.getMtu(), serverId))
                     .addListener(ChannelFutureListener.FIRE_EXCEPTION_ON_FAILURE);
             pingTask = channel.eventLoop().scheduleAtFixedRate(
                     () -> channel.writeAndFlush(new Ping()).addListener(ChannelFutureListener.FIRE_EXCEPTION_ON_FAILURE),
-                    100, 250, TimeUnit.MILLISECONDS);
+                    100, 250, TimeUnit.MILLISECONDS
+            );
         } else {
             //if guid matches then it means that reply2 packet didn't arrive to the clients
             //otherwise it means that it is actually a new client connecting using already taken ip+port
             if (guid == nguid) {
-                ctx.writeAndFlush(new ConnectionReply2(ctx.channel().attr(RakNetServer.MTU).get()))
+                ctx.writeAndFlush(new ConnectionReply2(ctx.channel().attr(RakNetServer.MTU).get(), serverId))
                         .addListener(ChannelFutureListener.FIRE_EXCEPTION_ON_FAILURE);
             } else {
                 ctx.writeAndFlush(new ConnectionFailed()).addListeners(

@@ -52,9 +52,7 @@ public class UdpChildChannel extends AbstractChannel {
         open = false;
     }
 
-    protected void doBeginRead() {
-
-    }
+    protected void doBeginRead() {}
 
     protected void doWrite(ChannelOutboundBuffer buffer) {
         Object obj;

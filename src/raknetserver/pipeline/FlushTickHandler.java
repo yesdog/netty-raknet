@@ -5,7 +5,7 @@ import io.netty.util.concurrent.ScheduledFuture;
 
 import java.util.concurrent.TimeUnit;
 
-public class FlushTickDriver extends ChannelOutboundHandlerAdapter {
+public class FlushTickHandler extends ChannelOutboundHandlerAdapter {
 
     public static final String NAME_IN = "rn-tick-in";
     public static final String NAME_OUT = "rn-tick-out";
@@ -41,12 +41,17 @@ public class FlushTickDriver extends ChannelOutboundHandlerAdapter {
         maybeFlush();
     }
 
-    /**
-    The flush fires no faster than the set interval, and is driven
-    by a slow (100ms) netty timer as well as the traffic flow itself.
-    This could benefit from a higher resolution timer, but the
-    traffic flow itself generally does fine as a driver.
-     */
+    @Override
+    public void flush(ChannelHandlerContext ctx) throws Exception {
+        //force flush, lets adjust tickAccum
+        if (tickAccum >= TICK_RESOLUTION) {
+            tickAccum -= TICK_RESOLUTION;
+        } else {
+            tickAccum = 0;
+        }
+        super.flush(ctx);
+    }
+
     protected void maybeFlush() {
         if (ctx == null) {
             return;
@@ -54,8 +59,8 @@ public class FlushTickDriver extends ChannelOutboundHandlerAdapter {
         final long curTime = System.nanoTime();
         tickAccum += curTime - lastTickAccum;
         lastTickAccum = curTime;
-        if (tickAccum > TICK_RESOLUTION) {
-            tickAccum = tickAccum % TICK_RESOLUTION;
+        while (tickAccum >= TICK_RESOLUTION) {
+            tickAccum -= TICK_RESOLUTION;
             ctx.flush();
         }
     }

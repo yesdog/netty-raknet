@@ -9,9 +9,11 @@ public class ConnectionReply1 extends SimplePacket implements Packet {
 	private static final boolean hasSecurity = false;
 
 	private final int mtu;
+	private final long serverId;
 
-	public ConnectionReply1(int mtu) {
+	public ConnectionReply1(int mtu, long serverId) {
 		this.mtu = mtu;
+		this.serverId = serverId;
 	}
 
 	@Override
@@ -22,7 +24,7 @@ public class ConnectionReply1 extends SimplePacket implements Packet {
 	@Override
 	public void encode(ByteBuf buf) {
 		buf.writeBytes(Constants.MAGIC);
-		buf.writeLong(Constants.SERVER_ID);
+		buf.writeLong(serverId);
 		buf.writeBoolean(hasSecurity);
 		buf.writeShort(mtu);
 	}
