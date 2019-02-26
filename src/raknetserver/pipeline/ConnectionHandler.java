@@ -34,8 +34,10 @@ public class ConnectionHandler extends SimpleChannelInboundHandler<Packet> {
     }
 
     @Override
+    @SuppressWarnings("unchecked")
     public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) {
-        ctx.writeAndFlush(new ConnectionFailed()).addListener(ChannelFutureListener.CLOSE);
+        ctx.writeAndFlush(new ConnectionFailed()).addListeners(
+                ChannelFutureListener.CLOSE, ChannelFutureListener.CLOSE_ON_FAILURE);
         ctx.fireExceptionCaught(cause);
     }
 
@@ -47,6 +49,7 @@ public class ConnectionHandler extends SimpleChannelInboundHandler<Packet> {
         super.channelInactive(ctx);
     }
 
+    @SuppressWarnings("unchecked")
     protected void handleConnectionRequest2(ChannelHandlerContext ctx, ConnectionRequest2 connectionRequest2) {
         final long nguid = connectionRequest2.getGUID();
         if (!isConnected) {
@@ -58,7 +61,7 @@ public class ConnectionHandler extends SimpleChannelInboundHandler<Packet> {
             ctx.writeAndFlush(new ConnectionReply2(connectionRequest2.getMtu()))
                     .addListener(ChannelFutureListener.FIRE_EXCEPTION_ON_FAILURE);
             pingTask = channel.eventLoop().scheduleAtFixedRate(
-                    () -> channel.write(new Ping()).addListener(ChannelFutureListener.FIRE_EXCEPTION_ON_FAILURE),
+                    () -> channel.writeAndFlush(new Ping()).addListener(ChannelFutureListener.FIRE_EXCEPTION_ON_FAILURE),
                     100, 250, TimeUnit.MILLISECONDS);
         } else {
             //if guid matches then it means that reply2 packet didn't arrive to the clients
@@ -67,7 +70,8 @@ public class ConnectionHandler extends SimpleChannelInboundHandler<Packet> {
                 ctx.writeAndFlush(new ConnectionReply2(ctx.channel().attr(RakNetServer.MTU).get()))
                         .addListener(ChannelFutureListener.FIRE_EXCEPTION_ON_FAILURE);
             } else {
-                ctx.writeAndFlush(new ConnectionFailed()).addListener(ChannelFutureListener.CLOSE);
+                ctx.writeAndFlush(new ConnectionFailed()).addListeners(
+                        ChannelFutureListener.CLOSE, ChannelFutureListener.CLOSE_ON_FAILURE);
             }
         }
     }

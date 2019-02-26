@@ -55,9 +55,7 @@ public class FlushTickDriver extends ChannelOutboundHandlerAdapter {
         tickAccum += curTime - lastTickAccum;
         lastTickAccum = curTime;
         if (tickAccum > TICK_RESOLUTION) {
-            final int nTicks = (int) (tickAccum / TICK_RESOLUTION);
             tickAccum = tickAccum % TICK_RESOLUTION;
-            //ctx.writeAndFlush(Tick.get(nTicks)).addListener(ChannelFutureListener.FIRE_EXCEPTION_ON_FAILURE);
             ctx.flush();
         }
     }

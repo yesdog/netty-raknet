@@ -1,12 +1,12 @@
 package raknetserver.packet;
 
 import java.util.ArrayList;
-import java.util.Iterator;
 import java.util.function.Consumer;
 
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.ByteBufAllocator;
 import io.netty.buffer.CompositeByteBuf;
+import io.netty.channel.ChannelPromise;
 import io.netty.util.AbstractReferenceCounted;
 import io.netty.util.Recycler;
 import io.netty.util.ReferenceCounted;
@@ -80,6 +80,16 @@ public final class FrameSet extends AbstractReferenceCounted implements Packet {
     protected void writeHeader(ByteBuf out) {
         out.writeByte(Packets.FRAME_DATA_START);
         out.writeMediumLE(seqId);
+    }
+
+    public void succeed() {
+        frames.forEach(frame -> {
+            final ChannelPromise promise = frame.getPromise();
+            if (promise != null) {
+                promise.trySuccess();
+                frame.setPromise(null);
+            }
+        });
     }
 
     protected void deallocate() {

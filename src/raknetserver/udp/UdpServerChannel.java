@@ -51,6 +51,9 @@ public class UdpServerChannel extends AbstractServerChannel {
     protected volatile boolean open = true;
 
     protected void doBind(SocketAddress local) {
+        if (localAddress != null) {
+            throw new IllegalStateException("UdpServerChannel already bound");
+        }
         localAddress = local;
         //share same loop between io channel and server channel
         final Bootstrap bootstrap = new Bootstrap().group(eventLoop())

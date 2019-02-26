@@ -3,12 +3,14 @@ package raknetserver.frame;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.ByteBufAllocator;
 import io.netty.buffer.CompositeByteBuf;
+import io.netty.channel.ChannelPromise;
 import io.netty.util.AbstractReferenceCounted;
 import io.netty.util.Recycler;
 import io.netty.util.ReferenceCounted;
 import io.netty.util.ResourceLeakDetector;
 import io.netty.util.ResourceLeakDetectorFactory;
 import io.netty.util.ResourceLeakTracker;
+
 import raknetserver.packet.FramedPacket;
 import raknetserver.packet.PacketData;
 import raknetserver.packet.Packets;
@@ -16,7 +18,6 @@ import raknetserver.utils.UINT;
 
 import java.util.List;
 
-//TODO: store and fulfill original netty promise
 public final class Frame extends AbstractReferenceCounted {
 
     public static Comparator COMPARATOR = new Comparator();
@@ -112,6 +113,7 @@ public final class Frame extends AbstractReferenceCounted {
     private final Recycler.Handle<Frame> handle;
     private PacketData packet = null;
     private ResourceLeakTracker<Frame> tracker = null;
+    private ChannelPromise promise = null;
 
     private Frame(Recycler.Handle<Frame> handle) {
         this.handle = handle;
@@ -275,6 +277,14 @@ public final class Frame extends AbstractReferenceCounted {
 
     public void setReliableIndex(int reliableIndex) {
         this.reliableIndex = reliableIndex;
+    }
+
+    public ChannelPromise getPromise() {
+        return promise;
+    }
+
+    public void setPromise(ChannelPromise promise) {
+        this.promise = promise;
     }
 
     protected static final class Comparator implements java.util.Comparator<Frame> {

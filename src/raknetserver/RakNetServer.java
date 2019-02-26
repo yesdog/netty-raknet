@@ -1,10 +1,8 @@
 package raknetserver;
 
 import java.net.InetSocketAddress;
-import java.util.function.Supplier;
 
 import io.netty.bootstrap.ServerBootstrap;
-import io.netty.channel.Channel;
 import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelInitializer;
 import io.netty.channel.DefaultEventLoopGroup;
@@ -21,7 +19,6 @@ public class RakNetServer {
     public static final AttributeKey<Long> RTT = AttributeKey.valueOf("RN_RTT");
     public static final AttributeKey<Integer> USER_DATA_ID = AttributeKey.valueOf("RN_USER_DATA_ID");
     public static final AttributeKey<MetricsLogger> RN_METRICS = AttributeKey.valueOf("RN_METRICS");
-    public static final AttributeKey<Supplier<String>> PING_SUPPLIER = AttributeKey.valueOf("RN_PING_SUPPLIER");
 
     public static ChannelFuture createSimple(InetSocketAddress listen, ChannelInitializer childInit, ChannelInitializer ioInit) {
         ServerBootstrap bootstrap = new ServerBootstrap()
@@ -42,7 +39,7 @@ public class RakNetServer {
         protected void initChannel(UdpServerChannel channel) {
             channel.pipeline()
                     .addLast(new UdpChildHandler())
-                    .addLast(PreConnectionHandler.NAME, new PreConnectionHandler())
+                    .addLast(ConnectionInitializer.NAME, new ConnectionInitializer())
                     .addLast(ioInit);
         }
     }

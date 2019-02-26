@@ -45,6 +45,7 @@ public class UdpChildHandler extends ChannelDuplexHandler {
         final UdpServerChannel channel = (UdpServerChannel) ctx.channel();
         if (msg instanceof DatagramPacket) {
             channel.listener.write(msg).addListener(ChannelFutureListener.FIRE_EXCEPTION_ON_FAILURE);
+            promise.trySuccess();
         } else {
             ctx.write(msg, promise);
         }
@@ -70,7 +71,7 @@ public class UdpChildHandler extends ChannelDuplexHandler {
             }
             if (!childMap.containsKey(remoteAddress)) {
                 final UdpChildChannel child = new UdpChildChannel(channel, (InetSocketAddress) remoteAddress);
-                channel.pipeline().fireChannelRead(child).fireChannelReadComplete();
+                channel.pipeline().fireChannelRead(child).fireChannelReadComplete(); //register
                 child.closeFuture().addListener(v ->
                         channel.eventLoop().execute(() -> childMap.remove(remoteAddress, child))
                 );

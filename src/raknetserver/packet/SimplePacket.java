@@ -22,10 +22,4 @@ public abstract class SimplePacket implements Packet {
         return Packets.packetIdFor(getClass());
     }
 
-    public ByteBuf createData(ByteBufAllocator alloc) {
-        final ByteBuf out = alloc.ioBuffer();
-        write(out);
-        return out;
-    }
-
 }
