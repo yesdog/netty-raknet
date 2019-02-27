@@ -25,5 +25,8 @@ room for extension with any plugins or custom behavior.
   * Back pressure signals useful for buffer limiting when client is overloaded. 
   * Pending frame-set limits reduce unnecessary resends during high transfer rates.
   * Resend priority based on frame sequence so you get older packets faster.
+* Automated flush driver
+  * Recommended to write to pipeline with no flush. 
+  * Flush cycles condense outbound data for best use of MTU.
 
 # [License](./LICENSE)
