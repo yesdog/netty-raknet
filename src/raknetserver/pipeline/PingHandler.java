@@ -5,10 +5,10 @@ import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.socket.DatagramPacket;
 import io.netty.util.ReferenceCountUtil;
 
-import raknetserver.RakNetServer;
 import raknetserver.packet.Packet;
 import raknetserver.packet.UnconnectedPing;
 import raknetserver.packet.UnconnectedPong;
+import raknetserver.udp.UdpServerChannel;
 
 import java.net.InetSocketAddress;
 import java.util.function.Consumer;
@@ -23,7 +23,8 @@ public abstract class PingHandler extends UdpPacketHandler<UnconnectedPing> {
 
     protected void handle(ChannelHandlerContext ctx, InetSocketAddress sender, UnconnectedPing ping) {
         final long clientTime = ping.getClientTime(); //must ditch references to ping
-        final long serverId = ctx.channel().attr(RakNetServer.SERVER_ID).get();
+        final UdpServerChannel channel = (UdpServerChannel) ctx.channel();
+        final long serverId = channel.config().getServerId();
         handlePing(sender, serverId, response -> {
             final Packet pong = new UnconnectedPong(clientTime, serverId, response);
             try {

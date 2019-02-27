@@ -24,8 +24,7 @@ public final class PacketData extends AbstractReferenceCounted implements Framed
     @SuppressWarnings("unchecked")
     private static PacketData createRaw() {
         final PacketData out = recycler.get();
-        assert out.refCnt() == 0;
-        assert out.tracker == null;
+        assert out.refCnt() == 0 && out.tracker == null : "bad reuse";
         out.orderId = 0;
         out.fragment = false;
         out.data = null;

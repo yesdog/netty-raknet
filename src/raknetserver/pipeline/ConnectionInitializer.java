@@ -23,7 +23,7 @@ public class ConnectionInitializer extends UdpPacketHandler<ConnectionRequest1> 
     }
 
     protected void handle(ChannelHandlerContext ctx, InetSocketAddress sender, ConnectionRequest1 request) {
-        final long serverId = ctx.channel().attr(RakNetServer.SERVER_ID).get();
+        final long serverId = ctx.channel().config().getOption(RakNetServer.SERVER_ID);
         final Packet response;
         if (request.getRakNetProtocolVersion() == InvalidVersion.VALID_VERSION) {
             //use connect to create a new child for this address
