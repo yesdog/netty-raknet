@@ -12,6 +12,7 @@ import raknetserver.RakNetServer;
 import raknetserver.packet.Ping;
 import raknetserver.packet.ConnectionFailed;
 import raknetserver.packet.ConnectionReply2;
+import raknetserver.packet.ConnectionRequest1;
 import raknetserver.packet.ConnectionRequest2;
 import raknetserver.packet.Packet;
 import raknetserver.channel.RakNetChildChannel;
@@ -25,7 +26,9 @@ public class ConnectionHandler extends SimpleChannelInboundHandler<Packet> {
     protected boolean isConnected = false;
 
     protected void channelRead0(ChannelHandlerContext ctx, Packet packet) {
-        if (packet instanceof ConnectionRequest2) {
+        if (packet instanceof ConnectionRequest1) {
+            // ignore
+        } else if (packet instanceof ConnectionRequest2) {
             handleConnectionRequest2(ctx, (ConnectionRequest2) packet);
         } else if (!isConnected) {
             throw new IllegalStateException("Can't handle packet " + packet + ", connection is not established yet");
