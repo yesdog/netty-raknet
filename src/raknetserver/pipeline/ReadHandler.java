@@ -16,7 +16,7 @@ import raknetserver.packet.Ping;
 import raknetserver.packet.Pong;
 import raknetserver.packet.ServerHandshake;
 import raknetserver.packet.PacketData;
-import raknetserver.udp.UdpChildChannel;
+import raknetserver.channel.RakNetChildChannel;
 
 public class ReadHandler extends SimpleChannelInboundHandler<Packet> {
 
@@ -32,7 +32,7 @@ public class ReadHandler extends SimpleChannelInboundHandler<Packet> {
     }
 
     protected void channelRead0(ChannelHandlerContext ctx, Packet packet) {
-        final UdpChildChannel channel = (UdpChildChannel) ctx.channel();
+        final RakNetChildChannel channel = (RakNetChildChannel) ctx.channel();
         if (packet instanceof PacketData) {
             final PacketData data = (PacketData) packet;
             final int userDataId = channel.config().getUserDataId();

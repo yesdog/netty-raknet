@@ -6,6 +6,7 @@ import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelPromise;
 import io.netty.handler.codec.DecoderException;
 import io.netty.util.ReferenceCountUtil;
+
 import it.unimi.dsi.fastutil.ints.IntRBTreeSet;
 import it.unimi.dsi.fastutil.ints.IntSortedSet;
 import it.unimi.dsi.fastutil.ints.Int2ObjectMap;
@@ -13,14 +14,16 @@ import it.unimi.dsi.fastutil.ints.Int2ObjectOpenHashMap;
 import it.unimi.dsi.fastutil.objects.ObjectIterator;
 import it.unimi.dsi.fastutil.objects.ObjectRBTreeSet;
 import it.unimi.dsi.fastutil.objects.ObjectSortedSet;
+
 import raknetserver.RakNetServer;
+import raknetserver.channel.RakNetChannelConfig;
 import raknetserver.frame.Frame;
 import raknetserver.packet.FrameSet;
 import raknetserver.packet.Reliability;
 import raknetserver.packet.Reliability.REntry;
 import raknetserver.packet.Reliability.ACK;
 import raknetserver.packet.Reliability.NACK;
-import raknetserver.udp.UdpChildChannel;
+import raknetserver.channel.RakNetChildChannel;
 import raknetserver.utils.Constants;
 import raknetserver.utils.UINT;
 
@@ -38,7 +41,13 @@ public class ReliabilityHandler extends ChannelDuplexHandler {
     protected int resendGauge = 0;
     protected int burstTokens = 0;
     protected boolean backPressureActive = false;
-    protected RakNetServer.MetricsLogger metrics = RakNetServer.MetricsLogger.DEFAULT;
+    protected RakNetChildChannel.Config config = null;
+
+    @Override
+    public void handlerAdded(ChannelHandlerContext ctx) throws Exception {
+        config = ((RakNetChildChannel) ctx.channel()).config();
+        super.handlerAdded(ctx);
+    }
 
     @Override
     public void handlerRemoved(ChannelHandlerContext ctx) throws Exception {
@@ -83,12 +92,12 @@ public class ReliabilityHandler extends ChannelDuplexHandler {
         //all data sent in order of priority
         if (!ackSet.isEmpty()) {
             ctx.write(new ACK(ackSet)).addListener(ChannelFutureListener.FIRE_EXCEPTION_ON_FAILURE);
-            metrics.acksSent(ackSet.size());
+            config.getMetrics().acksSent(ackSet.size());
             ackSet.clear();
         }
         if (!nackSet.isEmpty()) {
             ctx.write(new NACK(nackSet)).addListener(ChannelFutureListener.FIRE_EXCEPTION_ON_FAILURE);
-            metrics.nacksSent(nackSet.size());
+            config.getMetrics().nacksSent(nackSet.size());
             nackSet.clear();
         }
         final ObjectIterator<FrameSet> packetItr = pendingFrameSets.values().iterator();
@@ -105,13 +114,12 @@ public class ReliabilityHandler extends ChannelDuplexHandler {
         }
         updateBurstTokens();
         produceFrameSets(ctx);
-        if (frameQueue.size() > Constants.BACK_PRESSURE_HIGH_WATERMARK) {
+        if (frameQueue.size() > config.getBackPressureHighWatermark()) {
             updateBackPressure(ctx, true);
-        } else if (frameQueue.size() < Constants.BACK_PRESSURE_LOW_WATERMARK) {
+        } else if (frameQueue.size() < config.getBackPressureLowWatermark()) {
             updateBackPressure(ctx, false);
         }
         Constants.packetLossCheck(pendingFrameSets.size(), "resend queue");
-        metrics = ((UdpChildChannel) ctx.channel()).config().getMetrics();
         super.flush(ctx);
     }
 
@@ -126,9 +134,9 @@ public class ReliabilityHandler extends ChannelDuplexHandler {
                 lastReceivedSeqId = UINT.B3.plus(lastReceivedSeqId, 1);
             }
         }
-        metrics.packetsIn(1);
-        metrics.framesIn(frameSet.getNumPackets());
-        metrics.bytesIn(frameSet.getRoughSize());
+        config.getMetrics().packetsIn(1);
+        config.getMetrics().framesIn(frameSet.getNumPackets());
+        config.getMetrics().bytesIn(frameSet.getRoughSize());
         frameSet.createFrames(ctx::fireChannelRead);
     }
 
@@ -148,7 +156,7 @@ public class ReliabilityHandler extends ChannelDuplexHandler {
                 Constants.packetLossCheck(nIterations++, "ack confirm range");
             }
         }
-        metrics.bytesACKd(ackdBytes);
+        config.getMetrics().bytesACKd(ackdBytes);
     }
 
     protected void readNack(NACK nack) {
@@ -165,7 +173,7 @@ public class ReliabilityHandler extends ChannelDuplexHandler {
                 Constants.packetLossCheck(nIterations++, "nack confirm range");
             }
         }
-        metrics.bytesNACKd(bytesNACKd);
+        config.getMetrics().bytesNACKd(bytesNACKd);
     }
 
     protected void queueFrame(Frame frame) {
@@ -176,8 +184,8 @@ public class ReliabilityHandler extends ChannelDuplexHandler {
     protected void adjustResendGauge(int n) {
         //clamped gauge, can rebound more easily
         resendGauge = Math.max(
-                -Constants.DEFAULT_PENDING_FRAME_SETS,
-                Math.min(Constants.DEFAULT_PENDING_FRAME_SETS, resendGauge + n)
+                -config.getDefaultPendingFrameSets(),
+                Math.min(config.getDefaultPendingFrameSets(), resendGauge + n)
         );
     }
 
@@ -189,8 +197,8 @@ public class ReliabilityHandler extends ChannelDuplexHandler {
         } else if (resendGauge < -1 || burstUnused) {
             burstTokens -= 3;
         }
-        burstTokens = Math.max(Math.min(burstTokens, Constants.MAX_PENDING_FRAME_SETS), 0);
-        metrics.measureBurstTokens(burstTokens);
+        burstTokens = Math.max(Math.min(burstTokens, config.getMaxPendingFrameSets()), 0);
+        config.getMetrics().measureBurstTokens(burstTokens);
     }
 
     protected void produceFrameSet(ChannelHandlerContext ctx, int maxSize) {
@@ -213,9 +221,9 @@ public class ReliabilityHandler extends ChannelDuplexHandler {
             pendingFrameSets.put(frameSet.getSeqId(), frameSet);
             frameSet.touch("Added to pending FrameSet list");
             ctx.write(frameSet.retain()).addListener(ChannelFutureListener.FIRE_EXCEPTION_ON_FAILURE);
-            metrics.packetsOut(1);
-            metrics.framesOut(frameSet.getNumPackets());
-            metrics.bytesOut(frameSet.getRoughSize());
+            config.getMetrics().packetsOut(1);
+            config.getMetrics().framesOut(frameSet.getNumPackets());
+            config.getMetrics().bytesOut(frameSet.getRoughSize());
             assert frameSet.refCnt() > 0;
         }
     }
@@ -226,7 +234,7 @@ public class ReliabilityHandler extends ChannelDuplexHandler {
             return;
         }
         final int maxSize = storedMTU - FrameSet.HEADER_SIZE - Frame.HEADER_SIZE;
-        final int maxPendingFrameSets = Constants.DEFAULT_PENDING_FRAME_SETS + burstTokens;
+        final int maxPendingFrameSets = config.getDefaultPendingFrameSets() + burstTokens;
         while (pendingFrameSets.size() < maxPendingFrameSets && !frameQueue.isEmpty()) {
             produceFrameSet(ctx, maxSize);
         }
@@ -235,7 +243,7 @@ public class ReliabilityHandler extends ChannelDuplexHandler {
     protected void recallFrameSet(FrameSet frameSet) {
         try {
             adjustResendGauge(-1);
-            metrics.bytesRecalled(frameSet.getRoughSize());
+            config.getMetrics().bytesRecalled(frameSet.getRoughSize());
             frameSet.touch("Recalled");
             frameSet.createFrames(frame -> {
                 if (frame.getReliability().isReliable) {

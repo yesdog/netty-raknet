@@ -7,17 +7,17 @@ import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelInitializer;
 import io.netty.channel.ChannelOption;
 import io.netty.channel.DefaultEventLoopGroup;
+import io.netty.channel.socket.DatagramChannel;
 import io.netty.handler.timeout.ReadTimeoutHandler;
 import io.netty.util.AttributeKey;
 
 import raknetserver.pipeline.*;
-import raknetserver.udp.UdpChildChannel;
-import raknetserver.udp.UdpServerChannel;
-import raknetserver.udp.UdpServerHandler;
+import raknetserver.channel.RakNetChildChannel;
+import raknetserver.channel.RakNetServerChannel;
+import raknetserver.channel.RakNetServerHandler;
 
-public class RakNetServer {
+public class RakNetServer extends RakNetServerChannel {
 
-    //TODO: switch some of these to ChannelOptions
     public static final AttributeKey<Integer> MTU = AttributeKey.valueOf("RN_MTU");
     public static final AttributeKey<Long> RTT = AttributeKey.valueOf("RN_RTT");
     public static final ChannelOption<Long> SERVER_ID = ChannelOption.valueOf("RN_SERVER_ID");
@@ -26,36 +26,36 @@ public class RakNetServer {
 
     public static ChannelFuture createSimple(InetSocketAddress listen, ChannelInitializer childInit, ChannelInitializer ioInit) {
         ServerBootstrap bootstrap = new ServerBootstrap()
-        .group(UdpServerChannel.DEFAULT_CHANNEL_EVENT_GROUP.get(), new DefaultEventLoopGroup())
-        .channelFactory(() -> new UdpServerChannel(UdpServerChannel.DEFAULT_CHANNEL_CLASS))
+        .group(RakNetServer.DEFAULT_CHANNEL_EVENT_GROUP.get(), new DefaultEventLoopGroup())
+        .channelFactory(() -> new RakNetServer(RakNetServer.DEFAULT_CHANNEL_CLASS))
         .handler(new DefaultIoInitializer(ioInit))
         .childHandler(new DefaultChildInitializer(childInit));
         return bootstrap.bind(listen);
     }
 
-    public static class DefaultIoInitializer extends ChannelInitializer<UdpServerChannel> {
+    public static class DefaultIoInitializer extends ChannelInitializer<RakNetServerChannel> {
         final ChannelInitializer ioInit;
 
         public DefaultIoInitializer(ChannelInitializer childInit) {
             this.ioInit = childInit;
         }
 
-        protected void initChannel(UdpServerChannel channel) {
+        protected void initChannel(RakNetServerChannel channel) {
             channel.pipeline()
-                    .addLast(new UdpServerHandler())
+                    .addLast(new RakNetServerHandler())
                     .addLast(ConnectionInitializer.NAME, new ConnectionInitializer())
                     .addLast(ioInit);
         }
     }
 
-    public static class DefaultChildInitializer extends ChannelInitializer<UdpChildChannel> {
+    public static class DefaultChildInitializer extends ChannelInitializer<RakNetChildChannel> {
         final ChannelInitializer childInit;
 
         public DefaultChildInitializer(ChannelInitializer childInit) {
             this.childInit = childInit;
         }
 
-        protected void initChannel(UdpChildChannel channel) {
+        protected void initChannel(RakNetChildChannel channel) {
             channel.pipeline()
                     .addLast("rn-timeout",        new ReadTimeoutHandler(5))
                     .addLast(PacketEncoder.NAME,        new PacketEncoder())
@@ -71,6 +71,10 @@ public class RakNetServer {
                     .addLast(childInit)
                     .addLast(FlushTickHandler.NAME_OUT,  new FlushTickHandler());
         }
+    }
+
+    public RakNetServer(Class<? extends DatagramChannel> ioChannelType) {
+        super(ioChannelType);
     }
 
     /**

@@ -4,7 +4,6 @@ import java.net.InetSocketAddress;
 
 import io.netty.buffer.ByteBuf;
 
-import raknetserver.utils.Constants;
 import raknetserver.utils.DataSerializer;
 
 public class ServerHandshake extends SimpleFramedPacket {
@@ -33,7 +32,7 @@ public class ServerHandshake extends SimpleFramedPacket {
 		DataSerializer.writeAddress(buf, clientAddr);
 		buf.writeShort(0);
 		for (int i = 0; i < 20; i++) {
-			DataSerializer.writeAddress(buf, Constants.NULL_ADDR);
+			DataSerializer.writeAddress(buf);
 		}
 		buf.writeLong(timestamp);
 		buf.writeLong(System.currentTimeMillis());

@@ -26,7 +26,7 @@ public class ConnectionReply2 extends SimplePacket implements Packet {
     public void encode(ByteBuf buf) {
         buf.writeBytes(Constants.MAGIC);
         buf.writeLong(serverId);
-        DataSerializer.writeAddress(buf, Constants.NULL_ADDR);
+        DataSerializer.writeAddress(buf);
         buf.writeShort(mtu);
         buf.writeBoolean(needsSecurity);
     }

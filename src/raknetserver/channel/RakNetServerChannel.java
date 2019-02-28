@@ -1,4 +1,4 @@
-package raknetserver.udp;
+package raknetserver.channel;
 
 import io.netty.channel.*;
 import io.netty.channel.epoll.Epoll;
@@ -14,7 +14,7 @@ import io.netty.channel.socket.nio.NioDatagramChannel;
 import java.net.SocketAddress;
 import java.util.function.Supplier;
 
-public class UdpServerChannel extends AbstractServerChannel {
+public class RakNetServerChannel extends AbstractServerChannel {
 
     public static final boolean DEFAULT_CHANNEL_CAN_REUSE;
     public static final Class<? extends DatagramChannel> DEFAULT_CHANNEL_CLASS;
@@ -22,11 +22,17 @@ public class UdpServerChannel extends AbstractServerChannel {
 
     static {
         boolean kQueueEnabled = false;
+        boolean ePollEnabled = false;
+
         try {
             kQueueEnabled = KQueue.isAvailable();
         } catch (Throwable e) {}
 
-        if (Epoll.isAvailable()) {
+        try {
+            ePollEnabled = Epoll.isAvailable();
+        } catch (Throwable e) {}
+
+        if (ePollEnabled) {
             DEFAULT_CHANNEL_CLASS = EpollDatagramChannel.class;
             DEFAULT_CHANNEL_CAN_REUSE = true;
             DEFAULT_CHANNEL_EVENT_GROUP = EpollEventLoopGroup::new;
@@ -41,14 +47,12 @@ public class UdpServerChannel extends AbstractServerChannel {
         }
     }
 
-    //TODO: keep NIO channel as part of instance and forward configs accordingly, dont use bootstrap
-
     protected final DatagramChannel listener;
     protected final Config config = new Config();
     protected SocketAddress localAddress = null;
     protected volatile boolean open = true;
 
-    public UdpServerChannel(Class<? extends DatagramChannel> ioChannelType) {
+    public RakNetServerChannel(Class<? extends DatagramChannel> ioChannelType) {
         try {
             listener = ioChannelType.newInstance();
         } catch (InstantiationException | IllegalAccessException e) {
@@ -97,9 +101,7 @@ public class UdpServerChannel extends AbstractServerChannel {
         listener.close();
     }
 
-    protected void doBeginRead() {
-
-    }
+    protected void doBeginRead() {}
 
     protected boolean isCompatible(EventLoop loop) {
         return true;
@@ -116,16 +118,16 @@ public class UdpServerChannel extends AbstractServerChannel {
     protected class IoReader extends ChannelInboundHandlerAdapter {
         @Override
         public void channelRead(ChannelHandlerContext ctx, Object msg) {
-            assert UdpServerChannel.this.eventLoop().inEventLoop();
-            UdpServerChannel.this.pipeline()
+            assert RakNetServerChannel.this.eventLoop().inEventLoop();
+            RakNetServerChannel.this.pipeline()
                     .fireChannelRead(msg)
                     .fireChannelReadComplete();
         }
     }
 
-    public class Config extends RakNetConfig {
+    public class Config extends RakNetChannelConfig {
         protected Config() {
-            super(UdpServerChannel.this);
+            super(RakNetServerChannel.this);
         }
 
         @Override

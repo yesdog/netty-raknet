@@ -1,4 +1,4 @@
-package raknetserver.udp;
+package raknetserver.channel;
 
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelOption;
@@ -7,12 +7,13 @@ import raknetserver.RakNetServer;
 
 import java.util.Map;
 
-class RakNetConfig extends DefaultChannelConfig {
+public class RakNetChannelConfig extends DefaultChannelConfig {
+
     protected volatile RakNetServer.MetricsLogger metrics = RakNetServer.MetricsLogger.DEFAULT;
-    protected volatile long serverId = 1L;
+    protected volatile long serverId = 123456789L;
     protected volatile int userDataId = -1;
 
-    protected RakNetConfig(Channel channel) {
+    protected RakNetChannelConfig(Channel channel) {
         super(channel);
     }
 
@@ -21,7 +22,7 @@ class RakNetConfig extends DefaultChannelConfig {
     public Map<ChannelOption<?>, Object> getOptions() {
         return getOptions(
                 super.getOptions(),
-                RakNetServer.SERVER_ID, RakNetServer.METRICS);
+                RakNetServer.SERVER_ID, RakNetServer.METRICS, RakNetServer.USER_DATA_ID);
     }
 
     @Override
@@ -29,15 +30,14 @@ class RakNetConfig extends DefaultChannelConfig {
     public <T> boolean setOption(ChannelOption<T> option, T value) {
         if (option == RakNetServer.SERVER_ID) {
             serverId = (Long) value;
-            return true;
         } else if (option == RakNetServer.METRICS) {
             metrics = (RakNetServer.MetricsLogger) value;
-            return true;
         } else if (option == RakNetServer.USER_DATA_ID) {
             userDataId = (Integer) value;
-            return true;
+        } else {
+            return super.setOption(option, value);
         }
-        return super.setOption(option, value);
+        return true;
     }
 
     @Override

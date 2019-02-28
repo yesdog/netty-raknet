@@ -14,6 +14,8 @@ import io.netty.handler.codec.EncoderException;
 
 public class DataSerializer {
 
+    private static final InetSocketAddress NULL_ADDR = new InetSocketAddress(0);
+
 	public static void writeString(ByteBuf buf, String str) {
 		byte[] bytes = str.getBytes(StandardCharsets.UTF_8);
 		buf.writeShort(bytes.length);
@@ -45,6 +47,10 @@ public class DataSerializer {
 			throw new DecoderException("Unexpected error", e);
 		}
 	}
+
+	public static void writeAddress(ByteBuf buf) {
+        writeAddress(buf, NULL_ADDR);
+    }
 
 	public static void writeAddress(ByteBuf buf, InetSocketAddress address) {
 		final InetAddress addr = address.getAddress();

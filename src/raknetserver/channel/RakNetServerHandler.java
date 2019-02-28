@@ -1,22 +1,21 @@
-package raknetserver.udp;
+package raknetserver.channel;
 
 import io.netty.channel.*;
 import io.netty.channel.socket.DatagramPacket;
 import io.netty.util.ReferenceCountUtil;
-import raknetserver.RakNetServer;
 
 import java.net.InetSocketAddress;
 import java.net.SocketAddress;
 import java.util.HashMap;
 import java.util.Map;
 
-public class UdpServerHandler extends ChannelDuplexHandler {
+public class RakNetServerHandler extends ChannelDuplexHandler {
 
-    protected Map<SocketAddress, UdpChildChannel> childMap = new HashMap<>();
+    protected Map<SocketAddress, RakNetChildChannel> childMap = new HashMap<>();
 
     @Override
     public void channelRegistered(ChannelHandlerContext ctx) throws Exception {
-        assert ctx.channel() instanceof UdpServerChannel;
+        assert ctx.channel() instanceof RakNetServerChannel;
         super.channelRegistered(ctx);
     }
 
@@ -43,7 +42,7 @@ public class UdpServerHandler extends ChannelDuplexHandler {
 
     @Override
     public void write(ChannelHandlerContext ctx, Object msg, ChannelPromise promise) {
-        final UdpServerChannel channel = (UdpServerChannel) ctx.channel();
+        final RakNetServerChannel channel = (RakNetServerChannel) ctx.channel();
         if (msg instanceof DatagramPacket) {
             channel.listener.write(msg).addListener(ChannelFutureListener.FIRE_EXCEPTION_ON_FAILURE);
             promise.trySuccess();
@@ -54,7 +53,7 @@ public class UdpServerHandler extends ChannelDuplexHandler {
 
     @Override
     public void flush(ChannelHandlerContext ctx) {
-        ((UdpServerChannel) ctx.channel()).listener.flush();
+        ((RakNetServerChannel) ctx.channel()).listener.flush();
         ctx.flush();
     }
 
@@ -62,7 +61,7 @@ public class UdpServerHandler extends ChannelDuplexHandler {
     public void connect(ChannelHandlerContext ctx, SocketAddress remoteAddress,
                         SocketAddress localAddress, ChannelPromise promise) {
         //TODO: session limit check
-        final UdpServerChannel channel = (UdpServerChannel) ctx.channel();
+        final RakNetServerChannel channel = (RakNetServerChannel) ctx.channel();
         try {
             if (localAddress != null && !channel.localAddress.equals(localAddress)) {
                 throw new IllegalArgumentException("Bound localAddress does not match provided " + localAddress);
@@ -71,7 +70,7 @@ public class UdpServerHandler extends ChannelDuplexHandler {
                 throw new IllegalArgumentException("Provided remote address is not an InetSocketAddress");
             }
             if (!childMap.containsKey(remoteAddress)) {
-                final UdpChildChannel child = new UdpChildChannel(channel, (InetSocketAddress) remoteAddress);
+                final RakNetChildChannel child = new RakNetChildChannel(channel, (InetSocketAddress) remoteAddress);
                 channel.pipeline().fireChannelRead(child).fireChannelReadComplete(); //register
                 child.closeFuture().addListener(v ->
                         channel.eventLoop().execute(() -> childMap.remove(remoteAddress, child))

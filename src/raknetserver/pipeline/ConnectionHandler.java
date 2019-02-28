@@ -2,7 +2,6 @@ package raknetserver.pipeline;
 
 import java.util.concurrent.TimeUnit;
 
-import io.netty.channel.Channel;
 import io.netty.channel.ChannelFutureListener;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.SimpleChannelInboundHandler;
@@ -15,7 +14,7 @@ import raknetserver.packet.ConnectionFailed;
 import raknetserver.packet.ConnectionReply2;
 import raknetserver.packet.ConnectionRequest2;
 import raknetserver.packet.Packet;
-import raknetserver.udp.UdpChildChannel;
+import raknetserver.channel.RakNetChildChannel;
 
 public class ConnectionHandler extends SimpleChannelInboundHandler<Packet> {
 
@@ -54,7 +53,7 @@ public class ConnectionHandler extends SimpleChannelInboundHandler<Packet> {
     @SuppressWarnings("unchecked")
     protected void handleConnectionRequest2(ChannelHandlerContext ctx, ConnectionRequest2 connectionRequest2) {
         final long nguid = connectionRequest2.getGUID();
-        final UdpChildChannel channel = (UdpChildChannel) ctx.channel();
+        final RakNetChildChannel channel = (RakNetChildChannel) ctx.channel();
         final long serverId = channel.config().getServerId();
         if (!isConnected) {
             isConnected = true;

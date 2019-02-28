@@ -1,4 +1,4 @@
-package raknetserver.udp;
+package raknetserver.channel;
 
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.*;
@@ -8,22 +8,22 @@ import io.netty.util.ReferenceCountUtil;
 import java.net.InetSocketAddress;
 import java.net.SocketAddress;
 
-public class UdpChildChannel extends AbstractChannel {
+public class RakNetChildChannel extends AbstractChannel {
     protected final Config config;
     protected final InetSocketAddress remoteAddress;
     protected final ChannelMetadata metadata = new ChannelMetadata(false);
 
     protected volatile boolean open = true;
 
-    protected UdpChildChannel(UdpServerChannel parent, InetSocketAddress remoteAddress) {
+    protected RakNetChildChannel(RakNetServerChannel parent, InetSocketAddress remoteAddress) {
         super(parent);
         this.remoteAddress = remoteAddress;
         config = new Config();
     }
 
     @Override
-    public UdpServerChannel parent() {
-        return (UdpServerChannel) super.parent();
+    public RakNetServerChannel parent() {
+        return (RakNetServerChannel) super.parent();
     }
 
     protected boolean isCompatible(EventLoop eventloop) {
@@ -93,12 +93,55 @@ public class UdpChildChannel extends AbstractChannel {
         return metadata;
     }
 
-    public class Config extends RakNetConfig {
+    public class Config extends RakNetChannelConfig {
+        //TODO: ChannelOption's... fml
+        public static final int DEFAULT_BACK_PRESSURE_HIGH_WATERMARK = 2048;
+        public static final int DEFAULT_BACK_PRESSURE_LOW_WATERMARK = 1024;
+        public static final int DEFAULT_MAX_PENDING_FRAME_SETS = 1024;
+        public static final int DEFAULT_DEFAULT_PENDING_FRAME_SETS = 64;
+
+        protected volatile int backPressureHighWatermark = DEFAULT_BACK_PRESSURE_HIGH_WATERMARK;
+        protected volatile int backPressureLowWatermark = DEFAULT_BACK_PRESSURE_LOW_WATERMARK;
+        protected volatile int maxPendingFrameSets = DEFAULT_MAX_PENDING_FRAME_SETS;
+        protected volatile int defaultPendingFrameSets = DEFAULT_DEFAULT_PENDING_FRAME_SETS;
+
         protected Config() {
-            super(UdpChildChannel.this);
+            super(RakNetChildChannel.this);
             metrics = parent().config.metrics;
             serverId = parent().config.serverId;
             userDataId = parent().config.userDataId;
+        }
+
+        public int getBackPressureHighWatermark() {
+            return backPressureHighWatermark;
+        }
+
+        public void setBackPressureHighWatermark(int backPressureHighWatermark) {
+            this.backPressureHighWatermark = backPressureHighWatermark;
+        }
+
+        public int getBackPressureLowWatermark() {
+            return backPressureLowWatermark;
+        }
+
+        public void setBackPressureLowWatermark(int backPressureLowWatermark) {
+            this.backPressureLowWatermark = backPressureLowWatermark;
+        }
+
+        public int getMaxPendingFrameSets() {
+            return maxPendingFrameSets;
+        }
+
+        public void setMaxPendingFrameSets(int maxPendingFrameSets) {
+            this.maxPendingFrameSets = maxPendingFrameSets;
+        }
+
+        public int getDefaultPendingFrameSets() {
+            return defaultPendingFrameSets;
+        }
+
+        public void setDefaultPendingFrameSets(int defaultPendingFrameSets) {
+            this.defaultPendingFrameSets = defaultPendingFrameSets;
         }
     }
 }
