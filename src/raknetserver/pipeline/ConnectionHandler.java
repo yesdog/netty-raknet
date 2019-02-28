@@ -38,14 +38,6 @@ public class ConnectionHandler extends SimpleChannelInboundHandler<Packet> {
     }
 
     @Override
-    @SuppressWarnings("unchecked")
-    public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) {
-        ctx.writeAndFlush(new ConnectionFailed()).addListeners(
-                ChannelFutureListener.CLOSE, ChannelFutureListener.CLOSE_ON_FAILURE);
-        ctx.fireExceptionCaught(cause);
-    }
-
-    @Override
     public void channelInactive(ChannelHandlerContext ctx) throws Exception {
         if (pingTask != null) {
             pingTask.cancel(true);
