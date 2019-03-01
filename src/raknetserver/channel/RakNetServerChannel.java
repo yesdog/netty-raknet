@@ -63,9 +63,11 @@ public class RakNetServerChannel extends AbstractServerChannel {
     }
 
     @Override
+    @SuppressWarnings("unchecked")
     protected void doRegister() {
         //share same loop between io channel and server channel
-        eventLoop().register(listener);
+        eventLoop().register(listener).addListeners(
+                ChannelFutureListener.FIRE_EXCEPTION_ON_FAILURE, ChannelFutureListener.CLOSE_ON_FAILURE);
     }
 
     @Override
@@ -73,15 +75,11 @@ public class RakNetServerChannel extends AbstractServerChannel {
         listener.deregister();
     }
 
+    @SuppressWarnings("unchecked")
     protected void doBind(SocketAddress local) {
-        if (localAddress != null) {
-            throw new IllegalStateException("already bound");
-        }
-        if (!open) {
-            throw new IllegalStateException("already closed");
-        }
         localAddress = local;
-        listener.bind(local);
+        listener.bind(local).addListeners(
+                ChannelFutureListener.FIRE_EXCEPTION_ON_FAILURE, ChannelFutureListener.CLOSE_ON_FAILURE);
     }
 
     public Config config() {
@@ -89,7 +87,7 @@ public class RakNetServerChannel extends AbstractServerChannel {
     }
 
     public boolean isOpen() {
-        return open;
+        return open && listener.isOpen();
     }
 
     public boolean isActive() {
@@ -98,7 +96,7 @@ public class RakNetServerChannel extends AbstractServerChannel {
 
     protected void doClose() {
         open = false;
-        listener.close();
+        listener.close().addListener(ChannelFutureListener.FIRE_EXCEPTION_ON_FAILURE);
     }
 
     protected void doBeginRead() {}
@@ -119,9 +117,19 @@ public class RakNetServerChannel extends AbstractServerChannel {
         @Override
         public void channelRead(ChannelHandlerContext ctx, Object msg) {
             assert RakNetServerChannel.this.eventLoop().inEventLoop();
-            RakNetServerChannel.this.pipeline()
-                    .fireChannelRead(msg)
-                    .fireChannelReadComplete();
+            RakNetServerChannel.this.pipeline().fireChannelRead(msg);
+        }
+
+        @Override
+        public void channelReadComplete(ChannelHandlerContext ctx) {
+            assert RakNetServerChannel.this.eventLoop().inEventLoop();
+            RakNetServerChannel.this.pipeline().fireChannelReadComplete();
+        }
+
+        @Override
+        public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) {
+            assert RakNetServerChannel.this.eventLoop().inEventLoop();
+            RakNetServerChannel.this.pipeline().fireExceptionCaught(cause);
         }
     }
 

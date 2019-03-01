@@ -38,7 +38,7 @@ public final class Frame extends AbstractReferenceCounted {
         final Frame out = createRaw();
         final int flags = buf.readUnsignedByte();
         final int bitLength = buf.readUnsignedShort();
-        final int length = (bitLength + 7) / 8; //round up
+        final int length = (bitLength + Byte.SIZE - 1) / Byte.SIZE; //round up
         final boolean hasSplit = (flags & SPLIT_FLAG) != 0;
         final FramedPacket.Reliability reliability = FramedPacket.Reliability.get(flags >> 5);
         int orderChannel = 0;
@@ -214,7 +214,7 @@ public final class Frame extends AbstractReferenceCounted {
 
     protected void writeHeader(ByteBuf out) {
         out.writeByte((getReliability().code() << 5) | (hasSplit ? SPLIT_FLAG : 0));
-        out.writeShort(packet.getDataSize() * 8);
+        out.writeShort(packet.getDataSize() * Byte.SIZE);
 
         assert !(hasSplit && !getReliability().isReliable);
 

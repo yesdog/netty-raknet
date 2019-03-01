@@ -45,6 +45,7 @@ public class RakNetServer extends RakNetServerChannel {
                     .addLast(new RakNetServerHandler())
                     .addLast(ConnectionInitializer.NAME, new ConnectionInitializer())
                     .addLast(ioInit);
+                    //TODO: blackhole unhandled Datagram messages
         }
     }
 

@@ -23,7 +23,7 @@ public abstract class UdpPacketHandler<T extends Packet> extends SimpleChannelIn
         packetId = Packets.packetIdFor(type);
     }
 
-    abstract void handle(ChannelHandlerContext ctx, InetSocketAddress sender, T packet);
+    abstract protected void handle(ChannelHandlerContext ctx, InetSocketAddress sender, T packet);
 
     @Override
     public boolean acceptInboundMessage(Object msg) {
