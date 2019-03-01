@@ -106,6 +106,7 @@ public class RakNetChildChannel extends AbstractChannel {
         @Override
         public void write(ChannelHandlerContext ctx, Object msg, ChannelPromise promise) throws Exception {
             if (msg instanceof ByteBuf) {
+                //TODO: want to do real promise resolution here, but is it worth it?
                 promise.trySuccess();
                 parent().write(new DatagramPacket((ByteBuf) msg, remoteAddress))
                         .addListener(ChannelFutureListener.FIRE_EXCEPTION_ON_FAILURE);

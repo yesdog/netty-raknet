@@ -13,6 +13,7 @@ import io.netty.channel.socket.DatagramPacket;
 import io.netty.channel.socket.nio.NioDatagramChannel;
 import io.netty.util.ReferenceCountUtil;
 import io.netty.util.concurrent.PromiseCombiner;
+
 import raknet.RakNet;
 import raknet.config.DefaultConfig;
 
@@ -233,10 +234,10 @@ public class RakNetServerChannel extends AbstractServerChannel {
                 if (!childMap.containsKey(remoteAddress)) {
                     final RakNetChildChannel child = new RakNetChildChannel(
                             RakNetServerChannel.this, (InetSocketAddress) remoteAddress);
-                    pipeline().fireChannelRead(child).fireChannelReadComplete(); //register
                     child.closeFuture().addListener(v ->
                             eventLoop().execute(() -> childMap.remove(remoteAddress, child))
                     );
+                    pipeline().fireChannelRead(child).fireChannelReadComplete(); //register
                     childMap.put(remoteAddress, child);
                 }
                 promise.trySuccess();
