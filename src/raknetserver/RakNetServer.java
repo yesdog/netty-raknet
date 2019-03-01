@@ -5,24 +5,16 @@ import java.net.InetSocketAddress;
 import io.netty.bootstrap.ServerBootstrap;
 import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelInitializer;
-import io.netty.channel.ChannelOption;
 import io.netty.channel.DefaultEventLoopGroup;
 import io.netty.channel.socket.DatagramChannel;
 import io.netty.handler.timeout.ReadTimeoutHandler;
-import io.netty.util.AttributeKey;
 
+import raknet.pipeline.*;
 import raknetserver.pipeline.*;
 import raknetserver.channel.RakNetChildChannel;
 import raknetserver.channel.RakNetServerChannel;
-import raknetserver.channel.RakNetServerHandler;
 
 public class RakNetServer extends RakNetServerChannel {
-
-    public static final AttributeKey<Integer> MTU = AttributeKey.valueOf("RN_MTU");
-    public static final AttributeKey<Long> RTT = AttributeKey.valueOf("RN_RTT");
-    public static final ChannelOption<Long> SERVER_ID = ChannelOption.valueOf("RN_SERVER_ID");
-    public static final ChannelOption<Integer> USER_DATA_ID = ChannelOption.valueOf("RN_USER_DATA_ID");
-    public static final ChannelOption<MetricsLogger> METRICS = ChannelOption.valueOf("RN_METRICS");
 
     public static ChannelFuture createSimple(InetSocketAddress listen, ChannelInitializer childInit, ChannelInitializer ioInit) {
         ServerBootstrap bootstrap = new ServerBootstrap()
@@ -42,7 +34,6 @@ public class RakNetServer extends RakNetServerChannel {
 
         protected void initChannel(RakNetServerChannel channel) {
             channel.pipeline()
-                    .addLast(new RakNetServerHandler())
                     .addLast(ConnectionInitializer.NAME, new ConnectionInitializer())
                     .addLast(ioInit);
                     //TODO: blackhole unhandled Datagram messages
@@ -76,41 +67,6 @@ public class RakNetServer extends RakNetServerChannel {
 
     public RakNetServer(Class<? extends DatagramChannel> ioChannelType) {
         super(ioChannelType);
-    }
-
-    /**
-     * Sent down pipeline when backpressure should be
-     * applied or removed.
-     */
-    public enum BackPressure {
-        ON, OFF
-    }
-
-    /**
-     * Influences stream control.
-     * SYNC - Send up the pipeline to block new frames until all pending ones are ACKd.
-     * TODO: this...
-     */
-    public enum StreamControl {
-        SYNC
-    }
-
-    public interface MetricsLogger {
-        MetricsLogger DEFAULT = new MetricsLogger() {};
-
-        default void packetsIn(int delta) {}
-        default void framesIn(int delta) {}
-        default void bytesIn(int delta) {}
-        default void packetsOut(int delta) {}
-        default void framesOut(int delta) {}
-        default void bytesOut(int delta) {}
-        default void bytesRecalled(int delta) {}
-        default void bytesACKd(int delta) {}
-        default void bytesNACKd(int delta) {}
-        default void acksSent(int delta) {}
-        default void nacksSent(int delta) {}
-        default void measureRTTns(long n) {}
-        default void measureBurstTokens(int n) {}
     }
 
 }

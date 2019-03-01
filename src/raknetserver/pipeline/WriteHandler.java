@@ -5,7 +5,7 @@ import java.util.List;
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.codec.MessageToMessageEncoder;
-import raknetserver.packet.PacketData;
+import raknet.packet.PacketData;
 import raknetserver.channel.RakNetChildChannel;
 
 public class WriteHandler extends MessageToMessageEncoder<ByteBuf> {

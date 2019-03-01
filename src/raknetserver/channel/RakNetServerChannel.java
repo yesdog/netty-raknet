@@ -9,9 +9,17 @@ import io.netty.channel.kqueue.KQueueDatagramChannel;
 import io.netty.channel.kqueue.KQueueEventLoopGroup;
 import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.DatagramChannel;
+import io.netty.channel.socket.DatagramPacket;
 import io.netty.channel.socket.nio.NioDatagramChannel;
+import io.netty.util.ReferenceCountUtil;
+import io.netty.util.concurrent.PromiseCombiner;
+import raknet.RakNet;
+import raknet.config.DefaultConfig;
 
+import java.net.InetSocketAddress;
 import java.net.SocketAddress;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.function.Supplier;
 
 public class RakNetServerChannel extends AbstractServerChannel {
@@ -49,6 +57,7 @@ public class RakNetServerChannel extends AbstractServerChannel {
 
     protected final DatagramChannel listener;
     protected final Config config = new Config();
+    protected final Map<SocketAddress, RakNetChildChannel> childMap = new HashMap<>();
     protected SocketAddress localAddress = null;
     protected volatile boolean open = true;
 
@@ -58,21 +67,22 @@ public class RakNetServerChannel extends AbstractServerChannel {
         } catch (InstantiationException | IllegalAccessException e) {
             throw new RuntimeException("Failed to create instance", e);
         }
-        listener.pipeline().addLast(newReader());
-        listener.closeFuture().addListener(v -> close());
+        initChannels();
     }
 
     @Override
     @SuppressWarnings("unchecked")
     protected void doRegister() {
-        //share same loop between io channel and server channel
+        //share same loop between listener and server channel
         eventLoop().register(listener).addListeners(
                 ChannelFutureListener.FIRE_EXCEPTION_ON_FAILURE, ChannelFutureListener.CLOSE_ON_FAILURE);
     }
 
     @Override
+    @SuppressWarnings("unchecked")
     protected void doDeregister() {
-        listener.deregister();
+        listener.deregister().addListeners(
+                ChannelFutureListener.FIRE_EXCEPTION_ON_FAILURE, ChannelFutureListener.CLOSE_ON_FAILURE);
     }
 
     @SuppressWarnings("unchecked")
@@ -82,7 +92,13 @@ public class RakNetServerChannel extends AbstractServerChannel {
                 ChannelFutureListener.FIRE_EXCEPTION_ON_FAILURE, ChannelFutureListener.CLOSE_ON_FAILURE);
     }
 
-    public Config config() {
+    protected void doClose() {
+        open = false;
+    }
+
+    protected void doBeginRead() {}
+
+    public RakNet.Config config() {
         return config;
     }
 
@@ -94,12 +110,11 @@ public class RakNetServerChannel extends AbstractServerChannel {
         return isOpen() && isRegistered();
     }
 
-    protected void doClose() {
-        open = false;
-        listener.close().addListener(ChannelFutureListener.FIRE_EXCEPTION_ON_FAILURE);
+    protected void initChannels() {
+        pipeline().addLast(new ServerHandler());
+        listener.pipeline().addLast(new ListenerHandler());
+        listener.closeFuture().addListener(v -> close());
     }
-
-    protected void doBeginRead() {}
 
     protected boolean isCompatible(EventLoop loop) {
         return true;
@@ -109,31 +124,11 @@ public class RakNetServerChannel extends AbstractServerChannel {
         return localAddress;
     }
 
-    protected IoReader newReader() {
-        return new IoReader();
+    private boolean inEventLoop() {
+        return eventLoop().inEventLoop();
     }
 
-    protected class IoReader extends ChannelInboundHandlerAdapter {
-        @Override
-        public void channelRead(ChannelHandlerContext ctx, Object msg) {
-            assert RakNetServerChannel.this.eventLoop().inEventLoop();
-            RakNetServerChannel.this.pipeline().fireChannelRead(msg);
-        }
-
-        @Override
-        public void channelReadComplete(ChannelHandlerContext ctx) {
-            assert RakNetServerChannel.this.eventLoop().inEventLoop();
-            RakNetServerChannel.this.pipeline().fireChannelReadComplete();
-        }
-
-        @Override
-        public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) {
-            assert RakNetServerChannel.this.eventLoop().inEventLoop();
-            RakNetServerChannel.this.pipeline().fireExceptionCaught(cause);
-        }
-    }
-
-    public class Config extends RakNetChannelConfig {
+    protected class Config extends DefaultConfig {
         protected Config() {
             super(RakNetServerChannel.this);
         }
@@ -155,6 +150,100 @@ public class RakNetServerChannel extends AbstractServerChannel {
                 return listener.config().getOption(option);
             }
             return thisOption;
+        }
+    }
+
+    protected class ListenerHandler extends ChannelInboundHandlerAdapter {
+        @Override
+        public void channelRead(ChannelHandlerContext ctx, Object msg) {
+            assert inEventLoop();
+            pipeline().fireChannelRead(msg);
+        }
+
+        @Override
+        public void channelReadComplete(ChannelHandlerContext ctx) {
+            assert inEventLoop();
+            pipeline().fireChannelReadComplete();
+        }
+
+        @Override
+        public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) {
+            assert inEventLoop();
+            pipeline().fireExceptionCaught(cause);
+        }
+    }
+
+    protected class ServerHandler extends ChannelDuplexHandler {
+        @Override
+        public void channelRead(ChannelHandlerContext ctx, Object msg) {
+            if (msg instanceof DatagramPacket) {
+                try {
+                    final DatagramPacket datagram = (DatagramPacket) msg;
+                    final Channel child = childMap.get(datagram.sender());
+                    if (child != null && child.isActive() && child.config().isAutoRead()) {
+                        child.pipeline()
+                                .fireChannelRead(datagram.content().retain())
+                                .fireChannelReadComplete();
+                    } else if (child == null) {
+                        ctx.fireChannelRead(ReferenceCountUtil.retain(msg));
+                    }
+                } finally {
+                    ReferenceCountUtil.release(msg);
+                }
+            } else {
+                ctx.fireChannelRead(msg);
+            }
+        }
+
+        @Override
+        @SuppressWarnings("unchecked")
+        public void write(ChannelHandlerContext ctx, Object msg, ChannelPromise promise) throws Exception {
+            if (msg instanceof DatagramPacket) {
+                listener.write(msg).addListeners(ChannelFutureListener.FIRE_EXCEPTION_ON_FAILURE);
+                promise.trySuccess();
+            } else {
+                super.write(ctx, msg, promise);
+            }
+        }
+
+        @Override
+        public void flush(ChannelHandlerContext ctx) {
+            listener.flush();
+            ctx.flush();
+        }
+
+        @Override
+        public void close(ChannelHandlerContext ctx, ChannelPromise promise) {
+            final PromiseCombiner combiner = new PromiseCombiner();
+            combiner.addAll(ctx.close(), listener.close());
+            combiner.finish(promise);
+        }
+
+        @Override
+        public void connect(ChannelHandlerContext ctx, SocketAddress remoteAddress,
+                            SocketAddress localAddress, ChannelPromise promise) {
+            //TODO: session limit check
+            try {
+                if (localAddress != null && !localAddress.equals(localAddress)) {
+                    throw new IllegalArgumentException("Bound localAddress does not match provided " + localAddress);
+                }
+                if (!(remoteAddress instanceof InetSocketAddress)) {
+                    throw new IllegalArgumentException("Provided remote address is not an InetSocketAddress");
+                }
+                if (!childMap.containsKey(remoteAddress)) {
+                    final RakNetChildChannel child = new RakNetChildChannel(
+                            RakNetServerChannel.this, (InetSocketAddress) remoteAddress);
+                    pipeline().fireChannelRead(child).fireChannelReadComplete(); //register
+                    child.closeFuture().addListener(v ->
+                            eventLoop().execute(() -> childMap.remove(remoteAddress, child))
+                    );
+                    childMap.put(remoteAddress, child);
+                }
+                promise.trySuccess();
+            } catch (Exception e) {
+                promise.tryFailure(e);
+                throw e;
+            }
         }
     }
 

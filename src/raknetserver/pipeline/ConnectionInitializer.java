@@ -6,11 +6,11 @@ import io.netty.channel.socket.DatagramPacket;
 
 import io.netty.util.ReferenceCountUtil;
 
-import raknetserver.RakNetServer;
-import raknetserver.packet.ConnectionReply1;
-import raknetserver.packet.ConnectionRequest1;
-import raknetserver.packet.InvalidVersion;
-import raknetserver.packet.Packet;
+import raknet.RakNet;
+import raknet.packet.ConnectionReply1;
+import raknet.packet.ConnectionRequest1;
+import raknet.packet.InvalidVersion;
+import raknet.packet.Packet;
 
 import java.net.InetSocketAddress;
 
@@ -23,7 +23,7 @@ public class ConnectionInitializer extends UdpPacketHandler<ConnectionRequest1> 
     }
 
     protected void handle(ChannelHandlerContext ctx, InetSocketAddress sender, ConnectionRequest1 request) {
-        final long serverId = ctx.channel().config().getOption(RakNetServer.SERVER_ID);
+        final long serverId = ctx.channel().config().getOption(RakNet.SERVER_ID);
         final Packet response;
         //TODO: version config
         if (request.getRakNetProtocolVersion() == InvalidVersion.VALID_VERSION) {

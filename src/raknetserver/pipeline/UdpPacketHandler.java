@@ -6,9 +6,9 @@ import io.netty.channel.SimpleChannelInboundHandler;
 import io.netty.channel.socket.DatagramPacket;
 import io.netty.util.ReferenceCountUtil;
 
-import raknetserver.packet.FramedPacket;
-import raknetserver.packet.Packet;
-import raknetserver.packet.Packets;
+import raknet.packet.FramedPacket;
+import raknet.packet.Packet;
+import raknet.packet.Packets;
 
 import java.net.InetSocketAddress;
 

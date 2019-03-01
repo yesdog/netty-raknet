@@ -7,29 +7,20 @@ import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.SimpleChannelInboundHandler;
 import io.netty.util.ReferenceCountUtil;
 
-import raknetserver.RakNetServer;
-import raknetserver.packet.ClientHandshake;
-import raknetserver.packet.ConnectionRequest;
-import raknetserver.packet.Disconnect;
-import raknetserver.packet.Packet;
-import raknetserver.packet.Ping;
-import raknetserver.packet.Pong;
-import raknetserver.packet.ServerHandshake;
-import raknetserver.packet.PacketData;
+import raknet.RakNet;
+import raknet.packet.ClientHandshake;
+import raknet.packet.ConnectionRequest;
+import raknet.packet.Disconnect;
+import raknet.packet.Packet;
+import raknet.packet.Ping;
+import raknet.packet.Pong;
+import raknet.packet.ServerHandshake;
+import raknet.packet.PacketData;
 import raknetserver.channel.RakNetChildChannel;
 
 public class ReadHandler extends SimpleChannelInboundHandler<Packet> {
 
     public static final String NAME = "rn-read";
-
-    protected static final int RTT_WEIGHT = 8;
-    protected static final long DEFAULT_RTT_MS = 400;
-
-    @Override
-    public void handlerAdded(ChannelHandlerContext ctx) throws Exception {
-        super.handlerAdded(ctx);
-        ctx.channel().attr(RakNetServer.RTT).set(TimeUnit.NANOSECONDS.convert(DEFAULT_RTT_MS, TimeUnit.MILLISECONDS));
-    }
 
     protected void channelRead0(ChannelHandlerContext ctx, Packet packet) {
         final RakNetChildChannel channel = (RakNetChildChannel) ctx.channel();
@@ -49,10 +40,7 @@ public class ReadHandler extends SimpleChannelInboundHandler<Packet> {
             final Pong pong = (Pong) packet;
             if (!pong.getReliability().isReliable) {
                 final long pongRTT = TimeUnit.NANOSECONDS.convert(pong.getRTT(), TimeUnit.MILLISECONDS);
-                final long oldRTT = ctx.channel().attr(RakNetServer.RTT).get();
-                final long newRTT = (oldRTT * (RTT_WEIGHT - 1) + pongRTT) / RTT_WEIGHT;
-                ctx.channel().attr(RakNetServer.RTT).set(newRTT);
-                channel.config().getMetrics().measureRTTns(newRTT);
+                channel.config().updateRTT(pongRTT);
             }
         } else if (packet instanceof ConnectionRequest) {
             ctx.writeAndFlush(new ServerHandshake(
