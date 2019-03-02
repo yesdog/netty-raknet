@@ -2,6 +2,7 @@ package raknetserver.pipeline;
 
 import java.util.concurrent.TimeUnit;
 
+import io.netty.channel.Channel;
 import io.netty.channel.ChannelFutureListener;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.SimpleChannelInboundHandler;
@@ -23,7 +24,7 @@ public class ConnectionHandler extends SimpleChannelInboundHandler<Packet> {
 
     protected long guid;
     protected ScheduledFuture<?> pingTask;
-    protected boolean isConnected = false;
+    protected boolean isConnected = false; //TODO: attribute
 
     protected void channelRead0(ChannelHandlerContext ctx, Packet packet) {
         if (packet instanceof ConnectionRequest1) {
@@ -48,14 +49,14 @@ public class ConnectionHandler extends SimpleChannelInboundHandler<Packet> {
     @SuppressWarnings("unchecked")
     protected void handleConnectionRequest2(ChannelHandlerContext ctx, ConnectionRequest2 connectionRequest2) {
         final long nguid = connectionRequest2.getGUID();
-        final RakNetChildChannel channel = (RakNetChildChannel) ctx.channel();
-        final long serverId = channel.config().getServerId();
+        final Channel channel = ctx.channel();
+        final RakNet.Config config = (RakNet.Config) channel.config();
         if (!isConnected) {
             isConnected = true;
             guid = nguid;
             //TODO: verify server-side MTU?
-            ctx.channel().config().setOption(RakNet.MTU, connectionRequest2.getMtu());
-            ctx.writeAndFlush(new ConnectionReply2(connectionRequest2.getMtu(), serverId))
+            config.setMTU(connectionRequest2.getMtu());
+            ctx.writeAndFlush(new ConnectionReply2(connectionRequest2.getMtu(), config.getServerId()))
                     .addListener(ChannelFutureListener.FIRE_EXCEPTION_ON_FAILURE);
             pingTask = channel.eventLoop().scheduleAtFixedRate(
                     () -> channel.writeAndFlush(new Ping()).addListener(ChannelFutureListener.FIRE_EXCEPTION_ON_FAILURE),
@@ -65,8 +66,7 @@ public class ConnectionHandler extends SimpleChannelInboundHandler<Packet> {
             //if guid matches then it means that reply2 packet didn't arrive to the clients
             //otherwise it means that it is actually a new client connecting using already taken ip+port
             if (guid == nguid) {
-                final int mtu = ctx.channel().config().getOption(RakNet.MTU);
-                ctx.writeAndFlush(new ConnectionReply2(mtu, serverId))
+                ctx.writeAndFlush(new ConnectionReply2(config.getMTU(), config.getServerId()))
                         .addListener(ChannelFutureListener.FIRE_EXCEPTION_ON_FAILURE);
             } else {
                 ctx.writeAndFlush(new ConnectionFailed()).addListeners(

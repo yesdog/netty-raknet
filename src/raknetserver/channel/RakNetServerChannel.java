@@ -23,6 +23,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.function.Supplier;
 
+//TODO: implement DatagramChannel
 public class RakNetServerChannel extends AbstractServerChannel {
 
     public static final boolean DEFAULT_CHANNEL_CAN_REUSE;
@@ -59,7 +60,7 @@ public class RakNetServerChannel extends AbstractServerChannel {
     protected final DatagramChannel listener;
     protected final Config config = new Config();
     protected final Map<SocketAddress, RakNetChildChannel> childMap = new HashMap<>();
-    protected SocketAddress localAddress = null;
+    protected volatile SocketAddress localAddress = null;
     protected volatile boolean open = true;
 
     public RakNetServerChannel(Class<? extends DatagramChannel> ioChannelType) {
@@ -69,6 +70,21 @@ public class RakNetServerChannel extends AbstractServerChannel {
             throw new RuntimeException("Failed to create instance", e);
         }
         initChannels();
+    }
+
+    @Override
+    public boolean isWritable() {
+        return listener.isWritable();
+    }
+
+    @Override
+    public long bytesBeforeUnwritable() {
+        return listener.bytesBeforeUnwritable();
+    }
+
+    @Override
+    public long bytesBeforeWritable() {
+        return listener.bytesBeforeWritable();
     }
 
     @Override
@@ -104,11 +120,11 @@ public class RakNetServerChannel extends AbstractServerChannel {
     }
 
     public boolean isOpen() {
-        return open && listener.isOpen();
+        return open;
     }
 
     public boolean isActive() {
-        return isOpen() && isRegistered();
+        return isOpen() && listener.isActive();
     }
 
     protected void initChannels() {
@@ -139,7 +155,6 @@ public class RakNetServerChannel extends AbstractServerChannel {
         public <T> boolean setOption(ChannelOption<T> option, T value) {
             final boolean thisOption = super.setOption(option, value);
             final boolean listenOption = listener.config().setOption(option, value);
-
             return thisOption || listenOption;
         }
 
@@ -165,6 +180,12 @@ public class RakNetServerChannel extends AbstractServerChannel {
         public void channelReadComplete(ChannelHandlerContext ctx) {
             assert inEventLoop();
             pipeline().fireChannelReadComplete();
+        }
+
+        @Override
+        public void channelWritabilityChanged(ChannelHandlerContext ctx) {
+            assert inEventLoop();
+            pipeline().fireChannelWritabilityChanged();
         }
 
         @Override

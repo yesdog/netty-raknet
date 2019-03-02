@@ -3,6 +3,7 @@ package raknet.packet;
 import io.netty.buffer.ByteBuf;
 
 import raknet.utils.Constants;
+import raknet.utils.DataSerializer;
 
 public class UnconnectedPing extends SimplePacket implements Packet {
 
@@ -11,7 +12,7 @@ public class UnconnectedPing extends SimplePacket implements Packet {
 	@Override
 	public void decode(ByteBuf buf) {
 		this.clientTime = buf.readLong();
-		buf.skipBytes(Constants.MAGIC.length);
+		DataSerializer.readMagic(buf);
 		buf.skipBytes(8); //guid
 	}
 

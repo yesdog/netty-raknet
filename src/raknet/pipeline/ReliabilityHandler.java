@@ -26,17 +26,6 @@ public class ReliabilityHandler extends ChannelDuplexHandler {
 
     public static final String NAME = "rn-reliability";
 
-    public interface Config extends ChannelConfig {
-        int DEFAULT_MAX_PENDING_FRAME_SETS = 1024;
-        int DEFAULT_DEFAULT_PENDING_FRAME_SETS = 64;
-
-        RakNet.MetricsLogger getMetrics();
-        int getMaxPendingFrameSets();
-        int getDefaultPendingFrameSets();
-        long getRTT();
-        int getMTU();
-    }
-
     protected final IntSortedSet nackSet = new IntRBTreeSet(UINT.B3.COMPARATOR);
     protected final IntSortedSet ackSet = new IntRBTreeSet(UINT.B3.COMPARATOR);
     protected final ObjectSortedSet<Frame> frameQueue = new ObjectRBTreeSet<>(Frame.COMPARATOR);
@@ -47,11 +36,11 @@ public class ReliabilityHandler extends ChannelDuplexHandler {
     protected int resendGauge = 0;
     protected int burstTokens = 0;
     protected boolean backPressureActive = false;
-    protected Config config = null;
+    protected RakNet.Config config = null;
 
     @Override
     public void handlerAdded(ChannelHandlerContext ctx) throws Exception {
-        config = (Config) ctx.channel().config();
+        config = (RakNet.Config) ctx.channel().config();
         super.handlerAdded(ctx);
     }
 
@@ -107,8 +96,7 @@ public class ReliabilityHandler extends ChannelDuplexHandler {
             nackSet.clear();
         }
         final ObjectIterator<FrameSet> packetItr = pendingFrameSets.values().iterator();
-        final long avgRTT = config.getRTT();
-        final long deadline = System.nanoTime() - avgRTT; //TODO: offset?
+        final long deadline = System.nanoTime() - (config.getRTT() + config.getRetryDelay());
         while (packetItr.hasNext()) {
             final FrameSet frameSet = packetItr.next();
             if (frameSet.getSentTime() < deadline) {

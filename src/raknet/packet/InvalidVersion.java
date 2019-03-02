@@ -2,7 +2,7 @@ package raknet.packet;
 
 import io.netty.buffer.ByteBuf;
 
-import raknet.utils.Constants;
+import raknet.utils.DataSerializer;
 
 public class InvalidVersion extends SimplePacket implements Packet {
 
@@ -22,7 +22,7 @@ public class InvalidVersion extends SimplePacket implements Packet {
     @Override
     public void encode(ByteBuf buf) {
         buf.writeByte(VALID_VERSION);
-        buf.writeBytes(Constants.MAGIC);
+        DataSerializer.writeMagic(buf);
         buf.writeLong(serverId);
     }
 

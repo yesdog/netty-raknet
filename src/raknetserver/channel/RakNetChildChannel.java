@@ -95,7 +95,7 @@ public class RakNetChildChannel extends AbstractChannel {
     }
 
     public boolean isActive() {
-        return isOpen() && isRegistered();
+        return isOpen() && parent().isActive();
     }
 
     public ChannelMetadata metadata() {

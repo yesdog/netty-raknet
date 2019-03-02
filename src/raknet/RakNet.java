@@ -4,8 +4,6 @@ import io.netty.channel.ChannelConfig;
 import io.netty.channel.ChannelOption;
 import io.netty.util.AttributeKey;
 
-import raknet.pipeline.ReliabilityHandler;
-
 public class RakNet {
 
     public static final AttributeKey<Boolean> WRITABLE = AttributeKey.valueOf("RN_WRITABLE");
@@ -33,7 +31,10 @@ public class RakNet {
         default void measureBurstTokens(int n) {}
     }
 
-    public interface Config extends ChannelConfig, ReliabilityHandler.Config {
+    public interface Config extends ChannelConfig {
+        int DEFAULT_MAX_PENDING_FRAME_SETS = 1024;
+        int DEFAULT_DEFAULT_PENDING_FRAME_SETS = 64;
+
         MetricsLogger getMetrics();
         void setMetrics(MetricsLogger metrics);
         long getServerId();
@@ -45,6 +46,10 @@ public class RakNet {
         long getRTT();
         void setRTT(long rtt);
         void updateRTT(long rttSample);
+        int getRttWeight();
+        void setRttWeight(int rttWeight);
+        long getRetryDelay();
+        void setRetryDelay(long retryDelay);
         int getMaxPendingFrameSets();
         void setMaxPendingFrameSets(int maxPendingFrameSets);
         int getDefaultPendingFrameSets();

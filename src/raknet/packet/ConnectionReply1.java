@@ -2,7 +2,7 @@ package raknet.packet;
 
 import io.netty.buffer.ByteBuf;
 
-import raknet.utils.Constants;
+import raknet.utils.DataSerializer;
 
 public class ConnectionReply1 extends SimplePacket implements Packet {
 
@@ -23,7 +23,7 @@ public class ConnectionReply1 extends SimplePacket implements Packet {
 
 	@Override
 	public void encode(ByteBuf buf) {
-		buf.writeBytes(Constants.MAGIC);
+		DataSerializer.writeMagic(buf);
 		buf.writeLong(serverId);
 		buf.writeBoolean(hasSecurity);
 		buf.writeShort(mtu);

@@ -16,10 +16,20 @@ public class DataSerializer {
 
     private static final InetSocketAddress NULL_ADDR = new InetSocketAddress(0);
 
+    private static final byte[] MAGIC = new byte[] { (byte) 0x00, (byte) 0xff, (byte) 0xff, (byte) 0x00,
+			(byte) 0xfe, (byte) 0xfe, (byte) 0xfe, (byte) 0xfe, (byte) 0xfd, (byte) 0xfd, (byte) 0xfd,
+			(byte) 0xfd, (byte) 0x12, (byte) 0x34, (byte) 0x56, (byte) 0x78 };
+
 	public static void writeString(ByteBuf buf, String str) {
 		byte[] bytes = str.getBytes(StandardCharsets.UTF_8);
 		buf.writeShort(bytes.length);
 		buf.writeBytes(bytes);
+	}
+
+	public static String readString(ByteBuf buf) {
+		byte[] bytes = new byte[buf.readShort()];
+		buf.readBytes(bytes);
+		return new String(bytes, StandardCharsets.UTF_8);
 	}
 
 	public static InetSocketAddress readAddress(ByteBuf buf) {
@@ -68,6 +78,24 @@ public class DataSerializer {
 			buf.writeInt(0); //scope id
 		} else {
 			throw new EncoderException("Unknown inet addr version: " + addr.getClass().getName());
+		}
+	}
+
+	public static void writeMagic(ByteBuf out) {
+		out.writeBytes(MAGIC);
+	}
+
+	public static void readMagic(ByteBuf out) {
+		for (byte b : MAGIC) {
+			if (out.readByte() != b) {
+				throw new MagicDecodeException();
+			}
+		}
+	}
+
+	public static class MagicDecodeException extends DecoderException {
+		protected MagicDecodeException() {
+			super("Incorrect RakNet magic value");
 		}
 	}
 

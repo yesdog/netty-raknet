@@ -51,7 +51,7 @@ public final class Packets
         register(CLIENT_HANDSHAKE,          ClientHandshake.class,      ClientHandshake::new);
         register(CLIENT_DISCONNECT,         Disconnect.class,           Disconnect::new);
         register(INVALID_VERSION,           InvalidVersion.class);
-        register(UNCONNECTED_PONG,          UnconnectedPong.class);
+        register(UNCONNECTED_PONG,          UnconnectedPong.class,      UnconnectedPong::new);
         for (int i = FRAME_DATA_START ; i <= FRAME_DATA_END ; i++) {
             register(i,                     FrameSet.class,             FrameSet::read);
         }

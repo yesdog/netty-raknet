@@ -58,10 +58,15 @@ public class RakNetServer extends RakNetServerChannel {
                     .addLast(FrameOrderIn.NAME,         new FrameOrderIn())
                     .addLast(FrameSplitter.NAME,        new FrameSplitter())
                     .addLast(FrameOrderOut.NAME,        new FrameOrderOut())
+                    .addLast(DisconnectHandler.NAME,    new DisconnectHandler())
+                    .addLast(PingHandler.NAME,          new PingHandler())
+                    .addLast(PongHandler.NAME,          new PongHandler())
+                    .addLast(ConnectionRequestHandler.NAME,
+                                                        new ConnectionRequestHandler())
                     .addLast(WriteHandler.NAME,         new WriteHandler())
                     .addLast(ReadHandler.NAME,          new ReadHandler())
                     .addLast(childInit)
-                    .addLast(FlushTickHandler.NAME_OUT,  new FlushTickHandler());
+                    .addLast(FlushTickHandler.NAME_OUT, new FlushTickHandler());
         }
     }
 

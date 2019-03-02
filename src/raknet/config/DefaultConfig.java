@@ -18,6 +18,7 @@ public class DefaultConfig extends DefaultChannelConfig implements RakNet.Config
     protected volatile int mtu = 1500;
     protected volatile long rtt = TimeUnit.NANOSECONDS.convert(400, TimeUnit.MILLISECONDS);
     protected volatile int rttWeight = 8;
+    protected volatile long retryDelay = TimeUnit.NANOSECONDS.convert(100, TimeUnit.MILLISECONDS);
     protected volatile int maxPendingFrameSets = DEFAULT_MAX_PENDING_FRAME_SETS;
     protected volatile int defaultPendingFrameSets = DEFAULT_DEFAULT_PENDING_FRAME_SETS;
 
@@ -112,6 +113,22 @@ public class DefaultConfig extends DefaultChannelConfig implements RakNet.Config
     public void updateRTT(long rttSample) {
         rtt = (rtt * (rttWeight - 1) + rttSample) / rttWeight;
         metrics.measureRTTns(rtt);
+    }
+
+    public int getRttWeight() {
+        return rttWeight;
+    }
+
+    public void setRttWeight(int rttWeight) {
+        this.rttWeight = rttWeight;
+    }
+
+    public long getRetryDelay() {
+        return retryDelay;
+    }
+
+    public void setRetryDelay(long retryDelay) {
+        this.retryDelay = retryDelay;
     }
 
     public int getMaxPendingFrameSets() {

@@ -1,7 +1,7 @@
 package raknet.packet;
 
 import io.netty.buffer.ByteBuf;
-import raknet.utils.Constants;
+import raknet.utils.DataSerializer;
 
 public class ConnectionRequest1 extends SimplePacket implements Packet {
 
@@ -9,7 +9,7 @@ public class ConnectionRequest1 extends SimplePacket implements Packet {
 	private int mtu;
 	@Override
 	public void decode(ByteBuf buf) {
-		buf.skipBytes(Constants.MAGIC.length);
+		DataSerializer.readMagic(buf);
 		rakNetProtocolVersion = buf.readByte();
 		mtu = buf.readableBytes();
 		buf.skipBytes(mtu);

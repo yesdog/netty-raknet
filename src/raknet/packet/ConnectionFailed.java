@@ -2,7 +2,7 @@ package raknet.packet;
 
 import io.netty.buffer.ByteBuf;
 
-import raknet.utils.Constants;
+import raknet.utils.DataSerializer;
 
 public class ConnectionFailed extends SimplePacket implements Packet {
 
@@ -12,7 +12,7 @@ public class ConnectionFailed extends SimplePacket implements Packet {
 
 	@Override
 	public void encode(ByteBuf buf) {
-		buf.writeBytes(Constants.MAGIC);
+		DataSerializer.writeMagic(buf);
 		buf.writeLong(0);
 	}
 
