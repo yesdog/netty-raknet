@@ -50,6 +50,7 @@ public class RakNetServer extends RakNetServerChannel {
         protected void initChannel(RakNetChildChannel channel) {
             channel.pipeline()
                     .addLast("rn-timeout",        new ReadTimeoutHandler(5))
+                    .addLast(FlushTickHandler.NAME,  new FlushTickHandler())
                     .addLast(PacketEncoder.NAME,        PacketEncoder.INSTANCE)
                     .addLast(PacketDecoder.NAME,        PacketDecoder.INSTANCE)
                     .addLast(ConnectionHandler.NAME,    new ConnectionHandler())
@@ -65,8 +66,7 @@ public class RakNetServer extends RakNetServerChannel {
                          ConnectionRequestHandler.NAME, ConnectionRequestHandler.INSTANCE)
                     .addLast(WriteHandler.NAME,         WriteHandler.INSTANCE)
                     .addLast(ReadHandler.NAME,          ReadHandler.INSTANCE)
-                    .addLast(childInit)
-                    .addLast(FlushTickHandler.NAME_OUT, new FlushTickHandler());
+                    .addLast(childInit);
         }
     }
 
