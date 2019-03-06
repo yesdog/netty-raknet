@@ -36,7 +36,7 @@ public class RakNetServer extends RakNetServerChannel {
             channel.pipeline()
                     .addLast(ConnectionInitializer.NAME, new ConnectionInitializer())
                     .addLast(ioInit);
-                    //TODO: blackhole unhandled Datagram messages
+                    //TODO: blackhole unhandled Datagram messages. respond with disconnect?
         }
     }
 
@@ -50,21 +50,21 @@ public class RakNetServer extends RakNetServerChannel {
         protected void initChannel(RakNetChildChannel channel) {
             channel.pipeline()
                     .addLast("rn-timeout",        new ReadTimeoutHandler(5))
-                    .addLast(PacketEncoder.NAME,        new PacketEncoder())
-                    .addLast(PacketDecoder.NAME,        new PacketDecoder())
+                    .addLast(PacketEncoder.NAME,        PacketEncoder.INSTANCE)
+                    .addLast(PacketDecoder.NAME,        PacketDecoder.INSTANCE)
                     .addLast(ConnectionHandler.NAME,    new ConnectionHandler())
                     .addLast(ReliabilityHandler.NAME,   new ReliabilityHandler())
                     .addLast(FrameJoiner.NAME,          new FrameJoiner())
                     .addLast(FrameOrderIn.NAME,         new FrameOrderIn())
                     .addLast(FrameSplitter.NAME,        new FrameSplitter())
                     .addLast(FrameOrderOut.NAME,        new FrameOrderOut())
-                    .addLast(DisconnectHandler.NAME,    new DisconnectHandler())
-                    .addLast(PingHandler.NAME,          new PingHandler())
-                    .addLast(PongHandler.NAME,          new PongHandler())
-                    .addLast(ConnectionRequestHandler.NAME,
-                                                        new ConnectionRequestHandler())
-                    .addLast(WriteHandler.NAME,         new WriteHandler())
-                    .addLast(ReadHandler.NAME,          new ReadHandler())
+                    .addLast(DisconnectHandler.NAME,    DisconnectHandler.INSTANCE)
+                    .addLast(PingHandler.NAME,          PingHandler.INSTANCE)
+                    .addLast(PongHandler.NAME,          PongHandler.INSTANCE)
+                    .addLast(
+                         ConnectionRequestHandler.NAME, ConnectionRequestHandler.INSTANCE)
+                    .addLast(WriteHandler.NAME,         WriteHandler.INSTANCE)
+                    .addLast(ReadHandler.NAME,          ReadHandler.INSTANCE)
                     .addLast(childInit)
                     .addLast(FlushTickHandler.NAME_OUT, new FlushTickHandler());
         }

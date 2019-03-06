@@ -16,7 +16,7 @@ public class FrameOrderIn extends MessageToMessageDecoder<Frame> {
 
 	public static final String NAME = "rn-order-in";
 
-	private final OrderedChannelPacketQueue[] channels = new OrderedChannelPacketQueue[8];
+	protected final OrderedChannelPacketQueue[] channels = new OrderedChannelPacketQueue[8];
 	{
 		for (int i = 0; i < channels.length; i++) {
 			channels[i] = new OrderedChannelPacketQueue();

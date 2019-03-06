@@ -20,7 +20,7 @@ public class Pong extends SimpleFramedPacket {
 
 	public Pong(long pingTimestamp) {
 		this.pingTimestamp = pingTimestamp;
-		this.pongTimestamp = System.currentTimeMillis();
+		this.pongTimestamp = System.nanoTime();
 	}
 
 	@Override
@@ -46,7 +46,7 @@ public class Pong extends SimpleFramedPacket {
 	}
 
 	public long getRTT() {
-		return System.currentTimeMillis() - pingTimestamp;
+		return System.nanoTime() - pingTimestamp;
 	}
 
 }

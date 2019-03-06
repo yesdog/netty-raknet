@@ -8,7 +8,7 @@ public class Ping extends SimpleFramedPacket {
 	protected Reliability reliability = Reliability.UNRELIABLE;
 
 	public Ping() {
-		timestamp = System.currentTimeMillis();
+		timestamp = System.nanoTime();
 	}
 
 	@Override
