@@ -6,18 +6,15 @@
     <modelVersion>4.0.0</modelVersion>
     <groupId>network.ycc</groupId>
     <artifactId>raknet</artifactId>
-    <packaging>jar</packaging>
-    <version>${revision}</version>
+    <version>0.6-SNAPSHOT</version>
     <name>Yesdog RakNet</name>
     <description>A RakNet reliable UDP transport server using Netty.</description>
     <url>https://github.com/yesdog/RakNetServer</url>
 
     <properties>
-        <build.version>0.5</build.version>
         <java.version>1.8</java.version>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <maven.build.timestamp.format>HHmm-MMddyyyy</maven.build.timestamp.format>
-        <revision>${build.version}</revision>
     </properties>
 
     <licenses>
@@ -75,32 +72,8 @@
         </repository>
     </distributionManagement>
 
-    <profiles>
-        <profile>
-            <id>local</id>
-            <activation>
-                <activeByDefault>true</activeByDefault>
-            </activation>
-            <properties>
-                <revision>${build.version}-SNAPSHOT</revision>
-            </properties>
-        </profile>
-        <profile>
-            <id>master</id>
-            <activation>
-                <property>
-                    <name>env.GIT_BRANCH</name>
-                    <value>origin/master</value>
-                </property>
-            </activation>
-            <properties>
-                <revision>${build.version}</revision>
-            </properties>
-        </profile>
-    </profiles>
-
     <build>
-        <defaultGoal>clean test package</defaultGoal>
+        <defaultGoal>clean package</defaultGoal>
         <sourceDirectory>${project.basedir}/src</sourceDirectory>
         <testSourceDirectory>${project.basedir}/test</testSourceDirectory>
         <plugins>
