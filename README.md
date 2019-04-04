@@ -1,5 +1,6 @@
 # RakNetServer
 [![Build Status](https://travis-ci.org/yesdog/RakNetServer.svg?branch=master)](https://travis-ci.org/yesdog/RakNetServer)
+[![Known Vulnerabilities](https://snyk.io/test/github/yesdog/RakNetServer/badge.svg?targetFile=build.gradle)](https://snyk.io/test/github/yesdog/RakNetServer?targetFile=build.gradle)
 
 High performance fork of [RakNetServer](https://github.com/Shevchik/RakNetServer) 
 targeting unreliable and rate-limited client connections.
