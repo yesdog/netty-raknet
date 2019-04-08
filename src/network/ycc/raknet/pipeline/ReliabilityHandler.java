@@ -94,10 +94,11 @@ public class ReliabilityHandler extends ChannelDuplexHandler {
             nackSet.clear();
         }
         final ObjectIterator<FrameSet> packetItr = pendingFrameSets.values().iterator();
-        final long deadline = System.nanoTime() - (config.getRTT() + config.getRetryDelay());
+        //2 sd from mean RTT is about 97% coverage
+        final long deadline = System.nanoTime() -
+                (config.getRTT() + 2 * config.getRTTStdDev() + config.getRetryDelay());
         while (packetItr.hasNext()) {
             final FrameSet frameSet = packetItr.next();
-            //TODO: this whole mechanic sucks. what do we do ?
             if (frameSet.getSentTime() < deadline) {
                 packetItr.remove();
                 recallFrameSet(frameSet);

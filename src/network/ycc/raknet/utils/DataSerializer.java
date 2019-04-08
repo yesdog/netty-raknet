@@ -94,6 +94,8 @@ public class DataSerializer {
 	}
 
 	public static class MagicDecodeException extends DecoderException {
+		public static final long serialVersionUID = 550681556L;
+
 		protected MagicDecodeException() {
 			super("Incorrect RakNet magic value");
 		}

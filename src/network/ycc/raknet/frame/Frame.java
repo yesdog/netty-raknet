@@ -23,7 +23,7 @@ public final class Frame extends AbstractReferenceCounted {
     public static Comparator COMPARATOR = new Comparator();
     public static final int HEADER_SIZE = 24;
 
-    private static final ResourceLeakDetector leakDetector =
+    private static final ResourceLeakDetector<Frame> leakDetector =
             ResourceLeakDetectorFactory.instance().newResourceLeakDetector(Frame.class);
     private static final Recycler<Frame> recycler = new Recycler<Frame>() {
         @Override

@@ -39,6 +39,11 @@
             <version>8.1.1</version>
         </dependency>
         <dependency>
+            <groupId>org.apache.commons</groupId>
+            <artifactId>commons-math3</artifactId>
+            <version>3.6.1</version>
+        </dependency>
+        <dependency>
             <groupId>io.netty</groupId>
             <artifactId>netty-all</artifactId>
             <version>4.1.22.Final</version>
@@ -74,6 +79,7 @@
 
     <build>
         <defaultGoal>clean package</defaultGoal>
+        <finalName>${project.artifactId}</finalName>
         <sourceDirectory>${project.basedir}/src</sourceDirectory>
         <testSourceDirectory>${project.basedir}/test</testSourceDirectory>
         <plugins>
@@ -86,7 +92,6 @@
                     <target>${java.version}</target>
                     <compilerArgs>
                         <arg>-verbose</arg>
-                        <arg>-Werror</arg>
                         <arg>-Xlint:all,-options,-path</arg>
                     </compilerArgs>
                 </configuration>

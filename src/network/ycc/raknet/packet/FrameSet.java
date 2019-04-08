@@ -20,7 +20,7 @@ public final class FrameSet extends AbstractReferenceCounted implements Packet {
 
     public static final int HEADER_SIZE = 4;
 
-    private static final ResourceLeakDetector leakDetector =
+    private static final ResourceLeakDetector<FrameSet> leakDetector =
             ResourceLeakDetectorFactory.instance().newResourceLeakDetector(FrameSet.class);
     private static final Recycler<FrameSet> recycler = new Recycler<FrameSet>() {
         @Override

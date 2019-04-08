@@ -5,6 +5,7 @@ import io.netty.channel.ChannelOption;
 import io.netty.channel.DefaultChannelConfig;
 
 import network.ycc.raknet.RakNet;
+import org.apache.commons.math3.stat.descriptive.DescriptiveStatistics;
 
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
@@ -16,14 +17,15 @@ public class DefaultConfig extends DefaultChannelConfig implements RakNet.Config
     protected volatile RakNet.MetricsLogger metrics = RakNet.MetricsLogger.DEFAULT;
     protected volatile int userDataId = -1;
     protected volatile int mtu = 1500;
-    protected volatile long rtt = TimeUnit.NANOSECONDS.convert(400, TimeUnit.MILLISECONDS);
-    protected volatile int rttWeight = 8;
-    protected volatile long retryDelay = TimeUnit.NANOSECONDS.convert(100, TimeUnit.MILLISECONDS);
+    protected volatile long retryDelay = TimeUnit.NANOSECONDS.convert(50, TimeUnit.MILLISECONDS);
     protected volatile int maxPendingFrameSets = DEFAULT_MAX_PENDING_FRAME_SETS;
     protected volatile int defaultPendingFrameSets = DEFAULT_DEFAULT_PENDING_FRAME_SETS;
 
+    protected final DescriptiveStatistics stats = new DescriptiveStatistics(32);
+
     public DefaultConfig(Channel channel) {
         super(channel);
+        setRTT(TimeUnit.NANOSECONDS.convert(400, TimeUnit.MILLISECONDS));
     }
 
     @Override
@@ -46,7 +48,7 @@ public class DefaultConfig extends DefaultChannelConfig implements RakNet.Config
         } else if (option == RakNet.MTU) {
             mtu = (Integer) value;
         } else if (option == RakNet.RTT) {
-            rtt = (Long) value;
+            setRTT((Long) value);
         } else {
             return super.setOption(option, value);
         }
@@ -65,7 +67,7 @@ public class DefaultConfig extends DefaultChannelConfig implements RakNet.Config
         } else if (option == RakNet.MTU) {
             return (T) (Integer) mtu;
         } else if (option == RakNet.RTT) {
-            return (T) (Long) rtt;
+            return (T) (Long) getRTT();
         }
         return super.getOption(option);
     }
@@ -102,33 +104,31 @@ public class DefaultConfig extends DefaultChannelConfig implements RakNet.Config
         this.mtu = mtu;
     }
 
-    public long getRTT() {
-        return rtt;
-    }
-
-    public void setRTT(long rtt) {
-        this.rtt = rtt;
-    }
-
-    public void updateRTT(long rttSample) {
-        rtt = (rtt * (rttWeight - 1) + rttSample) / rttWeight;
-        metrics.measureRTTns(rtt);
-    }
-
-    public int getRttWeight() {
-        return rttWeight;
-    }
-
-    public void setRttWeight(int rttWeight) {
-        this.rttWeight = rttWeight;
-    }
-
     public long getRetryDelay() {
         return retryDelay;
     }
 
     public void setRetryDelay(long retryDelay) {
         this.retryDelay = retryDelay;
+    }
+
+    public long getRTT() {
+        return (long) stats.getMean(); //ns
+    }
+
+    public long getRTTStdDev() {
+        return (long) stats.getStandardDeviation(); //ns
+    }
+
+    public void setRTT(long rtt) {
+        stats.clear();
+        stats.addValue(rtt);
+    }
+
+    public void updateRTT(long rttSample) {
+        stats.addValue(rttSample);
+        metrics.measureRTTns(getRTT());
+        metrics.measureRTTnsStdDev(getRTTStdDev());
     }
 
     public int getMaxPendingFrameSets() {

@@ -12,7 +12,7 @@ import io.netty.util.ResourceLeakTracker;
 
 public final class PacketData extends AbstractReferenceCounted implements FramedPacket {
 
-    private static final ResourceLeakDetector leakDetector =
+    private static final ResourceLeakDetector<PacketData> leakDetector =
             ResourceLeakDetectorFactory.instance().newResourceLeakDetector(PacketData.class);
     private static final Recycler<PacketData> recycler = new Recycler<PacketData>() {
         @Override

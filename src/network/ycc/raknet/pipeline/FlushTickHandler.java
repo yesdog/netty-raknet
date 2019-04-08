@@ -16,7 +16,7 @@ public class FlushTickHandler extends ChannelInboundHandlerAdapter {
     protected long tickAccum = 0;
     protected long lastTickAccum = System.nanoTime();
     protected Channel channel;
-    protected ScheduledFuture timer;
+    protected ScheduledFuture<?> timer;
 
     @Override
     public void handlerAdded(ChannelHandlerContext ctx) throws Exception {

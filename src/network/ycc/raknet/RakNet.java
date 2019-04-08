@@ -37,6 +37,7 @@ public class RakNet {
         default void acksSent(int delta) {}
         default void nacksSent(int delta) {}
         default void measureRTTns(long n) {}
+        default void measureRTTnsStdDev(long n) {}
         default void measureBurstTokens(int n) {}
     }
 
@@ -52,13 +53,12 @@ public class RakNet {
         void setUserDataId(int userDataId);
         int getMTU();
         void setMTU(int mtu);
-        long getRTT();
-        void setRTT(long rtt);
-        void updateRTT(long rttSample);
-        int getRttWeight();
-        void setRttWeight(int rttWeight);
         long getRetryDelay();
         void setRetryDelay(long retryDelay);
+        long getRTT();
+        void setRTT(long rtt);
+        long getRTTStdDev();
+        void updateRTT(long rttSample);
         int getMaxPendingFrameSets();
         void setMaxPendingFrameSets(int maxPendingFrameSets);
         int getDefaultPendingFrameSets();
