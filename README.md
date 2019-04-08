@@ -30,13 +30,13 @@ room for extension with any plugins or custom behavior.
   * Recommended to write to pipeline with no flush. 
   * Flush cycles condense outbound data for best use of MTU.
   
-## Maven at CodeMC
+## Maven Use (at CodeMC)
 ```xml
     <dependencies>
         <dependency>
             <groupId>network.ycc</groupId>
             <artifactId>raknet</artifactId>
-            <version>0.6-SNAPSHOT</version>
+            <version>0.5</version>
         </dependency>
     </dependencies>
 
