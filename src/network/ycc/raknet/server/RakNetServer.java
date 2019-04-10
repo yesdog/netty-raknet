@@ -8,7 +8,6 @@ import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelInitializer;
 import io.netty.channel.DefaultEventLoopGroup;
 import io.netty.channel.socket.DatagramChannel;
-import io.netty.handler.timeout.ReadTimeoutHandler;
 
 import network.ycc.raknet.pipeline.*;
 import network.ycc.raknet.server.pipeline.*;
@@ -50,7 +49,6 @@ public class RakNetServer extends RakNetServerChannel {
 
         protected void initChannel(RakNetChildChannel channel) {
             channel.pipeline()
-                    .addLast("rn-timeout",        new ReadTimeoutHandler(5))
                     .addLast(FlushTickHandler.NAME,     new FlushTickHandler())
                     .addLast(PacketCodec.INSTANCE)
                     .addLast(ConnectionHandler.NAME,    new ConnectionHandler())
