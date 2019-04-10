@@ -29,5 +29,23 @@ room for extension with any plugins or custom behavior.
 * Automated flush driver
   * Recommended to write to pipeline with no flush. 
   * Flush cycles condense outbound data for best use of MTU.
+  
+## Maven Use (at CodeMC)
+```xml
+    <dependencies>
+        <dependency>
+            <groupId>network.ycc</groupId>
+            <artifactId>raknet</artifactId>
+            <version>0.5</version>
+        </dependency>
+    </dependencies>
+
+    <repositories>
+        <repository>
+            <id>codemc-repo</id>
+            <url>https://repo.codemc.org/repository/maven-public</url>
+        </repository>
+    </repositories>
+```
 
 # [License](./LICENSE)
