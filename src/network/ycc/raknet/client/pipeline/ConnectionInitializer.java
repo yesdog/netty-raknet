@@ -131,7 +131,7 @@ public class ConnectionInitializer extends SimpleChannelInboundHandler<Packet> {
     protected enum State {
         CR1, //UDP: ConnectionRequest1 -> ConnectionReply1, InvalidVersion
         CR2, //UDP: ConnectionRequest2 -> ConnectionReply2, ConnectionFailed
-        CR3, //Framed: ConnectionRequest -> Handshake
+        CR3, //Framed: ConnectionRequest -> Handshake -> ClientHandshake
     }
 
 }

@@ -7,6 +7,7 @@ import io.netty.util.ReferenceCountUtil;
 import io.netty.util.concurrent.PromiseCombiner;
 import network.ycc.raknet.channel.RakNetUDPChannel;
 import network.ycc.raknet.client.RakNetClient;
+import network.ycc.raknet.client.pipeline.ConnectionInitializer;
 
 import java.net.InetSocketAddress;
 import java.net.SocketAddress;
@@ -24,10 +25,11 @@ public class RakNetClientChannel extends RakNetUDPChannel {
     public RakNetClientChannel(Class<? extends DatagramChannel> ioChannelType) {
         super(ioChannelType);
         connectPromise = this.newPromise();
+        addDefaultPipeline();
     }
 
     protected void addDefaultPipeline() {
-        pipeline().addLast(new RakNetClient.DefaultInitializer(connectPromise));
+        pipeline().addLast(RakNetClient.DefaultInitializer.INSTANCE);
     }
 
     protected ChannelHandler newChannelHandler() {
@@ -48,10 +50,14 @@ public class RakNetClientChannel extends RakNetUDPChannel {
                     final ChannelFuture listenerConnect = listener.connect(remoteAddress, localAddress);
                     listenerConnect.addListener(x -> {
                        if (x.isSuccess()) {
-                           addDefaultPipeline();
+                           //start connection process
+                           pipeline().replace(ConnectionInitializer.NAME, ConnectionInitializer.NAME,
+                                   new ConnectionInitializer(connectPromise));
                            connectPromise.addListener(x2 -> {
                                if (!x2.isSuccess()) {
                                    RakNetClientChannel.this.close();
+                               } else {
+                                   pipeline().fireChannelActive();
                                }
                            });
                        }
@@ -71,6 +77,11 @@ public class RakNetClientChannel extends RakNetUDPChannel {
     protected void doClose() {
         super.doClose();
         connectPromise.tryFailure(new ClosedChannelException());
+    }
+
+    @Override
+    public boolean isActive() {
+        return super.isActive() && connectPromise.isSuccess();
     }
 
     protected SocketAddress localAddress0() {

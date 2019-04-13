@@ -99,6 +99,7 @@ public class RakNetServerChannel extends RakNetUDPChannel implements ServerChann
                     );
                     pipeline().fireChannelRead(child).fireChannelReadComplete(); //register
                     childMap.put(remoteAddress, child);
+                    child.pipeline().fireChannelActive();
                 }
                 promise.trySuccess();
             } catch (Exception e) {

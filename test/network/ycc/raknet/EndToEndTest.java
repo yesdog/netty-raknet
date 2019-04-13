@@ -95,7 +95,7 @@ public class EndToEndTest {
 
     @Test
     public void manyBufferBadBoth() throws InterruptedException {
-        dataTest(1000, 1000, true, true);
+        dataTest(100, 5000, true, true);
     }
 
     @Test
@@ -133,6 +133,7 @@ public class EndToEndTest {
             ChannelPromise donePromise = client.newPromise();
             combiner.finish(donePromise);
             donePromise.await(15, TimeUnit.SECONDS);
+            Thread.sleep(1000);
             Assert.assertEquals(bytesSent, bytesRecvd.get());
         } finally {
             server.close().sync();
