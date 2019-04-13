@@ -48,7 +48,7 @@ public final class Packets
         register(CONNECTION_REQUEST,        ConnectionRequest.class,    decodeSimple(ConnectionRequest::new));
         register(SERVER_HANDSHAKE,          ServerHandshake.class,      ServerHandshake::new);
         register(CONNECTION_FAILED,         ConnectionFailed.class,     ConnectionFailed::new);
-        register(CLIENT_HANDSHAKE,          ClientHandshake.class,      ClientHandshake::new);
+        register(CLIENT_HANDSHAKE,          ClientHandshake.class,      decodeSimple(ClientHandshake::new));
         register(CLIENT_DISCONNECT,         Disconnect.class,           Disconnect::new);
         register(INVALID_VERSION,           InvalidVersion.class);
         register(UNCONNECTED_PONG,          UnconnectedPong.class,      UnconnectedPong::new);
