@@ -102,6 +102,9 @@ public abstract class RakNetUDPChannel extends AbstractChannel {
 
     protected void doClose() {
         open = false;
+        try {
+            listener.close().sync(); //TODO: not happy about this sync
+        } catch (InterruptedException e) {}
     }
 
     protected void doBeginRead() {}

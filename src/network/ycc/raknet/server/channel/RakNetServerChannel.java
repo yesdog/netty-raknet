@@ -38,9 +38,12 @@ public class RakNetServerChannel extends RakNetUDPChannel implements ServerChann
     @SuppressWarnings("unchecked")
     protected void doBind(SocketAddress local) {
         localAddress = local;
-        listener.bind(local).addListeners(
-                ChannelFutureListener.FIRE_EXCEPTION_ON_FAILURE,
-                ChannelFutureListener.CLOSE_ON_FAILURE);
+        try {
+            listener.bind(local).addListeners(
+                    ChannelFutureListener.FIRE_EXCEPTION_ON_FAILURE,
+                    ChannelFutureListener.CLOSE_ON_FAILURE)
+                    .sync(); //TODO: really not happy about this
+        } catch (InterruptedException e) {}
     }
 
     protected void doDisconnect() {
