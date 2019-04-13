@@ -1,6 +1,7 @@
 # RakNetServer
 [![Build Status](https://ci.codemc.org/job/yesdog/job/RakNetServer/badge/icon)](https://ci.codemc.org/job/yesdog/job/RakNetServer/)
 [![Known Vulnerabilities](https://snyk.io/test/github/yesdog/RakNetServer/badge.svg)](https://snyk.io/test/github/yesdog/RakNetServer)
+[![codecov](https://codecov.io/gh/yesdog/RakNetServer/branch/master/graph/badge.svg)](https://codecov.io/gh/yesdog/RakNetServer)
 
 High performance fork of [RakNetServer](https://github.com/Shevchik/RakNetServer) 
 targeting unreliable and rate-limited client connections.
