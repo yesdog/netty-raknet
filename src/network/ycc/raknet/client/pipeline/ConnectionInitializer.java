@@ -23,6 +23,7 @@ import network.ycc.raknet.packet.Packet;
 import network.ycc.raknet.packet.Ping;
 import network.ycc.raknet.packet.ServerHandshake;
 
+import java.net.InetSocketAddress;
 import java.util.IllegalFormatException;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
@@ -80,7 +81,6 @@ public class ConnectionInitializer extends SimpleChannelInboundHandler<Packet> {
                     config.setMTU(((ConnectionReply2) msg).getMtu());
                     config.setServerId(((ConnectionReply2) msg).getServerId());
                     state = State.CR3;
-                    sendTimer.cancel(false);
                     final ScheduledFuture<?> pingTask = ctx.channel().eventLoop().scheduleAtFixedRate(
                             () -> ctx.channel().writeAndFlush(new Ping()).addListener(ChannelFutureListener.FIRE_EXCEPTION_ON_FAILURE),
                             100, 250, TimeUnit.MILLISECONDS
@@ -95,7 +95,8 @@ public class ConnectionInitializer extends SimpleChannelInboundHandler<Packet> {
             }
             case CR3: {
                 if (msg instanceof ServerHandshake) {
-                    final Packet packet = new ClientHandshake(((ServerHandshake) msg).getTimestamp());
+                    final Packet packet = new ClientHandshake(((ServerHandshake) msg).getTimestamp(),
+                            (InetSocketAddress) ctx.channel().remoteAddress(), ((ServerHandshake) msg).getnExtraAddresses());
                     ctx.writeAndFlush(packet).addListener(ChannelFutureListener.FIRE_EXCEPTION_ON_FAILURE);
                     connectPromise.trySuccess();
                     ctx.pipeline().remove(this);
@@ -117,7 +118,8 @@ public class ConnectionInitializer extends SimpleChannelInboundHandler<Packet> {
                 break;
             }
             case CR2: {
-                final Packet packet = new ConnectionRequest2(config.getMTU(), guid);
+                final Packet packet = new ConnectionRequest2(config.getMTU(), guid,
+                        (InetSocketAddress) ctx.channel().remoteAddress());
                 ctx.writeAndFlush(packet).addListener(ChannelFutureListener.FIRE_EXCEPTION_ON_FAILURE);
                 break;
             }

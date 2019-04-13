@@ -3,27 +3,34 @@ package network.ycc.raknet.packet;
 import io.netty.buffer.ByteBuf;
 import network.ycc.raknet.utils.DataSerializer;
 
+import java.net.InetSocketAddress;
+
 public class ClientHandshake extends SimpleFramedPacket {
 
     protected Reliability reliability = Reliability.RELIABLE_ORDERED;
 
-    long pongTimestamp;
-    long timestamp;
+    private long pongTimestamp;
+    private long timestamp;
+    private InetSocketAddress address;
+    private int nExtraAddresses;
 
     public ClientHandshake() {}
 
-    public ClientHandshake(long pongTimestamp) {
-        this(pongTimestamp, System.nanoTime());
+    public ClientHandshake(long pongTimestamp, InetSocketAddress address, int nExtraAddresses) {
+        this(pongTimestamp, System.nanoTime(), address, nExtraAddresses);
     }
 
-    public ClientHandshake(long pongTimestamp, long timestamp) {
+    public ClientHandshake(long pongTimestamp, long timestamp, InetSocketAddress address, int nExtraAddresses) {
         this.pongTimestamp = pongTimestamp;
         this.timestamp = timestamp;
+        this.address = address;
+        this.nExtraAddresses = nExtraAddresses;
     }
 
     @Override
     public void decode(ByteBuf buf) {
-        for (int i = 0; i < 21; i++) {
+        address = DataSerializer.readAddress(buf);
+        for (nExtraAddresses = 0 ; buf.readableBytes() > 16 ; nExtraAddresses++) {
             DataSerializer.readAddress(buf);
         }
         pongTimestamp = buf.readLong();
@@ -32,7 +39,8 @@ public class ClientHandshake extends SimpleFramedPacket {
 
     @Override
     public void encode(ByteBuf buf) {
-        for (int i = 0; i < 21; i++) {
+        DataSerializer.writeAddress(buf, address);
+        for (int i = 0 ; i < nExtraAddresses ; i++) {
             DataSerializer.writeAddress(buf);
         }
         buf.writeLong(pongTimestamp);
@@ -53,6 +61,14 @@ public class ClientHandshake extends SimpleFramedPacket {
 
     public void setTimestamp(long timestamp) {
         this.timestamp = timestamp;
+    }
+
+    public int getnExtraAddresses() {
+        return nExtraAddresses;
+    }
+
+    public void setnExtraAddresses(int nExtraAddresses) {
+        this.nExtraAddresses = nExtraAddresses;
     }
 
 }

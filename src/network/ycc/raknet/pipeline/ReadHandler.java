@@ -19,7 +19,9 @@ public class ReadHandler extends SimpleChannelInboundHandler<PacketData> {
         final RakNet.Config config = (RakNet.Config) ctx.channel().config();
         final int userDataId = config.getUserDataId();
         assert !packet.isFragment();
-        if (userDataId != -1 && userDataId == packet.getPacketId()) {
+        if (packet.getDataSize() <= 1) {
+            return;
+        } else if (userDataId != -1 && userDataId == packet.getPacketId()) {
             ctx.fireChannelRead(packet.createData().skipBytes(1));
         } else {
             ctx.fireChannelRead(packet.retain());

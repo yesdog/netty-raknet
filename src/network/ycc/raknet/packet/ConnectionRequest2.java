@@ -3,22 +3,26 @@ package network.ycc.raknet.packet;
 import io.netty.buffer.ByteBuf;
 import network.ycc.raknet.utils.DataSerializer;
 
+import java.net.InetSocketAddress;
+
 public class ConnectionRequest2 extends SimplePacket implements Packet {
 
     private int mtu;
     private long guid;
+    private InetSocketAddress address;
 
     public ConnectionRequest2() {}
 
-    public ConnectionRequest2(int mtu, long guid) {
+    public ConnectionRequest2(int mtu, long guid, InetSocketAddress address) {
         this.mtu = mtu;
         this.guid = guid;
+        this.address = address;
     }
 
     @Override
     public void decode(ByteBuf buf) {
         DataSerializer.readMagic(buf);
-        DataSerializer.readAddress(buf);
+        address = DataSerializer.readAddress(buf);
         mtu = buf.readShort();
         guid = buf.readLong();
     }
@@ -26,7 +30,7 @@ public class ConnectionRequest2 extends SimplePacket implements Packet {
     @Override
     public void encode(ByteBuf buf) {
         DataSerializer.writeMagic(buf);
-        DataSerializer.writeAddress(buf);
+        DataSerializer.writeAddress(buf, address);
         buf.writeShort(mtu);
         buf.writeLong(guid);
     }

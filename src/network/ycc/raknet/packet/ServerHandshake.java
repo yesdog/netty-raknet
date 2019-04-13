@@ -11,25 +11,36 @@ public class ServerHandshake extends SimpleFramedPacket {
     private InetSocketAddress clientAddr;
     private long timestamp;
     protected Reliability reliability = Reliability.RELIABLE;
+    private int nExtraAddresses;
 
     public ServerHandshake() {}
 
     public ServerHandshake(InetSocketAddress clientAddr, long timestamp) {
+        this(clientAddr, timestamp, 20);
+    }
+
+    public ServerHandshake(InetSocketAddress clientAddr, long timestamp, int nExtraAddresses) {
         this.clientAddr = clientAddr;
         this.timestamp = timestamp;
+        this.nExtraAddresses = nExtraAddresses;
     }
 
     @Override
     public void decode(ByteBuf buf) {
-        //TODO: real decode
-        buf.skipBytes(buf.readableBytes());
+        clientAddr = DataSerializer.readAddress(buf);
+        buf.readShort();
+        for (nExtraAddresses = 0 ; buf.readableBytes() > 16 ; nExtraAddresses++) {
+            DataSerializer.readAddress(buf);
+        }
+        timestamp = buf.readLong();
+        timestamp = buf.readLong();
     }
 
     @Override
     public void encode(ByteBuf buf) {
         DataSerializer.writeAddress(buf, clientAddr);
         buf.writeShort(0);
-        for (int i = 0; i < 20; i++) {
+        for (int i = 0 ; i < nExtraAddresses ; i++) {
             DataSerializer.writeAddress(buf);
         }
         buf.writeLong(timestamp);
@@ -51,4 +62,13 @@ public class ServerHandshake extends SimpleFramedPacket {
     public void setTimestamp(long timestamp) {
         this.timestamp = timestamp;
     }
+
+    public int getnExtraAddresses() {
+        return nExtraAddresses;
+    }
+
+    public void setnExtraAddresses(int nExtraAddresses) {
+        this.nExtraAddresses = nExtraAddresses;
+    }
+
 }
