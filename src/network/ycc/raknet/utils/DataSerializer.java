@@ -12,6 +12,7 @@ import io.netty.buffer.ByteBuf;
 import io.netty.handler.codec.DecoderException;
 import io.netty.handler.codec.EncoderException;
 
+//TODO: move to static in Packet
 public class DataSerializer {
 
     private static final InetSocketAddress NULL_ADDR = new InetSocketAddress(0);

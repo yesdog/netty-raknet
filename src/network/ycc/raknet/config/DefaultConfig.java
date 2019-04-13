@@ -18,8 +18,8 @@ public class DefaultConfig extends DefaultChannelConfig implements RakNet.Config
     protected volatile int userDataId = -1;
     protected volatile int mtu = 1500;
     protected volatile long retryDelay = TimeUnit.NANOSECONDS.convert(50, TimeUnit.MILLISECONDS);
-    protected volatile int maxPendingFrameSets = DEFAULT_MAX_PENDING_FRAME_SETS;
-    protected volatile int defaultPendingFrameSets = DEFAULT_DEFAULT_PENDING_FRAME_SETS;
+    protected volatile int maxPendingFrameSets = 1024;
+    protected volatile int defaultPendingFrameSets = 64;
 
     protected final DescriptiveStatistics stats = new DescriptiveStatistics(32);
 

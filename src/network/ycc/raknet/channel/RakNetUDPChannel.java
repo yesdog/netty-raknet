@@ -1,15 +1,58 @@
 package network.ycc.raknet.channel;
 
 import io.netty.channel.*;
+import io.netty.channel.epoll.Epoll;
+import io.netty.channel.epoll.EpollDatagramChannel;
+import io.netty.channel.epoll.EpollEventLoopGroup;
+import io.netty.channel.kqueue.KQueueDatagramChannel;
+import io.netty.channel.kqueue.KQueueEventLoopGroup;
+import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.DatagramChannel;
 import io.netty.channel.socket.DatagramPacket;
+import io.netty.channel.socket.nio.NioDatagramChannel;
 import io.netty.util.concurrent.PromiseCombiner;
 
 import network.ycc.raknet.RakNet;
 import network.ycc.raknet.config.DefaultConfig;
 
+import java.util.function.Supplier;
+
 //TODO: implement DatagramChannel?
 public abstract class RakNetUDPChannel extends AbstractChannel {
+
+    public static final boolean DEFAULT_CHANNEL_CAN_REUSE;
+    public static final Class<? extends DatagramChannel> DEFAULT_CHANNEL_CLASS;
+    public static final Supplier<EventLoopGroup> DEFAULT_CHANNEL_EVENT_GROUP;
+
+    protected static final ChannelMetadata METADATA = new ChannelMetadata(false, 16);
+
+    static {
+        boolean kQueueEnabled = false;
+        boolean ePollEnabled = false;
+
+        try {
+            //kQueueEnabled = KQueue.isAvailable();
+            kQueueEnabled = false;
+        } catch (Throwable e) {}
+
+        try {
+            ePollEnabled = Epoll.isAvailable();
+        } catch (Throwable e) {}
+
+        if (ePollEnabled) {
+            DEFAULT_CHANNEL_CLASS = EpollDatagramChannel.class;
+            DEFAULT_CHANNEL_CAN_REUSE = true;
+            DEFAULT_CHANNEL_EVENT_GROUP = EpollEventLoopGroup::new;
+        } else if (kQueueEnabled) {
+            DEFAULT_CHANNEL_CLASS = KQueueDatagramChannel.class;
+            DEFAULT_CHANNEL_CAN_REUSE = true;
+            DEFAULT_CHANNEL_EVENT_GROUP = KQueueEventLoopGroup::new;
+        } else {
+            DEFAULT_CHANNEL_CLASS = NioDatagramChannel.class;
+            DEFAULT_CHANNEL_CAN_REUSE = false;
+            DEFAULT_CHANNEL_EVENT_GROUP = NioEventLoopGroup::new;
+        }
+    }
 
     protected final DatagramChannel listener;
     protected final Config config = new Config();

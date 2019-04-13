@@ -42,10 +42,10 @@ public final class Packets
         register(UNCONNECTED_PING,          UnconnectedPing.class,      UnconnectedPing::new);
         register(PONG,                      Pong.class,                 decodeSimple(Pong::new));
         register(OPEN_CONNECTION_REQUEST_1, ConnectionRequest1.class,   ConnectionRequest1::new);
-        register(OPEN_CONNECTION_REPLY_1,   ConnectionReply1.class);
+        register(OPEN_CONNECTION_REPLY_1,   ConnectionReply1.class,     ConnectionReply1::new);
         register(OPEN_CONNECTION_REQUEST_2, ConnectionRequest2.class,   ConnectionRequest2::new);
-        register(OPEN_CONNECTION_REPLY_2,   ConnectionReply2.class);
-        register(CONNECTION_REQUEST,        ConnectionRequest.class,    ConnectionRequest::new);
+        register(OPEN_CONNECTION_REPLY_2,   ConnectionReply2.class,     ConnectionReply2::new);
+        register(CONNECTION_REQUEST,        ConnectionRequest.class,    decodeSimple(ConnectionRequest::new));
         register(SERVER_HANDSHAKE,          ServerHandshake.class,      ServerHandshake::new);
         register(CONNECTION_FAILED,         ConnectionFailed.class,     ConnectionFailed::new);
         register(CLIENT_HANDSHAKE,          ClientHandshake.class,      ClientHandshake::new);

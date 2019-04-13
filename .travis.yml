@@ -7,7 +7,10 @@ language: java
 jdk:
 - oraclejdk8
 
-script: mvn clean package
+script: "mvn clean package cobertura:cobertura"
 
 notifications:
   email: false
+
+after_success:
+  - bash <(curl -s https://codecov.io/bash)

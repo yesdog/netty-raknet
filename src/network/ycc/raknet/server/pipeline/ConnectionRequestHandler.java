@@ -17,8 +17,9 @@ public class ConnectionRequestHandler extends SimpleChannelInboundHandler<Connec
     protected void channelRead0(ChannelHandlerContext ctx, ConnectionRequest request) {
         ctx.writeAndFlush(new ServerHandshake(
                 (InetSocketAddress) ctx.channel().remoteAddress(),
-                request.getTimeStamp()
+                request.getTimestamp()
         ));
+        ctx.pipeline().remove(this); //handshake is durable, can remove handler now
     }
 
 }

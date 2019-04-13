@@ -12,9 +12,7 @@ public class ServerHandshake extends SimpleFramedPacket {
 	private long timestamp;
 	protected Reliability reliability = Reliability.RELIABLE;
 
-	public ServerHandshake() {
-
-	}
+	public ServerHandshake() {}
 
 	public ServerHandshake(InetSocketAddress clientAddr, long timestamp) {
 		this.clientAddr = clientAddr;

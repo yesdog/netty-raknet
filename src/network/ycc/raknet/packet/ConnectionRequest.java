@@ -4,23 +4,45 @@ import io.netty.buffer.ByteBuf;
 
 public class ConnectionRequest extends SimpleFramedPacket {
 
-	protected long timestamp;
-	protected Reliability reliability = Reliability.RELIABLE;
+    protected long clientId;
+    protected long timestamp;
+    protected Reliability reliability = Reliability.RELIABLE;
 
-	@Override
-	public void decode(ByteBuf buf) {
-		buf.skipBytes(8); //client id
-		timestamp = buf.readLong();
-		buf.skipBytes(1); //use security
-	}
+    public ConnectionRequest() {}
 
-	@Override
-	public void encode(ByteBuf buf) {
-		throw new UnsupportedOperationException();
-	}
+    public ConnectionRequest(long clientId) {
+        this.clientId = clientId;
+        this.timestamp = System.nanoTime();
+    }
 
-	public long getTimeStamp() {
-		return timestamp;
-	}
+    @Override
+    public void decode(ByteBuf buf) {
+        clientId = buf.readLong(); //client id
+        timestamp = buf.readLong();
+        buf.readBoolean(); //use security
+    }
+
+    @Override
+    public void encode(ByteBuf buf) {
+        buf.writeLong(clientId);
+        buf.writeLong(timestamp);
+        buf.writeBoolean(false);
+    }
+
+    public long getClientId() {
+        return clientId;
+    }
+
+    public void setClientId(long clientId) {
+        this.clientId = clientId;
+    }
+
+    public long getTimestamp() {
+        return timestamp;
+    }
+
+    public void setTimestamp(long timestamp) {
+        this.timestamp = timestamp;
+    }
 
 }

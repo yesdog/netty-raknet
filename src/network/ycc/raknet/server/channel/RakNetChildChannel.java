@@ -6,6 +6,7 @@ import io.netty.channel.socket.DatagramPacket;
 
 import network.ycc.raknet.RakNet;
 import network.ycc.raknet.config.DefaultConfig;
+import network.ycc.raknet.server.RakNetServer;
 
 import java.net.InetSocketAddress;
 import java.net.SocketAddress;
@@ -25,6 +26,10 @@ public class RakNetChildChannel extends AbstractChannel {
         config.setMetrics(parent.config().getMetrics());
         config.setServerId(parent.config().getServerId());
         pipeline().addLast(new WriteHandler());
+    }
+
+    protected void addDefaultPipeline() {
+        pipeline().addLast(RakNetServer.DefaultChildInitializer.INSTANCE);
     }
 
     @Override
@@ -57,6 +62,7 @@ public class RakNetChildChannel extends AbstractChannel {
     }
 
     protected void doDisconnect() {
+        //TODO: correctly send disconnect packet?
         close().addListener(ChannelFutureListener.FIRE_EXCEPTION_ON_FAILURE);
     }
 

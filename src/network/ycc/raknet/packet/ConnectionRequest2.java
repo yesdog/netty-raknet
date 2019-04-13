@@ -5,28 +5,38 @@ import network.ycc.raknet.utils.DataSerializer;
 
 public class ConnectionRequest2 extends SimplePacket implements Packet {
 
-	private int mtu;
-	private long guid;
+    private int mtu;
+    private long guid;
 
-	@Override
-	public void decode(ByteBuf buf) {
-		DataSerializer.readMagic(buf);
-		DataSerializer.readAddress(buf);
-		mtu = buf.readShort();
-		guid = buf.readLong();
-	}
+    public ConnectionRequest2() {}
 
-	@Override
-	public void encode(ByteBuf buf) {
-		throw new UnsupportedOperationException();
-	}
+    public ConnectionRequest2(int mtu, long guid) {
+        this.mtu = mtu;
+        this.guid = guid;
+    }
 
-	public int getMtu() {
-		return mtu;
-	}
+    @Override
+    public void decode(ByteBuf buf) {
+        DataSerializer.readMagic(buf);
+        DataSerializer.readAddress(buf);
+        mtu = buf.readShort();
+        guid = buf.readLong();
+    }
 
-	public long getGUID() {
-		return guid;
-	}
+    @Override
+    public void encode(ByteBuf buf) {
+        DataSerializer.writeMagic(buf);
+        DataSerializer.writeAddress(buf);
+        buf.writeShort(mtu);
+        buf.writeLong(guid);
+    }
+
+    public int getMtu() {
+        return mtu;
+    }
+
+    public long getGUID() {
+        return guid;
+    }
 
 }

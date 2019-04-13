@@ -22,7 +22,6 @@ public class ConnectionHandler extends SimpleChannelInboundHandler<Packet> {
     public static final String NAME = "rn-connect";
 
     protected long guid;
-    protected ScheduledFuture<?> pingTask;
     protected boolean isConnected = false; //TODO: attribute
 
     protected void channelRead0(ChannelHandlerContext ctx, Packet packet) {
@@ -34,15 +33,8 @@ public class ConnectionHandler extends SimpleChannelInboundHandler<Packet> {
             throw new IllegalStateException("Can't handle packet " + packet + ", connection is not established yet");
         } else {
             ctx.fireChannelRead(ReferenceCountUtil.retain(packet));
+            ctx.pipeline().remove(this); //done with the handler now
         }
-    }
-
-    @Override
-    public void channelInactive(ChannelHandlerContext ctx) throws Exception {
-        if (pingTask != null) {
-            pingTask.cancel(true);
-        }
-        super.channelInactive(ctx);
     }
 
     @SuppressWarnings("unchecked")
@@ -57,10 +49,11 @@ public class ConnectionHandler extends SimpleChannelInboundHandler<Packet> {
             config.setMTU(connectionRequest2.getMtu());
             ctx.writeAndFlush(new ConnectionReply2(connectionRequest2.getMtu(), config.getServerId()))
                     .addListener(ChannelFutureListener.FIRE_EXCEPTION_ON_FAILURE);
-            pingTask = channel.eventLoop().scheduleAtFixedRate(
+            final ScheduledFuture<?> pingTask = channel.eventLoop().scheduleAtFixedRate(
                     () -> channel.writeAndFlush(new Ping()).addListener(ChannelFutureListener.FIRE_EXCEPTION_ON_FAILURE),
                     100, 250, TimeUnit.MILLISECONDS
             );
+            channel.closeFuture().addListener(x -> pingTask.cancel(false));
         } else {
             //if guid matches then it means that reply2 packet didn't arrive to the clients
             //otherwise it means that it is actually a new client connecting using already taken ip+port
