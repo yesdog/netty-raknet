@@ -16,6 +16,7 @@ import io.netty.util.concurrent.PromiseCombiner;
 import network.ycc.raknet.RakNet;
 import network.ycc.raknet.config.DefaultConfig;
 
+import java.nio.channels.ClosedChannelException;
 import java.util.function.Supplier;
 
 //TODO: implement DatagramChannel?
@@ -70,6 +71,19 @@ public abstract class RakNetUDPChannel extends AbstractChannel {
     }
 
     abstract protected ChannelHandler newChannelHandler();
+
+    @Override
+    protected DefaultChannelPipeline newChannelPipeline() {
+        return new DefaultChannelPipeline(this) {
+            @Override
+            protected void onUnhandledInboundException(Throwable cause) {
+                if (cause instanceof ClosedChannelException) {
+                    return;
+                }
+                super.onUnhandledInboundException(cause);
+            }
+        };
+    }
 
     @Override
     public boolean isWritable() {

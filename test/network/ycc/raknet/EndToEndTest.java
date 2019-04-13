@@ -98,6 +98,11 @@ public class EndToEndTest {
         dataTest(1000, 1000, true, true);
     }
 
+    @Test
+    public void fireGC() {
+        System.gc();
+    }
+
     public void dataTest(int nSent, int maxSize, boolean brutalizeWrite, boolean brutalizeRead) throws InterruptedException {
         Random rnd = new Random(345983678);
         int bytesSent = 0;
@@ -111,7 +116,7 @@ public class EndToEndTest {
         }));
         Channel client = newClient(null);
         Brutalizer brutalizer = new Brutalizer();
-        client.pipeline().addBefore(RakNetUDPChannel.LISTENER_HANDLER_NAME, "brutalizer", brutalizer);
+        client.pipeline().addAfter(RakNetUDPChannel.LISTENER_HANDLER_NAME, "brutalizer", brutalizer);
         brutalizer.rnd = rnd;
         brutalizer.brutalizeRead = brutalizeRead;
         brutalizer.brutalizeWrite = brutalizeWrite;
