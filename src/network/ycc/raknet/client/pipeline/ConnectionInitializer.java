@@ -11,6 +11,7 @@ import io.netty.handler.codec.DecoderException;
 import io.netty.handler.codec.UnsupportedMessageTypeException;
 import io.netty.util.concurrent.ScheduledFuture;
 import network.ycc.raknet.RakNet;
+import network.ycc.raknet.packet.ClientHandshake;
 import network.ycc.raknet.packet.ConnectionFailed;
 import network.ycc.raknet.packet.ConnectionReply1;
 import network.ycc.raknet.packet.ConnectionReply2;
@@ -94,6 +95,8 @@ public class ConnectionInitializer extends SimpleChannelInboundHandler<Packet> {
             }
             case CR3: {
                 if (msg instanceof ServerHandshake) {
+                    final Packet packet = new ClientHandshake(((ServerHandshake) msg).getTimestamp());
+                    ctx.writeAndFlush(packet).addListener(ChannelFutureListener.FIRE_EXCEPTION_ON_FAILURE);
                     connectPromise.trySuccess();
                     ctx.pipeline().remove(this);
                     return;

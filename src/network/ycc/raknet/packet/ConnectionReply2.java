@@ -22,10 +22,7 @@ public class ConnectionReply2 extends SimplePacket implements Packet {
     public void decode(ByteBuf buf) {
         DataSerializer.readMagic(buf);
         serverId = buf.readLong();
-        if (buf.readByte() != 4) {
-            throw new IllegalArgumentException("No IPV6 support yet"); //TODO: ivp6
-        }
-        buf.skipBytes(6);
+        DataSerializer.readAddress(buf);
         mtu = buf.readShort();
         if (buf.readBoolean()) {
             throw new IllegalArgumentException("No security support yet"); //TODO: security i guess?
