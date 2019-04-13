@@ -26,6 +26,7 @@ public class RakNetChildChannel extends AbstractChannel {
         config.setMetrics(parent.config().getMetrics());
         config.setServerId(parent.config().getServerId());
         pipeline().addLast(new WriteHandler());
+        addDefaultPipeline();
     }
 
     protected void addDefaultPipeline() {

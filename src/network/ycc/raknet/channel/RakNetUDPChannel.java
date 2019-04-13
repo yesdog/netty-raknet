@@ -4,6 +4,7 @@ import io.netty.channel.*;
 import io.netty.channel.epoll.Epoll;
 import io.netty.channel.epoll.EpollDatagramChannel;
 import io.netty.channel.epoll.EpollEventLoopGroup;
+import io.netty.channel.kqueue.KQueue;
 import io.netty.channel.kqueue.KQueueDatagramChannel;
 import io.netty.channel.kqueue.KQueueEventLoopGroup;
 import io.netty.channel.nio.NioEventLoopGroup;
@@ -23,6 +24,7 @@ public abstract class RakNetUDPChannel extends AbstractChannel {
     public static final boolean DEFAULT_CHANNEL_CAN_REUSE;
     public static final Class<? extends DatagramChannel> DEFAULT_CHANNEL_CLASS;
     public static final Supplier<EventLoopGroup> DEFAULT_CHANNEL_EVENT_GROUP;
+    public static final String LISTENER_HANDLER_NAME = "rn-udp-listener-handler";
 
     protected static final ChannelMetadata METADATA = new ChannelMetadata(false, 16);
 
@@ -31,8 +33,7 @@ public abstract class RakNetUDPChannel extends AbstractChannel {
         boolean ePollEnabled = false;
 
         try {
-            //kQueueEnabled = KQueue.isAvailable();
-            kQueueEnabled = false;
+            kQueueEnabled = KQueue.isAvailable();
         } catch (Throwable e) {}
 
         try {
@@ -130,7 +131,7 @@ public abstract class RakNetUDPChannel extends AbstractChannel {
     }
 
     protected void initChannels() {
-        pipeline().addLast(newChannelHandler());
+        pipeline().addLast(LISTENER_HANDLER_NAME, newChannelHandler());
         listener.pipeline().addLast(new ListenerHandler());
         listener.closeFuture().addListener(v -> close());
     }

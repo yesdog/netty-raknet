@@ -17,8 +17,10 @@ public class PacketDecoder extends MessageToMessageDecoder<ByteBuf> {
     public static final PacketDecoder INSTANCE = new PacketDecoder();
 
     protected void decode(ChannelHandlerContext ctx, ByteBuf in, List<Object> out) {
-        RakNet.metrics(ctx).bytesIn(in.readableBytes());
-        out.add(Packets.decodeRaw(in));
+        if (in.readableBytes() != 0) {
+            RakNet.metrics(ctx).bytesIn(in.readableBytes());
+            out.add(Packets.decodeRaw(in));
+        }
     }
 
 }

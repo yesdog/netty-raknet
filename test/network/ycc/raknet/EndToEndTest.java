@@ -5,6 +5,7 @@ import io.netty.bootstrap.ServerBootstrap;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
 import io.netty.channel.Channel;
+import io.netty.channel.ChannelDuplexHandler;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInboundHandlerAdapter;
 import io.netty.channel.ChannelInitializer;
@@ -12,8 +13,10 @@ import io.netty.channel.ChannelPromise;
 import io.netty.channel.DefaultEventLoopGroup;
 import io.netty.channel.EventLoopGroup;
 import io.netty.channel.unix.UnixChannelOption;
+import io.netty.util.ReferenceCountUtil;
 import io.netty.util.concurrent.PromiseCombiner;
 
+import network.ycc.raknet.channel.RakNetUDPChannel;
 import network.ycc.raknet.client.channel.RakNetClientChannel;
 import network.ycc.raknet.server.RakNetServer;
 
@@ -53,7 +56,7 @@ public class EndToEndTest {
     }
 
     @Test
-    public void dataTest1() throws InterruptedException {
+    public void singleBufferTest() throws InterruptedException {
         int bytesSent = 1000;
         AtomicInteger bytesRecvd = new AtomicInteger(0);
 
@@ -67,7 +70,7 @@ public class EndToEndTest {
         client.pipeline().write(Unpooled.wrappedBuffer(new byte[bytesSent]));
         client.pipeline().flush();
 
-        Thread.sleep(3000);
+        Thread.sleep(1000); //give pings time to run
 
         server.close().sync();
         client.close().sync();
@@ -76,7 +79,26 @@ public class EndToEndTest {
     }
 
     @Test
-    public void dataTest2() throws InterruptedException {
+    public void manyBufferTest() throws InterruptedException {
+        dataTest(100, 5000, false, false);
+    }
+
+    @Test
+    public void manyBufferBadClient() throws InterruptedException {
+        dataTest(1000, 1000, false, false);
+    }
+
+    @Test
+    public void manyBufferBadServer() throws InterruptedException {
+        dataTest(1000, 1000, true, true);
+    }
+
+    @Test
+    public void manyBufferBadBoth() throws InterruptedException {
+        dataTest(1000, 1000, true, true);
+    }
+
+    public void dataTest(int nSent, int maxSize, boolean brutalizeWrite, boolean brutalizeRead) throws InterruptedException {
         Random rnd = new Random(345983678);
         int bytesSent = 0;
         AtomicInteger bytesRecvd = new AtomicInteger(0);
@@ -88,9 +110,14 @@ public class EndToEndTest {
             }
         }));
         Channel client = newClient(null);
+        Brutalizer brutalizer = new Brutalizer();
+        client.pipeline().addBefore(RakNetUDPChannel.LISTENER_HANDLER_NAME, "brutalizer", brutalizer);
+        brutalizer.rnd = rnd;
+        brutalizer.brutalizeRead = brutalizeRead;
+        brutalizer.brutalizeWrite = brutalizeWrite;
 
-        for (int i = 0 ; i < 100 ; i++) {
-            int size = rnd.nextInt(5000);
+        for (int i = 0 ; i < nSent ; i++) {
+            int size = rnd.nextInt(maxSize);
             combiner.add(
                     client.pipeline().write(Unpooled.wrappedBuffer(new byte[size])));
             bytesSent += size;
@@ -100,7 +127,7 @@ public class EndToEndTest {
         try {
             ChannelPromise donePromise = client.newPromise();
             combiner.finish(donePromise);
-            donePromise.await(5, TimeUnit.SECONDS);
+            donePromise.await(15, TimeUnit.SECONDS);
             Assert.assertEquals(bytesSent, bytesRecvd.get());
         } finally {
             server.close().sync();
@@ -142,6 +169,43 @@ public class EndToEndTest {
                 });
             }
         };
+    }
+
+    public static class Brutalizer extends ChannelDuplexHandler {
+        Random rnd;
+        boolean brutalizeWrite = false;
+        boolean brutalizeRead = false;
+        double lossPercent = 0.20;
+        double dupePercent = 0.20;
+
+        @Override
+        public void write(ChannelHandlerContext ctx, Object msg, ChannelPromise promise) throws Exception {
+            if (brutalizeWrite) {
+                if (rnd.nextDouble() < lossPercent) {
+                    ReferenceCountUtil.release(msg);
+                    promise.trySuccess();
+                    return;
+                }
+                if (rnd.nextDouble() < dupePercent) {
+                    super.write(ctx, ReferenceCountUtil.retain(msg), ctx.voidPromise());
+                }
+            }
+            super.write(ctx, msg, promise);
+        }
+
+        @Override
+        public void channelRead(ChannelHandlerContext ctx, Object msg) throws Exception {
+            if (brutalizeRead) {
+                if (rnd.nextDouble() < lossPercent) {
+                    ReferenceCountUtil.release(msg);
+                    return;
+                }
+                if (rnd.nextDouble() < dupePercent) {
+                    super.channelRead(ctx, ReferenceCountUtil.retain(msg));
+                }
+            }
+            super.channelRead(ctx, msg);
+        }
     }
 
     public static class EmptyInit extends ChannelInitializer {

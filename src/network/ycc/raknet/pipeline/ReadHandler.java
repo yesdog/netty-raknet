@@ -15,13 +15,6 @@ public class ReadHandler extends SimpleChannelInboundHandler<PacketData> {
     public static final String NAME = "rn-read";
     public static final ReadHandler INSTANCE = new ReadHandler();
 
-    @Override
-    public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) {
-        if (!(cause instanceof ClosedChannelException)) {
-            ctx.fireExceptionCaught(cause);
-        }
-    }
-
     protected void channelRead0(ChannelHandlerContext ctx, PacketData packet) {
         final RakNet.Config config = (RakNet.Config) ctx.channel().config();
         final int userDataId = config.getUserDataId();

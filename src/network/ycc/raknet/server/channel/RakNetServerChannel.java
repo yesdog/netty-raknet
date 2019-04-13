@@ -94,7 +94,6 @@ public class RakNetServerChannel extends RakNetUDPChannel implements ServerChann
                 }
                 if (!childMap.containsKey(remoteAddress)) {
                     final RakNetChildChannel child = newChild((InetSocketAddress) remoteAddress);
-                    child.addDefaultPipeline();
                     child.closeFuture().addListener(v ->
                             eventLoop().execute(() -> childMap.remove(remoteAddress, child))
                     );
