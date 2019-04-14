@@ -7,20 +7,21 @@ import java.net.InetSocketAddress;
 
 public class ClientHandshake extends SimpleFramedPacket {
 
-    protected Reliability reliability = Reliability.RELIABLE_ORDERED;
-
     private long pongTimestamp;
     private long timestamp;
     private InetSocketAddress address;
     private int nExtraAddresses;
 
-    public ClientHandshake() {}
+    public ClientHandshake() {
+        reliability = Reliability.RELIABLE_ORDERED;
+    }
 
     public ClientHandshake(long pongTimestamp, InetSocketAddress address, int nExtraAddresses) {
         this(pongTimestamp, System.nanoTime(), address, nExtraAddresses);
     }
 
     public ClientHandshake(long pongTimestamp, long timestamp, InetSocketAddress address, int nExtraAddresses) {
+        this();
         this.pongTimestamp = pongTimestamp;
         this.timestamp = timestamp;
         this.address = address;

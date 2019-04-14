@@ -6,11 +6,13 @@ public class ConnectionRequest extends SimpleFramedPacket {
 
     protected long clientId;
     protected long timestamp;
-    protected Reliability reliability = Reliability.RELIABLE;
 
-    public ConnectionRequest() {}
+    public ConnectionRequest() {
+        reliability = Reliability.RELIABLE;
+    }
 
     public ConnectionRequest(long clientId) {
+        this();
         this.clientId = clientId;
         this.timestamp = System.nanoTime();
     }

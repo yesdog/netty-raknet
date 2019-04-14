@@ -10,16 +10,18 @@ public class ServerHandshake extends SimpleFramedPacket {
 
     private InetSocketAddress clientAddr;
     private long timestamp;
-    protected Reliability reliability = Reliability.RELIABLE;
     private int nExtraAddresses;
 
-    public ServerHandshake() {}
+    public ServerHandshake() {
+        reliability = Reliability.RELIABLE;
+    }
 
     public ServerHandshake(InetSocketAddress clientAddr, long timestamp) {
         this(clientAddr, timestamp, 20);
     }
 
     public ServerHandshake(InetSocketAddress clientAddr, long timestamp, int nExtraAddresses) {
+        this();
         this.clientAddr = clientAddr;
         this.timestamp = timestamp;
         this.nExtraAddresses = nExtraAddresses;

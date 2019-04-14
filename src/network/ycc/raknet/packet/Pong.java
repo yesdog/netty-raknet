@@ -4,49 +4,48 @@ import io.netty.buffer.ByteBuf;
 
 public class Pong extends SimpleFramedPacket {
 
-	private long pingTimestamp;
-	private long pongTimestamp;
+    private long pingTimestamp;
+    private long pongTimestamp;
 
-	protected Reliability reliability = Reliability.UNRELIABLE;
+    public Pong() {
+        reliability = Reliability.UNRELIABLE;
+    }
 
-	public Pong() {
+    public Pong(long pingTimestamp, Reliability reliability) {
+        this(pingTimestamp);
+        this.reliability = reliability;
+    }
 
-	}
+    public Pong(long pingTimestamp) {
+        this();
+        this.pingTimestamp = pingTimestamp;
+        this.pongTimestamp = System.nanoTime();
+    }
 
-	public Pong(long pingTimestamp, Reliability reliability) {
-		this(pingTimestamp);
-		this.reliability = reliability;
-	}
+    @Override
+    public void decode(ByteBuf buf) {
+        pingTimestamp = buf.readLong();
+        if (buf.isReadable()) {
+            pongTimestamp = buf.readLong();
+        }
+    }
 
-	public Pong(long pingTimestamp) {
-		this.pingTimestamp = pingTimestamp;
-		this.pongTimestamp = System.nanoTime();
-	}
+    @Override
+    public void encode(ByteBuf buf) {
+        buf.writeLong(pingTimestamp);
+        buf.writeLong(pongTimestamp);
+    }
 
-	@Override
-	public void decode(ByteBuf buf) {
-		pingTimestamp = buf.readLong();
-		if (buf.isReadable()) {
-			pongTimestamp = buf.readLong();
-		}
-	}
+    public long getPingTimestamp() {
+        return pingTimestamp;
+    }
 
-	@Override
-	public void encode(ByteBuf buf) {
-		buf.writeLong(pingTimestamp);
-		buf.writeLong(pongTimestamp);
-	}
+    public long getPongTimestamp() {
+        return pongTimestamp;
+    }
 
-	public long getPingTimestamp() {
-		return pingTimestamp;
-	}
-
-	public long getPongTimestamp() {
-		return pongTimestamp;
-	}
-
-	public long getRTT() {
-		return System.nanoTime() - pingTimestamp;
-	}
+    public long getRTT() {
+        return System.nanoTime() - pingTimestamp;
+    }
 
 }

@@ -292,13 +292,15 @@ public final class Frame extends AbstractReferenceCounted {
     protected static final class Comparator implements java.util.Comparator<Frame> {
         @Override
         public int compare(Frame a, Frame b) {
-            if (!a.getReliability().isReliable) {
+            if (a == b) {
+                return 0;
+            } else if (!a.getReliability().isReliable) {
                 return -1;
             } else if (!b.getReliability().isReliable) {
                 return 1;
             }
             final int d = UINT.B3.minusWrap(a.reliableIndex, b.reliableIndex);
-            return d < 0 ? -1 : ((d == 0) ? 0 : 1);
+            return d < 0 ? -1 : 1;
         }
     }
 

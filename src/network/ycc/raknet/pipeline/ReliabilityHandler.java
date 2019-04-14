@@ -195,6 +195,7 @@ public class ReliabilityHandler extends ChannelDuplexHandler {
         final FrameSet frameSet = FrameSet.create();
         while (itr.hasNext()) {
             final Frame frame = itr.next();
+            assert frame.refCnt() > 0 : "Frame has lost reference";
             if (frameSet.getRoughSize() + frame.getRoughPacketSize() > maxSize) {
                 if (frameSet.isEmpty()) {
                     throw new DecoderException("Finished frame larger than the MTU by " + (frame.getRoughPacketSize() - maxSize));
@@ -234,6 +235,7 @@ public class ReliabilityHandler extends ChannelDuplexHandler {
                 if (frame.getReliability().isReliable) {
                     queueFrame(frame);
                 } else {
+                    frame.getPromise().trySuccess(); //TODO: maybe need a fail here
                     frame.release();
                 }
             });
