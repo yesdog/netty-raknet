@@ -5,15 +5,30 @@ import io.netty.channel.ChannelOption;
 import io.netty.channel.DefaultChannelConfig;
 
 import network.ycc.raknet.RakNet;
+
 import org.apache.commons.math3.stat.descriptive.DescriptiveStatistics;
 
+import java.security.NoSuchAlgorithmException;
+import java.security.SecureRandom;
 import java.util.Map;
+import java.util.Random;
 import java.util.concurrent.TimeUnit;
 
 public class DefaultConfig extends DefaultChannelConfig implements RakNet.Config {
 
+    private static final Random rnd;
+
+    static {
+        Random secRand = null;
+        try {
+            secRand = SecureRandom.getInstanceStrong();
+        } catch (NoSuchAlgorithmException e) {}
+        rnd = secRand == null ? new Random() : secRand;
+    }
+
     //TODO: add rest of ChannelOptions
-    protected volatile long serverId = 1L;
+    protected volatile long serverId = rnd.nextLong();
+    protected volatile long clientId = rnd.nextLong();
     protected volatile RakNet.MetricsLogger metrics = RakNet.MetricsLogger.DEFAULT;
     protected volatile int userDataId = -1;
     protected volatile int mtu = 1500;
@@ -33,7 +48,8 @@ public class DefaultConfig extends DefaultChannelConfig implements RakNet.Config
     public Map<ChannelOption<?>, Object> getOptions() {
         return getOptions(
                 super.getOptions(),
-                RakNet.SERVER_ID, RakNet.METRICS, RakNet.USER_DATA_ID, RakNet.MTU, RakNet.RTT);
+                RakNet.SERVER_ID, RakNet.CLIENT_ID, RakNet.METRICS,
+                RakNet.USER_DATA_ID, RakNet.MTU, RakNet.RTT);
     }
 
     @Override
@@ -41,6 +57,8 @@ public class DefaultConfig extends DefaultChannelConfig implements RakNet.Config
     public <T> boolean setOption(ChannelOption<T> option, T value) {
         if (option == RakNet.SERVER_ID) {
             serverId = (Long) value;
+        } else if (option == RakNet.CLIENT_ID) {
+            clientId = (Long) value;
         } else if (option == RakNet.METRICS) {
             metrics = (RakNet.MetricsLogger) value;
         } else if (option == RakNet.USER_DATA_ID) {
@@ -60,6 +78,8 @@ public class DefaultConfig extends DefaultChannelConfig implements RakNet.Config
     public <T> T getOption(ChannelOption<T> option) {
         if (option == RakNet.SERVER_ID) {
             return (T) (Long) serverId;
+        } else if (option == RakNet.CLIENT_ID) {
+            return (T) (Long) clientId;
         } else if (option == RakNet.METRICS) {
             return (T) metrics;
         } else if (option == RakNet.USER_DATA_ID) {
@@ -86,6 +106,14 @@ public class DefaultConfig extends DefaultChannelConfig implements RakNet.Config
 
     public void setServerId(long serverId) {
         this.serverId = serverId;
+    }
+
+    public long getClientId() {
+        return clientId;
+    }
+
+    public void setClientId(long clientId) {
+        this.clientId = clientId;
     }
 
     public int getUserDataId() {

@@ -24,8 +24,6 @@ import network.ycc.raknet.packet.Ping;
 import network.ycc.raknet.packet.ServerHandshake;
 
 import java.net.InetSocketAddress;
-import java.util.IllegalFormatException;
-import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 
 public class ConnectionInitializer extends SimpleChannelInboundHandler<Packet> {
@@ -33,7 +31,6 @@ public class ConnectionInitializer extends SimpleChannelInboundHandler<Packet> {
     public static final String NAME = "rn-init-connect";
 
     protected final ChannelPromise connectPromise;
-    protected final long guid = UUID.randomUUID().getLeastSignificantBits();
     protected State state = State.CR1;
     protected ScheduledFuture<?> sendTimer = null;
     protected ScheduledFuture<?> connectTimer = null;
@@ -86,7 +83,7 @@ public class ConnectionInitializer extends SimpleChannelInboundHandler<Packet> {
                             100, 250, TimeUnit.MILLISECONDS
                     );
                     ctx.channel().closeFuture().addListener(x -> pingTask.cancel(false));
-                    final Packet packet = new ConnectionRequest(guid);
+                    final Packet packet = new ConnectionRequest(config.getClientId());
                     ctx.writeAndFlush(packet).addListener(ChannelFutureListener.FIRE_EXCEPTION_ON_FAILURE);
                 } else if (msg instanceof ConnectionFailed) {
                     connectPromise.tryFailure(new ChannelException("RakNet connection failed"));
@@ -118,7 +115,7 @@ public class ConnectionInitializer extends SimpleChannelInboundHandler<Packet> {
                 break;
             }
             case CR2: {
-                final Packet packet = new ConnectionRequest2(config.getMTU(), guid,
+                final Packet packet = new ConnectionRequest2(config.getMTU(), config.getClientId(),
                         (InetSocketAddress) ctx.channel().remoteAddress());
                 ctx.writeAndFlush(packet).addListener(ChannelFutureListener.FIRE_EXCEPTION_ON_FAILURE);
                 break;

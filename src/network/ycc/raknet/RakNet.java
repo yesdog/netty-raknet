@@ -29,6 +29,7 @@ public class RakNet {
 
     public static final AttributeKey<Boolean> WRITABLE = AttributeKey.valueOf("RN_WRITABLE");
     public static final ChannelOption<Long> SERVER_ID = ChannelOption.valueOf("RN_SERVER_ID");
+    public static final ChannelOption<Long> CLIENT_ID = ChannelOption.valueOf("RN_CLIENT_ID");
     public static final ChannelOption<MetricsLogger> METRICS = ChannelOption.valueOf("RN_METRICS");
     public static final ChannelOption<Integer> USER_DATA_ID = ChannelOption.valueOf("RN_USER_DATA_ID");
     public static final ChannelOption<Integer> MTU = ChannelOption.valueOf("RN_MTU");
@@ -102,6 +103,8 @@ public class RakNet {
         void setMetrics(MetricsLogger metrics);
         long getServerId();
         void setServerId(long serverId);
+        long getClientId();
+        void setClientId(long clientId);
         int getUserDataId();
         void setUserDataId(int userDataId);
         int getMTU();

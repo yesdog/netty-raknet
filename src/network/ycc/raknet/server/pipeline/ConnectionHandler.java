@@ -17,12 +17,12 @@ import network.ycc.raknet.packet.ConnectionRequest1;
 import network.ycc.raknet.packet.ConnectionRequest2;
 import network.ycc.raknet.packet.Packet;
 
+//TODO: redo this all as a single handler that self-removes and uses a connection promise for isActive
 public class ConnectionHandler extends SimpleChannelInboundHandler<Packet> {
 
     public static final String NAME = "rn-connect";
 
-    protected long guid;
-    protected boolean isConnected = false; //TODO: attribute
+    protected boolean isConnected = false; //TODO: attribute + channelActive
 
     protected void channelRead0(ChannelHandlerContext ctx, Packet packet) {
         if (packet instanceof ConnectionRequest1) {
@@ -44,7 +44,7 @@ public class ConnectionHandler extends SimpleChannelInboundHandler<Packet> {
         final RakNet.Config config = (RakNet.Config) channel.config();
         if (!isConnected) {
             isConnected = true;
-            guid = nguid;
+            config.setClientId(nguid);
             //TODO: verify server-side MTU?
             config.setMTU(connectionRequest2.getMtu());
             ctx.writeAndFlush(new ConnectionReply2(connectionRequest2.getMtu(), config.getServerId()))
@@ -57,7 +57,7 @@ public class ConnectionHandler extends SimpleChannelInboundHandler<Packet> {
         } else {
             //if guid matches then it means that reply2 packet didn't arrive to the clients
             //otherwise it means that it is actually a new client connecting using already taken ip+port
-            if (guid == nguid) {
+            if (config.getClientId() == nguid) {
                 ctx.writeAndFlush(new ConnectionReply2(config.getMTU(), config.getServerId()))
                         .addListener(ChannelFutureListener.FIRE_EXCEPTION_ON_FAILURE);
             } else {

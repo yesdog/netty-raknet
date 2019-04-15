@@ -148,7 +148,7 @@ public class EndToEndTest {
         .group(ioGroup, childGroup)
         .channelFactory(() -> new RakNetServer(RakNetServer.DEFAULT_CHANNEL_CLASS))
         .option(UnixChannelOption.SO_REUSEPORT, true)
-        .option(RakNet.SERVER_ID, UUID.randomUUID().getMostSignificantBits())
+        .option(RakNet.SERVER_ID, 12345L)
         .childOption(RakNet.USER_DATA_ID, 0xFE)
         .handler(ioInit)
         .childHandler(childInit);
@@ -161,6 +161,7 @@ public class EndToEndTest {
         .group(ioGroup)
         .channelFactory(() -> new RakNetClientChannel(RakNetServer.DEFAULT_CHANNEL_CLASS))
         .option(RakNet.USER_DATA_ID, 0xFE)
+        .option(RakNet.CLIENT_ID,6789L)
         .handler(init);
         return bootstrap.connect(localhost).sync().channel();
     }
