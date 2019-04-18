@@ -10,7 +10,6 @@ import network.ycc.raknet.server.RakNetServer;
 
 import java.net.InetSocketAddress;
 import java.net.SocketAddress;
-import java.nio.channels.ClosedChannelException;
 
 public class RakNetChildChannel extends AbstractChannel {
 

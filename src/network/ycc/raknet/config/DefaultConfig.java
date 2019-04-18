@@ -8,23 +8,13 @@ import network.ycc.raknet.RakNet;
 
 import org.apache.commons.math3.stat.descriptive.DescriptiveStatistics;
 
-import java.security.NoSuchAlgorithmException;
-import java.security.SecureRandom;
 import java.util.Map;
 import java.util.Random;
 import java.util.concurrent.TimeUnit;
 
 public class DefaultConfig extends DefaultChannelConfig implements RakNet.Config {
 
-    private static final Random rnd;
-
-    static {
-        Random secRand = null;
-        try {
-            secRand = SecureRandom.getInstanceStrong();
-        } catch (NoSuchAlgorithmException e) {}
-        rnd = secRand == null ? new Random() : secRand;
-    }
+    private static final Random rnd = new Random(System.nanoTime());
 
     //TODO: add rest of ChannelOptions
     protected volatile long serverId = rnd.nextLong();

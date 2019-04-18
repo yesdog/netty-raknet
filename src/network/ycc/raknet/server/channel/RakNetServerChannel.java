@@ -116,7 +116,7 @@ public class RakNetServerChannel extends RakNetUDPChannel implements ServerChann
                 try {
                     final DatagramPacket datagram = (DatagramPacket) msg;
                     final Channel child = childMap.get(datagram.sender());
-                    if (child != null && child.isActive() && child.config().isAutoRead()) {
+                    if (child != null && child.isOpen() && child.config().isAutoRead()) {
                         child.pipeline()
                                 .fireChannelRead(datagram.content().retain())
                                 .fireChannelReadComplete();

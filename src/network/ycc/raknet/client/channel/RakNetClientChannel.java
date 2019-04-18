@@ -5,6 +5,8 @@ import io.netty.channel.socket.DatagramChannel;
 import io.netty.channel.socket.DatagramPacket;
 import io.netty.util.ReferenceCountUtil;
 import io.netty.util.concurrent.PromiseCombiner;
+
+import network.ycc.raknet.RakNet;
 import network.ycc.raknet.channel.RakNetUDPChannel;
 import network.ycc.raknet.client.RakNetClient;
 import network.ycc.raknet.client.pipeline.ConnectionInitializer;
@@ -82,6 +84,12 @@ public class RakNetClientChannel extends RakNetUDPChannel {
     @Override
     public boolean isActive() {
         return super.isActive() && connectPromise.isSuccess();
+    }
+
+    @Override
+    public boolean isWritable() {
+        final Boolean result = attr(RakNet.WRITABLE).get();
+        return (result == null || result) && super.isWritable();
     }
 
     protected SocketAddress localAddress0() {
