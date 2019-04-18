@@ -4,12 +4,16 @@
 [![codecov](https://codecov.io/gh/yesdog/RakNetServer/branch/master/graph/badge.svg)](https://codecov.io/gh/yesdog/RakNetServer)
 
 High performance fork of [RakNetServer](https://github.com/Shevchik/RakNetServer) 
-targeting unreliable and rate-limited client connections.
+targeting unreliable and rate-limited client connections. It provides strict netty 
+style server and client channels. 
 
 This implementation uses [Netty](https://github.com/netty/netty) 
 channels to provide a fast and effective [RakNet](http://www.raknet.net) server, 
 offering the full feature set of the transport protocol, while providing
 room for extension with any plugins or custom behavior. 
+
+### Examples
+See the test case [here](./test/network/ycc/raknet/EndToEndTest.java).
 
 ## Features
 * Recylable objects:
