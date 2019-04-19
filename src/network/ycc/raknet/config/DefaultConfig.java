@@ -14,7 +14,7 @@ import java.util.concurrent.TimeUnit;
 
 public class DefaultConfig extends DefaultChannelConfig implements RakNet.Config {
 
-    private static final Random rnd = new Random(System.nanoTime());
+    private static final Random rnd = new Random();
 
     //TODO: add rest of ChannelOptions
     protected volatile long serverId = rnd.nextLong();
