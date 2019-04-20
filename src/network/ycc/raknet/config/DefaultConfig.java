@@ -22,7 +22,7 @@ public class DefaultConfig extends DefaultChannelConfig implements RakNet.Config
     protected volatile RakNet.MetricsLogger metrics = RakNet.MetricsLogger.DEFAULT;
     protected volatile int userDataId = -1;
     protected volatile int mtu = 1500;
-    protected volatile long retryDelay = TimeUnit.NANOSECONDS.convert(50, TimeUnit.MILLISECONDS);
+    protected volatile long retryDelay = TimeUnit.NANOSECONDS.convert(100, TimeUnit.MILLISECONDS);
     protected volatile int maxPendingFrameSets = 1024;
     protected volatile int defaultPendingFrameSets = 64;
 
