@@ -33,12 +33,12 @@ public class ReliabilityHandler extends ChannelDuplexHandler {
     protected int nextSendSeqId = 0;
     protected int resendGauge = 0;
     protected int burstTokens = 0;
-    protected boolean backPressureActive = false;
     protected RakNet.Config config = null;
 
     @Override
     public void handlerAdded(ChannelHandlerContext ctx) throws Exception {
         config = (RakNet.Config) ctx.channel().config();
+        ctx.channel().attr(RakNet.WRITABLE).set(true);
         super.handlerAdded(ctx);
     }
 
@@ -246,20 +246,17 @@ public class ReliabilityHandler extends ChannelDuplexHandler {
 
     protected void updateBackPressure(ChannelHandlerContext ctx) {
         final int queuedBytes = getQueuedBytes();
-        final boolean newBackPressureActive;
+        final boolean oldWritable = ctx.channel().attr(RakNet.WRITABLE).get();
+        boolean newWritable = oldWritable;
         if (queuedBytes > config.getWriteBufferHighWaterMark()) {
-            newBackPressureActive = true;
+            newWritable = false;
         } else if (queuedBytes < config.getWriteBufferLowWaterMark()) {
-            newBackPressureActive = false;
-        } else {
-            newBackPressureActive = backPressureActive;
+            newWritable = true;
         }
-        if (backPressureActive == newBackPressureActive) {
-            return;
+        if (newWritable != oldWritable) {
+            ctx.channel().attr(RakNet.WRITABLE).set(newWritable ? Boolean.TRUE : Boolean.FALSE);
+            ctx.fireChannelWritabilityChanged();
         }
-        backPressureActive = newBackPressureActive;
-        ctx.channel().attr(RakNet.WRITABLE).set(backPressureActive ? Boolean.FALSE : Boolean.TRUE);
-        ctx.fireChannelWritabilityChanged();
     }
 
     protected int getQueuedBytes() {
