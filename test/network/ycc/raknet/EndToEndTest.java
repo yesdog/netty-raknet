@@ -3,29 +3,44 @@ package network.ycc.raknet;
 import io.netty.bootstrap.Bootstrap;
 import io.netty.bootstrap.ServerBootstrap;
 import io.netty.buffer.ByteBuf;
+import io.netty.buffer.ByteBufAllocator;
 import io.netty.buffer.Unpooled;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelDuplexHandler;
+import io.netty.channel.ChannelFuture;
+import io.netty.channel.ChannelHandler;
 import io.netty.channel.ChannelHandlerContext;
+import io.netty.channel.ChannelId;
 import io.netty.channel.ChannelInboundHandlerAdapter;
 import io.netty.channel.ChannelInitializer;
+import io.netty.channel.ChannelMetadata;
+import io.netty.channel.ChannelPipeline;
+import io.netty.channel.ChannelProgressivePromise;
 import io.netty.channel.ChannelPromise;
 import io.netty.channel.DefaultEventLoopGroup;
+import io.netty.channel.EventLoop;
 import io.netty.channel.EventLoopGroup;
+import io.netty.channel.socket.DatagramChannel;
+import io.netty.channel.socket.DatagramChannelConfig;
 import io.netty.channel.unix.UnixChannelOption;
+import io.netty.util.Attribute;
+import io.netty.util.AttributeKey;
 import io.netty.util.ReferenceCountUtil;
 import io.netty.util.concurrent.PromiseCombiner;
 
 import network.ycc.raknet.channel.RakNetUDPChannel;
 import network.ycc.raknet.client.channel.RakNetClientChannel;
 import network.ycc.raknet.server.RakNetServer;
+import network.ycc.raknet.server.channel.RakNetServerChannel;
 
 import org.junit.Assert;
 import org.junit.Test;
 
+import java.net.InetAddress;
 import java.net.InetSocketAddress;
+import java.net.NetworkInterface;
+import java.net.SocketAddress;
 import java.util.Random;
-import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.BiConsumer;
@@ -40,15 +55,15 @@ public class EndToEndTest {
     @Test
     public void serverCloseTest() throws InterruptedException {
         for (int i = 0 ; i < 20 ; i++) {
-            newServer(null, null).close().sync();
+            newServer(null, null, null).close().sync();
         }
     }
 
     @Test
     public void connectAndCloseTest() throws InterruptedException {
         for (int i = 0 ; i < 20 ; i++) {
-            Channel server = newServer(null, null);
-            Channel client = newClient(null);
+            Channel server = newServer(null, null, null);
+            Channel client = newClient(null, null);
 
             server.close().sync();
             client.close().sync();
@@ -64,8 +79,8 @@ public class EndToEndTest {
             if (msg instanceof ByteBuf) {
                 bytesRecvd.addAndGet(((ByteBuf) msg).readableBytes());
             }
-        }));
-        Channel client = newClient(null);
+        }), null);
+        Channel client = newClient(null, null);
 
         client.pipeline().write(Unpooled.wrappedBuffer(new byte[bytesSent]));
         client.pipeline().flush();
@@ -80,22 +95,42 @@ public class EndToEndTest {
 
     @Test
     public void manyBufferTest() throws InterruptedException {
-        dataTest(100, 5000, false, false);
+        dataTest(100, 5000, false, false, false);
     }
 
     @Test
     public void manyBufferBadClient() throws InterruptedException {
-        dataTest(1000, 1000, false, false);
+        dataTest(1000, 1000, false, false, false);
     }
 
     @Test
     public void manyBufferBadServer() throws InterruptedException {
-        dataTest(1000, 1000, true, true);
+        dataTest(1000, 1000, true, true, false);
     }
 
     @Test
     public void manyBufferBadBoth() throws InterruptedException {
-        dataTest(100, 5000, true, true);
+        dataTest(100, 5000, true, true, false);
+    }
+
+    @Test
+    public void manyBufferTestMocked() throws InterruptedException {
+        dataTest(100, 5000, false, false, false);
+    }
+
+    @Test
+    public void manyBufferBadClientMocked() throws InterruptedException {
+        dataTest(1000, 1000, false, false, false);
+    }
+
+    @Test
+    public void manyBufferBadServerMocked() throws InterruptedException {
+        dataTest(1000, 1000, true, true, false);
+    }
+
+    @Test
+    public void manyBufferBadBothMocked() throws InterruptedException {
+        dataTest(100, 5000, true, true, false);
     }
 
     @Test
@@ -103,7 +138,7 @@ public class EndToEndTest {
         System.gc();
     }
 
-    public void dataTest(int nSent, int maxSize, boolean brutalizeWrite, boolean brutalizeRead) throws InterruptedException {
+    public void dataTest(int nSent, int maxSize, boolean brutalizeWrite, boolean brutalizeRead, boolean mockTransport) throws InterruptedException {
         Random rnd = new Random(345983678);
         int bytesSent = 0;
         AtomicInteger bytesRecvd = new AtomicInteger(0);
@@ -113,8 +148,8 @@ public class EndToEndTest {
             if (msg instanceof ByteBuf) {
                 bytesRecvd.addAndGet(((ByteBuf) msg).readableBytes());
             }
-        }));
-        Channel client = newClient(null);
+        }), null);
+        Channel client = newClient(null, null);
         Brutalizer brutalizer = new Brutalizer();
         client.pipeline().addAfter(RakNetUDPChannel.LISTENER_HANDLER_NAME, "brutalizer", brutalizer);
         brutalizer.rnd = rnd;
@@ -141,12 +176,20 @@ public class EndToEndTest {
         }
     }
 
-    public Channel newServer(ChannelInitializer ioInit, ChannelInitializer childInit) throws InterruptedException {
+    public Channel newServer(ChannelInitializer ioInit, ChannelInitializer childInit, ChannelHandler mockTransport) throws InterruptedException {
         if (ioInit == null) ioInit = new EmptyInit();
         if (childInit == null) childInit = new EmptyInit();
         final ServerBootstrap bootstrap = new ServerBootstrap()
         .group(ioGroup, childGroup)
-        .channelFactory(() -> new RakNetServer(RakNetServer.DEFAULT_CHANNEL_CLASS))
+        .channelFactory(() -> new RakNetServerChannel(RakNetServer.DEFAULT_CHANNEL_CLASS) {
+            @Override
+            protected void addDefaultPipeline() {
+                if (mockTransport != null) {
+                    pipeline().addLast(mockTransport);
+                }
+                super.addDefaultPipeline();
+            }
+        })
         .option(UnixChannelOption.SO_REUSEPORT, true)
         .option(RakNet.SERVER_ID, 12345L)
         .childOption(RakNet.USER_DATA_ID, 0xFE)
@@ -155,11 +198,19 @@ public class EndToEndTest {
         return bootstrap.bind(localhost).sync().channel();
     }
 
-    public Channel newClient(ChannelInitializer init) throws InterruptedException {
+    public Channel newClient(ChannelInitializer init, ChannelHandler mockTransport) throws InterruptedException {
         if (init == null) init = new EmptyInit();
         final Bootstrap bootstrap = new Bootstrap()
         .group(ioGroup)
-        .channelFactory(() -> new RakNetClientChannel(RakNetServer.DEFAULT_CHANNEL_CLASS))
+        .channelFactory(() -> new RakNetClientChannel(RakNetServer.DEFAULT_CHANNEL_CLASS) {
+            @Override
+            protected void addDefaultPipeline() {
+                if (mockTransport != null) {
+                    pipeline().addLast(mockTransport);
+                }
+                super.addDefaultPipeline();
+            }
+        })
         .option(RakNet.USER_DATA_ID, 0xFE)
         .option(RakNet.CLIENT_ID,6789L)
         .handler(init);
