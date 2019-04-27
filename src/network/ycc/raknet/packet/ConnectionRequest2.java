@@ -8,14 +8,14 @@ import java.net.InetSocketAddress;
 public class ConnectionRequest2 extends SimplePacket implements Packet {
 
     private int mtu;
-    private long guid;
+    private long clientId;
     private InetSocketAddress address;
 
     public ConnectionRequest2() {}
 
-    public ConnectionRequest2(int mtu, long guid, InetSocketAddress address) {
+    public ConnectionRequest2(int mtu, long clientId, InetSocketAddress address) {
         this.mtu = mtu;
-        this.guid = guid;
+        this.clientId = clientId;
         this.address = address;
     }
 
@@ -24,7 +24,7 @@ public class ConnectionRequest2 extends SimplePacket implements Packet {
         DataSerializer.readMagic(buf);
         address = DataSerializer.readAddress(buf);
         mtu = buf.readShort();
-        guid = buf.readLong();
+        clientId = buf.readLong();
     }
 
     @Override
@@ -32,15 +32,15 @@ public class ConnectionRequest2 extends SimplePacket implements Packet {
         DataSerializer.writeMagic(buf);
         DataSerializer.writeAddress(buf, address);
         buf.writeShort(mtu);
-        buf.writeLong(guid);
+        buf.writeLong(clientId);
     }
 
     public int getMtu() {
         return mtu;
     }
 
-    public long getGUID() {
-        return guid;
+    public long getClientId() {
+        return clientId;
     }
 
 }

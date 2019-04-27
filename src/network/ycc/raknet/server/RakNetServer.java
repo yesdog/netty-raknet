@@ -1,5 +1,6 @@
 package network.ycc.raknet.server;
 
+import io.netty.channel.ChannelInboundHandlerAdapter;
 import io.netty.channel.ChannelInitializer;
 import io.netty.channel.socket.DatagramChannel;
 
@@ -7,9 +8,8 @@ import network.ycc.raknet.RakNet;
 import network.ycc.raknet.pipeline.FlushTickHandler;
 import network.ycc.raknet.server.channel.RakNetServerChannel;
 import network.ycc.raknet.server.channel.RakNetChildChannel;
-import network.ycc.raknet.server.pipeline.ConnectionHandler;
 import network.ycc.raknet.server.pipeline.ConnectionInitializer;
-import network.ycc.raknet.server.pipeline.ConnectionRequestHandler;
+import network.ycc.raknet.server.pipeline.ConnectionListener;
 
 public class RakNetServer extends RakNetServerChannel {
 
@@ -19,7 +19,7 @@ public class RakNetServer extends RakNetServerChannel {
         protected void initChannel(RakNetServerChannel channel) {
             //TODO: blackhole unhandled Datagram messages. respond with disconnect?
             channel.pipeline()
-                    .addLast(ConnectionInitializer.NAME, new ConnectionInitializer());
+                    .addLast(ConnectionListener.NAME, new ConnectionListener());
         }
     }
 
@@ -30,11 +30,9 @@ public class RakNetServer extends RakNetServerChannel {
             channel.pipeline()
                     .addLast(FlushTickHandler.NAME,     new FlushTickHandler())
                     .addLast(RakNet.PacketCodec.INSTANCE)
-                    .addLast(ConnectionHandler.NAME,    new ConnectionHandler())
                     .addLast(RakNet.ReliableFrameHandling.INSTANCE)
-                    .addLast(RakNet.PacketHandling.INSTANCE)
-                    .addLast(
-                         ConnectionRequestHandler.NAME, ConnectionRequestHandler.INSTANCE);
+                    .addLast(ConnectionInitializer.NAME, new ChannelInboundHandlerAdapter()) //replace later
+                    .addLast(RakNet.PacketHandling.INSTANCE);
         }
     }
 

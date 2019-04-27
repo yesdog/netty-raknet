@@ -5,9 +5,11 @@ import io.netty.channel.*;
 import io.netty.channel.socket.DatagramPacket;
 
 import network.ycc.raknet.RakNet;
+import network.ycc.raknet.client.channel.RakNetClientChannel;
 import network.ycc.raknet.config.DefaultConfig;
 import network.ycc.raknet.packet.Disconnect;
 import network.ycc.raknet.server.RakNetServer;
+import network.ycc.raknet.server.pipeline.ConnectionInitializer;
 
 import java.net.InetSocketAddress;
 import java.net.SocketAddress;
@@ -15,6 +17,7 @@ import java.net.SocketAddress;
 public class RakNetChildChannel extends AbstractChannel {
 
     private static final ChannelMetadata metadata = new ChannelMetadata(false);
+    protected final ChannelPromise connectPromise;
     protected final RakNet.Config config;
     protected final InetSocketAddress remoteAddress;
 
@@ -24,6 +27,7 @@ public class RakNetChildChannel extends AbstractChannel {
         super(parent);
         this.remoteAddress = remoteAddress;
         config = new DefaultConfig(this);
+        connectPromise = newPromise();
         config.setMetrics(parent.config().getMetrics());
         config.setServerId(parent.config().getServerId());
         pipeline().addLast(new WriteHandler());
@@ -32,6 +36,17 @@ public class RakNetChildChannel extends AbstractChannel {
 
     protected void addDefaultPipeline() {
         pipeline().addLast(RakNetServer.DefaultChildInitializer.INSTANCE);
+        connectPromise.addListener(x2 -> {
+            if (!x2.isSuccess()) {
+                RakNetChildChannel.this.close();
+            }
+        });
+        pipeline().addLast(new ChannelInitializer<RakNetChildChannel>() {
+            protected void initChannel(RakNetChildChannel ch) throws Exception {
+                pipeline().replace(ConnectionInitializer.NAME, ConnectionInitializer.NAME,
+                        new ConnectionInitializer(connectPromise));
+            }
+        });
     }
 
     @Override
@@ -103,7 +118,7 @@ public class RakNetChildChannel extends AbstractChannel {
     }
 
     public boolean isActive() {
-        return isOpen() && parent().isActive();
+        return isOpen() && parent().isActive() && connectPromise.isSuccess();
     }
 
     public ChannelMetadata metadata() {

@@ -18,7 +18,7 @@ import java.nio.channels.ClosedChannelException;
 
 public class RakNetClientChannel extends RakNetUDPChannel {
 
-    public final ChannelPromise connectPromise;
+    protected final ChannelPromise connectPromise;
     protected volatile InetSocketAddress remoteAddress = null;
 
     public RakNetClientChannel() {
@@ -27,7 +27,7 @@ public class RakNetClientChannel extends RakNetUDPChannel {
 
     public RakNetClientChannel(Class<? extends DatagramChannel> ioChannelType) {
         super(ioChannelType);
-        connectPromise = this.newPromise();
+        connectPromise = newPromise();
         addDefaultPipeline();
     }
 
@@ -59,8 +59,6 @@ public class RakNetClientChannel extends RakNetUDPChannel {
                            connectPromise.addListener(x2 -> {
                                if (!x2.isSuccess()) {
                                    RakNetClientChannel.this.close();
-                               } else {
-                                   pipeline().fireChannelActive();
                                }
                            });
                        }

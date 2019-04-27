@@ -22,41 +22,15 @@ import network.ycc.raknet.packet.InvalidVersion;
 import network.ycc.raknet.packet.Packet;
 import network.ycc.raknet.packet.Ping;
 import network.ycc.raknet.packet.ServerHandshake;
+import network.ycc.raknet.pipeline.AbstractConnectionInitializer;
 
 import java.net.InetSocketAddress;
 import java.util.concurrent.TimeUnit;
 
-public class ConnectionInitializer extends SimpleChannelInboundHandler<Packet> {
-
-    public static final String NAME = "rn-init-connect";
-
-    protected final ChannelPromise connectPromise;
-    protected State state = State.CR1;
-    protected ScheduledFuture<?> sendTimer = null;
-    protected ScheduledFuture<?> connectTimer = null;
+public class ConnectionInitializer extends AbstractConnectionInitializer {
 
     public ConnectionInitializer(ChannelPromise connectPromise) {
-        this.connectPromise = connectPromise;
-    }
-
-    @Override
-    public void handlerAdded(ChannelHandlerContext ctx) {
-        sendTimer = ctx.channel().eventLoop().scheduleAtFixedRate(() -> sendRequest(ctx),
-                250, 250, TimeUnit.MILLISECONDS);
-        connectTimer = ctx.channel().eventLoop().schedule(() -> doTimeout(ctx),
-                ctx.channel().config().getConnectTimeoutMillis(), TimeUnit.MILLISECONDS);
-        sendRequest(ctx);
-    }
-
-    @Override
-    public void handlerRemoved(ChannelHandlerContext ctx) {
-        sendTimer.cancel(false);
-        connectTimer.cancel(false);
-    }
-
-    @Override
-    public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) {
-        connectPromise.tryFailure(cause);
+        super(connectPromise);
     }
 
     @Override
@@ -69,7 +43,7 @@ public class ConnectionInitializer extends SimpleChannelInboundHandler<Packet> {
                     config.setServerId(((ConnectionReply1) msg).getServerId());
                     state = State.CR2;
                 } else if (msg instanceof InvalidVersion) {
-                    connectPromise.tryFailure(new UnsupportedMessageTypeException("Invalid RakNet version"));
+                    fail(new UnsupportedMessageTypeException("Invalid RakNet version"));
                 }
                 break;
             }
@@ -78,15 +52,10 @@ public class ConnectionInitializer extends SimpleChannelInboundHandler<Packet> {
                     config.setMTU(((ConnectionReply2) msg).getMtu());
                     config.setServerId(((ConnectionReply2) msg).getServerId());
                     state = State.CR3;
-                    final ScheduledFuture<?> pingTask = ctx.channel().eventLoop().scheduleAtFixedRate(
-                            () -> ctx.channel().writeAndFlush(new Ping()).addListener(ChannelFutureListener.FIRE_EXCEPTION_ON_FAILURE),
-                            100, 250, TimeUnit.MILLISECONDS
-                    );
-                    ctx.channel().closeFuture().addListener(x -> pingTask.cancel(false));
                     final Packet packet = new ConnectionRequest(config.getClientId());
                     ctx.writeAndFlush(packet).addListener(ChannelFutureListener.FIRE_EXCEPTION_ON_FAILURE);
                 } else if (msg instanceof ConnectionFailed) {
-                    connectPromise.tryFailure(new ChannelException("RakNet connection failed"));
+                    fail(new ChannelException("RakNet connection failed"));
                 }
                 break;
             }
@@ -95,8 +64,7 @@ public class ConnectionInitializer extends SimpleChannelInboundHandler<Packet> {
                     final Packet packet = new ClientHandshake(((ServerHandshake) msg).getTimestamp(),
                             (InetSocketAddress) ctx.channel().remoteAddress(), ((ServerHandshake) msg).getnExtraAddresses());
                     ctx.writeAndFlush(packet).addListener(ChannelFutureListener.FIRE_EXCEPTION_ON_FAILURE);
-                    connectPromise.trySuccess();
-                    ctx.pipeline().remove(this);
+                    finish(ctx);
                     return;
                 }
                 break;
@@ -121,16 +89,6 @@ public class ConnectionInitializer extends SimpleChannelInboundHandler<Packet> {
                 break;
             }
         }
-    }
-
-    protected void doTimeout(ChannelHandlerContext ctx) {
-        connectPromise.tryFailure(new ConnectTimeoutException());
-    }
-
-    protected enum State {
-        CR1, //UDP: ConnectionRequest1 -> ConnectionReply1, InvalidVersion
-        CR2, //UDP: ConnectionRequest2 -> ConnectionReply2, ConnectionFailed
-        CR3, //Framed: ConnectionRequest -> Handshake -> ClientHandshake
     }
 
 }

@@ -97,10 +97,11 @@ public class RakNetServerChannel extends RakNetUDPChannel implements ServerChann
                     child.closeFuture().addListener(v ->
                             eventLoop().execute(() -> childMap.remove(remoteAddress, child))
                     );
+                    child.config.setServerId(config.getServerId());
                     pipeline().fireChannelRead(child).fireChannelReadComplete(); //register
                     childMap.put(remoteAddress, child);
-                    child.pipeline().fireChannelActive();
                 }
+                //TODO: tie promise to connection sequence
                 promise.trySuccess();
             } catch (Exception e) {
                 promise.tryFailure(e);
