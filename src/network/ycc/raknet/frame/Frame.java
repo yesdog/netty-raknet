@@ -43,7 +43,8 @@ public final class Frame extends AbstractReferenceCounted {
         final FramedPacket.Reliability reliability = FramedPacket.Reliability.get(flags >> 5);
         int orderChannel = 0;
 
-        assert !(hasSplit && !reliability.isReliable);
+        //TODO: some raknet impls are bad. what to do about this?
+        //assert !(hasSplit && !reliability.isReliable) : "Frame is unreliable, but split";
 
         if (reliability.isReliable) {
             out.reliableIndex = buf.readUnsignedMediumLE();

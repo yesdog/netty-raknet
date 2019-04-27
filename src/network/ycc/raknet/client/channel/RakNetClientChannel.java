@@ -10,6 +10,7 @@ import network.ycc.raknet.RakNet;
 import network.ycc.raknet.channel.RakNetUDPChannel;
 import network.ycc.raknet.client.RakNetClient;
 import network.ycc.raknet.client.pipeline.ConnectionInitializer;
+import network.ycc.raknet.packet.Disconnect;
 
 import java.net.InetSocketAddress;
 import java.net.SocketAddress;
@@ -77,6 +78,7 @@ public class RakNetClientChannel extends RakNetUDPChannel {
 
     @Override
     protected void doClose() {
+        pipeline().writeAndFlush(new Disconnect());
         super.doClose();
         connectPromise.tryFailure(new ClosedChannelException());
     }

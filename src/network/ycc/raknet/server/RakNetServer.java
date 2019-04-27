@@ -38,7 +38,8 @@ public class RakNetServer extends RakNetServerChannel {
         }
     }
 
-    public RakNetServer(Class<? extends DatagramChannel> ioChannelType) {
+    @Deprecated
+    private RakNetServer(Class<? extends DatagramChannel> ioChannelType) {
         super(ioChannelType);
     }
 
