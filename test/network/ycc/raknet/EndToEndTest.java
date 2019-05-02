@@ -228,6 +228,7 @@ public class EndToEndTest {
 
         try {
             donePromise.get(15, TimeUnit.SECONDS);
+            Thread.sleep(1000);
         } finally {
             server.close().get();
             client.close().get();
