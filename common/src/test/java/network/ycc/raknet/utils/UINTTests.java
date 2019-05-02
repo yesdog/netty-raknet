@@ -19,7 +19,7 @@ public class UINTTests {
             int d = (int)(random.nextDouble() * UINT.B3.MAX_VALUE) - UINT.B3.HALF_MAX;
             int b = UINT.B3.plus(a, d);
 
-            Assert.assertEquals(UINT.B3.minusWrap(b, a), d);
+            assertEquals(UINT.B3.minusWrap(b, a), d);
         }
     }
 

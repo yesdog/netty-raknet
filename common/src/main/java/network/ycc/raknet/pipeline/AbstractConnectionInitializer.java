@@ -6,7 +6,6 @@ import io.netty.channel.ChannelPromise;
 import io.netty.channel.ConnectTimeoutException;
 import io.netty.channel.SimpleChannelInboundHandler;
 import io.netty.util.concurrent.ScheduledFuture;
-import network.ycc.raknet.client.pipeline.ConnectionInitializer;
 import network.ycc.raknet.packet.Packet;
 import network.ycc.raknet.packet.Ping;
 
@@ -16,7 +15,7 @@ public abstract class AbstractConnectionInitializer extends SimpleChannelInbound
     public static final String NAME = "rn-init-connect";
 
     protected final ChannelPromise connectPromise;
-    protected ConnectionInitializer.State state = ConnectionInitializer.State.CR1;
+    protected State state = State.CR1;
     protected ScheduledFuture<?> sendTimer = null;
     protected ScheduledFuture<?> connectTimer = null;
 

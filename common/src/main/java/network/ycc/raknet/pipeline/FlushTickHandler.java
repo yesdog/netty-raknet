@@ -5,6 +5,7 @@ import io.netty.util.concurrent.ScheduledFuture;
 
 import java.util.concurrent.TimeUnit;
 
+//TODO: keep a channel atr that stores a long # of ticks?
 public class FlushTickHandler extends ChannelInboundHandlerAdapter {
 
     public static final String NAME = "rn-tick-in";

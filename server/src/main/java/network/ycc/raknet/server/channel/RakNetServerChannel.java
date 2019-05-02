@@ -20,7 +20,7 @@ public class RakNetServerChannel extends RakNetUDPChannel implements ServerChann
     protected volatile SocketAddress localAddress = null;
 
     public RakNetServerChannel() {
-        this(DEFAULT_CHANNEL_CLASS);
+        this(RakNetUDPChannel.DEFAULT_CHANNEL_CLASS);
     }
 
     public RakNetServerChannel(Supplier<? extends DatagramChannel> ioChannelSupplier) {
@@ -71,7 +71,7 @@ public class RakNetServerChannel extends RakNetUDPChannel implements ServerChann
     }
 
     public ChannelMetadata metadata() {
-        return METADATA;
+        return RakNetUDPChannel.METADATA;
     }
 
     protected SocketAddress localAddress0() {
@@ -86,7 +86,7 @@ public class RakNetServerChannel extends RakNetUDPChannel implements ServerChann
         return null;
     }
 
-    protected AbstractUnsafe newUnsafe() {
+    protected AbstractChannel.AbstractUnsafe newUnsafe() {
         return new ServerUnsafe();
     }
 
@@ -94,7 +94,7 @@ public class RakNetServerChannel extends RakNetUDPChannel implements ServerChann
         throw new UnsupportedOperationException();
     }
 
-    protected final class ServerUnsafe extends AbstractUnsafe {
+    protected final class ServerUnsafe extends AbstractChannel.AbstractUnsafe {
         public void connect(SocketAddress remoteAddress, SocketAddress localAddress, ChannelPromise promise) {
             //TODO: session limit check
             try {

@@ -6,8 +6,7 @@ import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInitializer;
 import io.netty.channel.ChannelOption;
 import io.netty.util.AttributeKey;
-import network.ycc.raknet.channel.RakNetUDPChannel;
-import network.ycc.raknet.client.channel.RakNetClientChannel;
+
 import network.ycc.raknet.pipeline.DisconnectHandler;
 import network.ycc.raknet.pipeline.FrameJoiner;
 import network.ycc.raknet.pipeline.FrameOrderIn;
@@ -20,12 +19,8 @@ import network.ycc.raknet.pipeline.PongHandler;
 import network.ycc.raknet.pipeline.ReadHandler;
 import network.ycc.raknet.pipeline.ReliabilityHandler;
 import network.ycc.raknet.pipeline.WriteHandler;
-import network.ycc.raknet.server.channel.RakNetServerChannel;
 
 public class RakNet {
-
-    public static final Class<? extends RakNetUDPChannel> SERVER_CHANNEL = RakNetServerChannel.class;
-    public static final Class<? extends RakNetUDPChannel> CLIENT_CHANNEL = RakNetClientChannel.class;
 
     public static final AttributeKey<Boolean> WRITABLE = AttributeKey.valueOf("RN_WRITABLE");
     public static final ChannelOption<Long> SERVER_ID = ChannelOption.valueOf("RN_SERVER_ID");

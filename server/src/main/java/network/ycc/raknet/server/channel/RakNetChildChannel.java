@@ -5,7 +5,6 @@ import io.netty.channel.*;
 import io.netty.channel.socket.DatagramPacket;
 
 import network.ycc.raknet.RakNet;
-import network.ycc.raknet.client.channel.RakNetClientChannel;
 import network.ycc.raknet.config.DefaultConfig;
 import network.ycc.raknet.packet.Disconnect;
 import network.ycc.raknet.server.RakNetServer;
