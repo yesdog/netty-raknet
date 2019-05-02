@@ -16,6 +16,7 @@ public class PacketEncoder extends MessageToByteEncoder<Packet> {
 
     protected void encode(ChannelHandlerContext ctx, Packet msg, ByteBuf out) {
         msg.write(out);
+        //TODO: MTU write sanity check
         RakNet.metrics(ctx).bytesOut(out.readableBytes());
     }
 

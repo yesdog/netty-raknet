@@ -160,9 +160,10 @@ public final class Frame extends AbstractReferenceCounted {
     public int fragment(int splitID, int splitSize, int reliableIndex, List<Object> outList) {
         final ByteBuf data = packet.createData();
         try {
-            final int splitCount = (data.readableBytes() + splitSize - 1) / splitSize; //round up
+            final int dataSplitSize = splitSize - HEADER_SIZE;
+            final int splitCount = (data.readableBytes() + dataSplitSize - 1) / dataSplitSize; //round up
             for (int splitIndex = 0; splitIndex < splitCount; splitIndex++) {
-                final int length = Math.min(splitSize, data.readableBytes());
+                final int length = Math.min(dataSplitSize, data.readableBytes());
                 final Frame out = createRaw();
                 out.reliableIndex = reliableIndex;
                 out.sequenceIndex = sequenceIndex;
@@ -175,6 +176,7 @@ public final class Frame extends AbstractReferenceCounted {
                 out.packet.setOrderChannel(getOrderChannel());
                 out.packet.setReliability(getReliability().makeReliable()); //reliable form only
                 assert out.packet.isFragment();
+                assert out.getRoughPacketSize() <= splitSize : "mtu fragment mismatch";
                 reliableIndex = UINT.B3.plus(reliableIndex, 1);
                 outList.add(out);
             }

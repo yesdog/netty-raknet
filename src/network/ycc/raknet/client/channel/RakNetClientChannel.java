@@ -15,6 +15,7 @@ import network.ycc.raknet.packet.Disconnect;
 import java.net.InetSocketAddress;
 import java.net.SocketAddress;
 import java.nio.channels.ClosedChannelException;
+import java.util.function.Supplier;
 
 public class RakNetClientChannel extends RakNetUDPChannel {
 
@@ -23,6 +24,12 @@ public class RakNetClientChannel extends RakNetUDPChannel {
 
     public RakNetClientChannel() {
         this(DEFAULT_CHANNEL_CLASS);
+    }
+
+    public RakNetClientChannel(Supplier<? extends DatagramChannel> ioChannelSupplier) {
+        super(ioChannelSupplier);
+        connectPromise = newPromise();
+        addDefaultPipeline();
     }
 
     public RakNetClientChannel(Class<? extends DatagramChannel> ioChannelType) {
@@ -128,7 +135,7 @@ public class RakNetClientChannel extends RakNetUDPChannel {
             if (msg instanceof DatagramPacket) {
                 try {
                     final DatagramPacket datagram = (DatagramPacket) msg;
-                    if (datagram.sender().equals(remoteAddress())) {
+                    if (datagram.sender() == null || datagram.sender().equals(remoteAddress())) {
                         ctx.fireChannelRead(datagram.content().retain());
                     }
                 } finally {

@@ -12,6 +12,7 @@ import java.net.InetSocketAddress;
 import java.net.SocketAddress;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.function.Supplier;
 
 public class RakNetServerChannel extends RakNetUDPChannel implements ServerChannel {
 
@@ -20,6 +21,11 @@ public class RakNetServerChannel extends RakNetUDPChannel implements ServerChann
 
     public RakNetServerChannel() {
         this(DEFAULT_CHANNEL_CLASS);
+    }
+
+    public RakNetServerChannel(Supplier<? extends DatagramChannel> ioChannelSupplier) {
+        super(ioChannelSupplier);
+        addDefaultPipeline();
     }
 
     public RakNetServerChannel(Class<? extends DatagramChannel> ioChannelType) {
@@ -44,6 +50,12 @@ public class RakNetServerChannel extends RakNetUDPChannel implements ServerChann
                     ChannelFutureListener.CLOSE_ON_FAILURE)
                     .sync(); //TODO: really not happy about this
         } catch (InterruptedException e) {}
+    }
+
+    @Override
+    protected void doClose() {
+        super.doClose();
+        childMap.values().forEach(Channel::close);
     }
 
     protected void doDisconnect() {

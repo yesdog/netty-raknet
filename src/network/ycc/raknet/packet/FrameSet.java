@@ -92,6 +92,16 @@ public final class FrameSet extends AbstractReferenceCounted implements Packet {
         });
     }
 
+    public void fail(Throwable e) {
+        frames.forEach(frame -> {
+            final ChannelPromise promise = frame.getPromise();
+            if (promise != null) {
+                promise.tryFailure(e);
+                frame.setPromise(null);
+            }
+        });
+    }
+
     protected void deallocate() {
         frames.forEach(Frame::release);
         frames.clear();

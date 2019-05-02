@@ -60,14 +60,20 @@ public abstract class RakNetUDPChannel extends AbstractChannel {
     protected final Config config = new Config();
     protected volatile boolean open = true;
 
-    public RakNetUDPChannel(Class<? extends DatagramChannel> ioChannelType) {
+    public RakNetUDPChannel(Supplier<? extends DatagramChannel> ioChannelSupplier) {
         super(null);
-        try {
-            listener = ioChannelType.newInstance();
-        } catch (InstantiationException | IllegalAccessException e) {
-            throw new RuntimeException("Failed to create instance", e);
-        }
+        listener = ioChannelSupplier.get();
         initChannels();
+    }
+
+    public RakNetUDPChannel(Class<? extends DatagramChannel> ioChannelType) {
+        this(() -> {
+            try {
+                return ioChannelType.newInstance();
+            } catch (InstantiationException | IllegalAccessException e) {
+                throw new RuntimeException("Failed to create instance", e);
+            }
+        });
     }
 
     abstract protected ChannelHandler newChannelHandler();
