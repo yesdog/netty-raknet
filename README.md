@@ -20,6 +20,11 @@ See the test case [here](./test/network/ycc/raknet/EndToEndTest.java#L144).
   * Heavily used objects are recycled.
   * Reduces GC pressure.
   * Instrumented with Netty leak detection.
+* Strict Netty patterns:
+  * Uses Bootstrap and ServerBootstrap pattern.
+  * Signals backpressure using Channel writability. 
+  * Uses Netty ChannelOptions for channel config.
+  * Follows the normal bind() and connect() patterns.
 * 0-copy buffer interactions:
   * Retained buffer references throughout.
   * Composite buffers used for encapsulation and defragmentation. 
