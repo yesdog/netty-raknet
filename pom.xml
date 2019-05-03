@@ -10,7 +10,7 @@
     <version>0.7-SNAPSHOT</version>
     <name>Netty RakNet</name>
     <description>A RakNet reliable UDP transport server using Netty.</description>
-    <url>https://github.com/yesdog/RakNetServer</url>
+    <url>https://github.com/yesdog/netty-raknet</url>
     <packaging>pom</packaging>
 
     <modules>
@@ -29,15 +29,15 @@
     <licenses>
         <license>
             <name>GNU General Public License v3.0</name>
-            <url>https://github.com/yesdog/RakNetServer/blob/master/LICENSE</url>
+            <url>https://github.com/yesdog/netty-raknet/blob/master/LICENSE</url>
             <distribution>repo</distribution>
         </license>
     </licenses>
 
     <scm>
-        <url>https://github.com/yesdog/RakNetServer/</url>
-        <connection>scm:git:git://github.com/yesdog/RakNetServer.git</connection>
-        <developerConnection>scm:git:git@github.com:yesdog/RakNetServer.git</developerConnection>
+        <url>https://github.com/yesdog/netty-raknet/</url>
+        <connection>scm:git:git://github.com/yesdog/netty-raknet.git</connection>
+        <developerConnection>scm:git:git@github.com:yesdog/netty-raknet.git</developerConnection>
         <tag>HEAD</tag>
     </scm>
 
@@ -48,16 +48,22 @@
             <version>4.1.34.Final</version>
             <scope>provided</scope>
         </dependency>
+        <dependency>
+            <groupId>junit</groupId>
+            <artifactId>junit</artifactId>
+            <version>4.11</version>
+            <scope>test</scope>
+        </dependency>
     </dependencies>
 
     <ciManagement>
         <system>jenkins</system>
-        <url>http://ci.codemc.org/job/yesdog/job/RakNetServer</url>
+        <url>http://ci.codemc.org/job/yesdog/job/netty-raknet</url>
     </ciManagement>
 
     <issueManagement>
         <system>GitHub</system>
-        <url>https://github.com/yesdog/RakNetServer/issues</url>
+        <url>https://github.com/yesdog/netty-raknet/issues</url>
     </issueManagement>
 
     <distributionManagement>
