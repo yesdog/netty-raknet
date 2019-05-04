@@ -2,6 +2,7 @@
 [![Build Status](https://ci.codemc.org/job/yesdog/job/netty-raknet/badge/icon)](https://ci.codemc.org/job/yesdog/job/netty-raknet/)
 [![Known Vulnerabilities](https://snyk.io/test/github/yesdog/netty-raknet/badge.svg)](https://snyk.io/test/github/yesdog/netty-raknet)
 [![codecov](https://codecov.io/gh/yesdog/netty-raknet/branch/master/graph/badge.svg)](https://codecov.io/gh/yesdog/netty-raknet)
+[![Discord Chat](https://img.shields.io/discord/574240965351571477.svg)](https://discord.gg/MhhWfSW)
 
 High performance fork of [RakNetServer](https://github.com/Shevchik/RakNetServer) 
 targeting unreliable and rate-limited client connections. It provides strict netty 
