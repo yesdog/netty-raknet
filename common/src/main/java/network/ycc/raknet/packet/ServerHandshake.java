@@ -4,8 +4,6 @@ import java.net.InetSocketAddress;
 
 import io.netty.buffer.ByteBuf;
 
-import network.ycc.raknet.utils.DataSerializer;
-
 public class ServerHandshake extends SimpleFramedPacket {
 
     private InetSocketAddress clientAddr;
@@ -29,10 +27,10 @@ public class ServerHandshake extends SimpleFramedPacket {
 
     @Override
     public void decode(ByteBuf buf) {
-        clientAddr = DataSerializer.readAddress(buf);
+        clientAddr = readAddress(buf);
         buf.readShort();
         for (nExtraAddresses = 0 ; buf.readableBytes() > 16 ; nExtraAddresses++) {
-            DataSerializer.readAddress(buf);
+            readAddress(buf);
         }
         timestamp = buf.readLong();
         timestamp = buf.readLong();
@@ -40,10 +38,10 @@ public class ServerHandshake extends SimpleFramedPacket {
 
     @Override
     public void encode(ByteBuf buf) {
-        DataSerializer.writeAddress(buf, clientAddr);
+        writeAddress(buf, clientAddr);
         buf.writeShort(0);
         for (int i = 0 ; i < nExtraAddresses ; i++) {
-            DataSerializer.writeAddress(buf);
+            writeAddress(buf);
         }
         buf.writeLong(timestamp);
         buf.writeLong(System.currentTimeMillis());

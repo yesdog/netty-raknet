@@ -1,5 +1,6 @@
 package network.ycc.raknet.server.pipeline;
 
+import io.netty.buffer.ByteBuf;
 import io.netty.channel.ChannelFutureListener;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.socket.DatagramPacket;
@@ -23,19 +24,24 @@ public class ConnectionListener extends UdpPacketHandler<ConnectionRequest1> {
     }
 
     protected void handle(ChannelHandlerContext ctx, InetSocketAddress sender, ConnectionRequest1 request) {
-        final long serverId = ctx.channel().config().getOption(RakNet.SERVER_ID);
+        final RakNet.Config config = (RakNet.Config) ctx.channel().config();
         final Packet response;
-        //TODO: version config
-        if (request.getRakNetProtocolVersion() == InvalidVersion.VALID_VERSION) {
+        if (request.getProtocolVersion() == config.getProtocolVersion()) {
             //use connect to create a new child for this address
             ctx.connect(sender).addListener(ChannelFutureListener.FIRE_EXCEPTION_ON_FAILURE);
-            response = new ConnectionReply1(request.getMtu(), serverId);
+            response = new ConnectionReply1(config.getMagic(), request.getMtu(), config.getServerId());
         } else {
-            response = new InvalidVersion(serverId);
+            response = new InvalidVersion(config.getServerId());
         }
-        ctx.writeAndFlush(new DatagramPacket(response.createData(ctx.alloc()), sender))
-                .addListener(ChannelFutureListener.FIRE_EXCEPTION_ON_FAILURE);
-        ReferenceCountUtil.release(response);
+        final ByteBuf buf = ctx.alloc().ioBuffer(response.sizeHint());
+        try {
+            config.getCodec().encode(response, buf);
+            ctx.writeAndFlush(new DatagramPacket(buf.retain(), sender))
+                    .addListener(ChannelFutureListener.FIRE_EXCEPTION_ON_FAILURE);
+        } finally {
+            ReferenceCountUtil.safeRelease(response);
+            buf.release();
+        }
     }
 
 }

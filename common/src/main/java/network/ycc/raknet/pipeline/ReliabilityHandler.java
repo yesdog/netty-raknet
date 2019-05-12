@@ -35,11 +35,11 @@ public class ReliabilityHandler extends ChannelDuplexHandler {
     protected int nextSendSeqId = 0;
     protected int resendGauge = 0;
     protected int burstTokens = 0;
-    protected RakNet.Config config = null;
+    protected RakNet.Config config = null; //TODO: not really needed anymore
 
     @Override
     public void handlerAdded(ChannelHandlerContext ctx) throws Exception {
-        config = (RakNet.Config) ctx.channel().config();
+        config = RakNet.config(ctx);
         ctx.channel().attr(RakNet.WRITABLE).set(true);
         super.handlerAdded(ctx);
     }
@@ -105,7 +105,7 @@ public class ReliabilityHandler extends ChannelDuplexHandler {
         final ObjectIterator<FrameSet> packetItr = pendingFrameSets.values().iterator();
         //2 sd from mean RTT is about 97% coverage
         final long deadline = System.nanoTime() -
-                (config.getRTT() + 2 * config.getRTTStdDev() + config.getRetryDelay());
+                (config.getRTTNanos() + 2 * config.getRTTStdDevNanos() + config.getRetryDelayNanos());
         while (packetItr.hasNext()) {
             final FrameSet frameSet = packetItr.next();
             if (frameSet.getSentTime() < deadline) {

@@ -2,48 +2,58 @@ package network.ycc.raknet.packet;
 
 import io.netty.buffer.ByteBuf;
 
-import network.ycc.raknet.utils.DataSerializer;
+import network.ycc.raknet.config.Magic;
 
 public class ConnectionRequest1 extends SimplePacket implements Packet {
 
-    private int rakNetProtocolVersion;
+    private Magic magic;
+    private int protocolVersion;
     private int mtu;
 
     public ConnectionRequest1() {}
 
-    public ConnectionRequest1(int rakNetProtocolVersion, int mtu) {
-        this.rakNetProtocolVersion = rakNetProtocolVersion;
+    public ConnectionRequest1(Magic magic, int protocolVersion, int mtu) {
+        this.magic = magic;
+        this.protocolVersion = protocolVersion;
         this.mtu = mtu;
     }
 
     public void decode(ByteBuf buf) {
-        DataSerializer.readMagic(buf);
-        rakNetProtocolVersion = buf.readByte();
+        magic = Magic.decode(buf);
+        protocolVersion = buf.readByte();
         mtu = buf.readableBytes();
         buf.skipBytes(mtu);
     }
 
     public void encode(ByteBuf buf) {
-        DataSerializer.writeMagic(buf);
-        buf.writeByte(rakNetProtocolVersion);
+        magic.write(buf);
+        buf.writeByte(protocolVersion);
         buf.ensureWritable(mtu);
         buf.writerIndex(buf.writerIndex() + mtu);
     }
 
-    public void setRakNetProtocolVersion(int rakNetProtocolVersion) {
-        this.rakNetProtocolVersion = rakNetProtocolVersion;
+    public Magic getMagic() {
+        return magic;
     }
 
-    public void setMtu(int mtu) {
-        this.mtu = mtu;
+    public void setMagic(Magic magic) {
+        this.magic = magic;
     }
 
-    public int getRakNetProtocolVersion() {
-        return rakNetProtocolVersion;
+    public int getProtocolVersion() {
+        return protocolVersion;
+    }
+
+    public void setProtocolVersion(int protocolVersion) {
+        this.protocolVersion = protocolVersion;
     }
 
     public int getMtu() {
         return mtu;
+    }
+
+    public void setMtu(int mtu) {
+        this.mtu = mtu;
     }
 
 }

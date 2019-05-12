@@ -38,7 +38,7 @@ public class FrameOrderIn extends MessageToMessageDecoder<Frame> {
 			channels[frame.getOrderChannel()].decodeOrdered(frame, list);
 		} else {
 			frame.touch("No order");
-			list.add(frame.decodePacket());
+			list.add(frame.retainedFrameData());
 		}
 	}
 
@@ -64,7 +64,7 @@ public class FrameOrderIn extends MessageToMessageDecoder<Frame> {
 			final int indexDiff = UINT.B3.minusWrap(frame.getOrderIndex(), lastOrderIndex);
 			Constants.packetLossCheck(indexDiff, "ordered difference");
 			if (indexDiff == 1) { //got next packet in line
-				FramedPacket data = frame.decodePacket();
+				FramedPacket data = frame.retainedFrameData();
 				do { //process this packet, and any queued packets following in sequence
 					list.add(data);
 					lastOrderIndex = UINT.B3.plus(lastOrderIndex, 1);
@@ -72,7 +72,7 @@ public class FrameOrderIn extends MessageToMessageDecoder<Frame> {
 				} while (data != null);
 			} else if (indexDiff > 1 && !queue.containsKey(frame.getOrderIndex())) {
 				// only new future data goes in the queue
-				queue.put(frame.getOrderIndex(), frame.decodePacket());
+				queue.put(frame.getOrderIndex(), frame.retainedFrameData());
 			}
 			Constants.packetLossCheck(queue.size(), "missed ordered packets");
 		}

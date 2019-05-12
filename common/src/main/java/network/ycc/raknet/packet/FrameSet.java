@@ -14,6 +14,7 @@ import io.netty.util.ResourceLeakDetector;
 import io.netty.util.ResourceLeakDetectorFactory;
 import io.netty.util.ResourceLeakTracker;
 
+import network.ycc.raknet.config.DefaultCodec;
 import network.ycc.raknet.frame.Frame;
 
 public final class FrameSet extends AbstractReferenceCounted implements Packet {
@@ -67,6 +68,10 @@ public final class FrameSet extends AbstractReferenceCounted implements Packet {
         frames.forEach(frame -> frame.write(out));
     }
 
+    public int sizeHint() {
+        return getRoughSize();
+    }
+
     public CompositeByteBuf createData(ByteBufAllocator alloc) {
         final ByteBuf header = alloc.ioBuffer(4);
         final CompositeByteBuf out = alloc.compositeDirectBuffer(1 + frames.size());
@@ -78,7 +83,7 @@ public final class FrameSet extends AbstractReferenceCounted implements Packet {
     }
 
     protected void writeHeader(ByteBuf out) {
-        out.writeByte(Packets.FRAME_DATA_START);
+        out.writeByte(DefaultCodec.FRAME_DATA_START); //TODO: erm... ?
         out.writeMediumLE(seqId);
     }
 

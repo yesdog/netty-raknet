@@ -39,8 +39,10 @@ public class ConnectionInitializer extends AbstractConnectionInitializer {
         switch (state) {
             case CR1: {
                 if (msg instanceof ConnectionReply1) {
-                    config.setMTU(((ConnectionReply1) msg).getMtu());
-                    config.setServerId(((ConnectionReply1) msg).getServerId());
+                    final ConnectionReply1 cr1 = (ConnectionReply1) msg;
+                    cr1.getMagic().verify(config.getMagic());
+                    config.setMTU(cr1.getMtu());
+                    config.setServerId(cr1.getServerId());
                     state = State.CR2;
                 } else if (msg instanceof InvalidVersion) {
                     fail(new UnsupportedMessageTypeException("Invalid RakNet version"));
@@ -49,8 +51,10 @@ public class ConnectionInitializer extends AbstractConnectionInitializer {
             }
             case CR2: {
                 if (msg instanceof ConnectionReply2) {
-                    config.setMTU(((ConnectionReply2) msg).getMtu());
-                    config.setServerId(((ConnectionReply2) msg).getServerId());
+                    final ConnectionReply2 cr2 = (ConnectionReply2) msg;
+                    cr2.getMagic().verify(config.getMagic());
+                    config.setMTU(cr2.getMtu());
+                    config.setServerId(cr2.getServerId());
                     state = State.CR3;
                     final Packet packet = new ConnectionRequest(config.getClientId());
                     ctx.writeAndFlush(packet).addListener(ChannelFutureListener.FIRE_EXCEPTION_ON_FAILURE);
@@ -78,13 +82,14 @@ public class ConnectionInitializer extends AbstractConnectionInitializer {
         final RakNet.Config config = (RakNet.Config) ctx.channel().config();
         switch(state) {
             case CR1: {
-                final Packet packet = new ConnectionRequest1(InvalidVersion.VALID_VERSION, config.getMTU());
+                final Packet packet = new ConnectionRequest1(config.getMagic(),
+                        config.getProtocolVersion(), config.getMTU());
                 ctx.writeAndFlush(packet).addListener(ChannelFutureListener.FIRE_EXCEPTION_ON_FAILURE);
                 break;
             }
             case CR2: {
-                final Packet packet = new ConnectionRequest2(config.getMTU(), config.getClientId(),
-                        (InetSocketAddress) ctx.channel().remoteAddress());
+                final Packet packet = new ConnectionRequest2(config.getMagic(), config.getMTU(),
+                        config.getClientId(), (InetSocketAddress) ctx.channel().remoteAddress());
                 ctx.writeAndFlush(packet).addListener(ChannelFutureListener.FIRE_EXCEPTION_ON_FAILURE);
                 break;
             }

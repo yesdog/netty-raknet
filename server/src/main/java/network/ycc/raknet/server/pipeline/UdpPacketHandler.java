@@ -6,24 +6,34 @@ import io.netty.channel.SimpleChannelInboundHandler;
 import io.netty.channel.socket.DatagramPacket;
 import io.netty.util.ReferenceCountUtil;
 
+import network.ycc.raknet.RakNet;
 import network.ycc.raknet.packet.FramedPacket;
 import network.ycc.raknet.packet.Packet;
-import network.ycc.raknet.packet.Packets;
 
 import java.net.InetSocketAddress;
 
 public abstract class UdpPacketHandler<T extends Packet> extends SimpleChannelInboundHandler<DatagramPacket> {
 
-    public final int packetId;
+    public final Class<T> type;
+    public int packetId;
 
     public UdpPacketHandler(Class<T> type) {
         if (FramedPacket.class.isAssignableFrom(type)) {
             throw new IllegalArgumentException("Framed packet types cannot be directly handled by UdpPacketHandler");
         }
-        packetId = Packets.packetIdFor(type);
+        this.type = type;
     }
 
     abstract protected void handle(ChannelHandlerContext ctx, InetSocketAddress sender, T packet);
+
+    @Override
+    public void handlerAdded(ChannelHandlerContext ctx) throws Exception {
+        final RakNet.Config config = (RakNet.Config) ctx.channel().config();
+        packetId = config.getCodec().packetIdFor(type);
+        if (packetId == -1) {
+            throw new IllegalArgumentException("Unknown packet ID for class " + type);
+        }
+    }
 
     @Override
     public boolean acceptInboundMessage(Object msg) {
@@ -36,7 +46,8 @@ public abstract class UdpPacketHandler<T extends Packet> extends SimpleChannelIn
 
     @SuppressWarnings("unchecked")
     protected void channelRead0(ChannelHandlerContext ctx, DatagramPacket msg) {
-        final T packet = (T) Packets.decodeRaw(msg.content());
+        final RakNet.Config config = (RakNet.Config) ctx.channel().config();
+        final T packet = (T) config.getCodec().decode(msg.content());
         try {
             handle(ctx, msg.sender(), packet);
         } finally {

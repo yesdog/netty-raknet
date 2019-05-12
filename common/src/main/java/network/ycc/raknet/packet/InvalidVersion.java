@@ -2,28 +2,56 @@ package network.ycc.raknet.packet;
 
 import io.netty.buffer.ByteBuf;
 
-import network.ycc.raknet.utils.DataSerializer;
+import network.ycc.raknet.config.Magic;
 
 public class InvalidVersion extends SimplePacket implements Packet {
 
-    public static final int VALID_VERSION = 9;
+    private Magic magic;
+    private int version;
+    private long serverId;
 
-    private final long serverId;
+    public InvalidVersion() {
+
+    }
 
     public InvalidVersion(long serverId) {
         this.serverId = serverId;
     }
 
-    @Override
     public void decode(ByteBuf buf) {
-        throw new UnsupportedOperationException();
+        version = buf.readUnsignedByte();
+        magic = Magic.decode(buf);
+        serverId = buf.readLong();
     }
 
-    @Override
     public void encode(ByteBuf buf) {
-        buf.writeByte(VALID_VERSION);
-        DataSerializer.writeMagic(buf);
+        buf.writeByte(version);
+        magic.write(buf);
         buf.writeLong(serverId);
+    }
+
+    public Magic getMagic() {
+        return magic;
+    }
+
+    public void setMagic(Magic magic) {
+        this.magic = magic;
+    }
+
+    public int getVersion() {
+        return version;
+    }
+
+    public void setVersion(int version) {
+        this.version = version;
+    }
+
+    public long getServerId() {
+        return serverId;
+    }
+
+    public void setServerId(long serverId) {
+        this.serverId = serverId;
     }
 
 }

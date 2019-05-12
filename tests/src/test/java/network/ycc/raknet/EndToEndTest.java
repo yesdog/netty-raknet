@@ -29,7 +29,8 @@ import io.netty.util.concurrent.PromiseCombiner;
 import network.ycc.raknet.channel.RakNetUDPChannel;
 import network.ycc.raknet.client.channel.RakNetClientChannel;
 import network.ycc.raknet.packet.FramedPacket;
-import network.ycc.raknet.packet.PacketData;
+import network.ycc.raknet.frame.FrameData;
+import network.ycc.raknet.pipeline.UserDataCodec;
 import network.ycc.raknet.server.channel.RakNetServerChannel;
 
 import org.junit.Assert;
@@ -195,7 +196,7 @@ public class EndToEndTest {
                     fut = client.pipeline().write(Unpooled.wrappedBuffer(new byte[size]));
                     break;
                 default:
-                    PacketData data = PacketData.create(client.alloc(), 0xFE, Unpooled.wrappedBuffer(new byte[size]));
+                    FrameData data = FrameData.create(client.alloc(), 0xFE, Unpooled.wrappedBuffer(new byte[size]));
                     if (rnd.nextBoolean()) {
                         data.setReliability(FramedPacket.Reliability.RELIABLE_ORDERED);
                         data.setOrderChannel(rnd.nextInt(4));
@@ -214,7 +215,7 @@ public class EndToEndTest {
             ByteBuf buf = Unpooled.wrappedBuffer(new byte[8]);
             buf.clear();
             buf.writeLong(value);
-            PacketData packet = PacketData.create(client.alloc(), 0xFE, buf);
+            FrameData packet = FrameData.create(client.alloc(), 0xFE, buf);
             packet.setReliability(FramedPacket.Reliability.RELIABLE);
             testLoop.execute(() -> combiner.add(client.pipeline().write(packet)));
         }
@@ -239,9 +240,8 @@ public class EndToEndTest {
         Assert.assertEquals(bytesSent.get(), bytesRecvd.get());
     }
 
-    public Channel newServer(ChannelInitializer ioInit, ChannelInitializer childInit, MockDatagramPair dgPair) throws InterruptedException {
+    public Channel newServer(ChannelInitializer ioInit, final ChannelInitializer childInit, MockDatagramPair dgPair) throws InterruptedException {
         if (ioInit == null) ioInit = new EmptyInit();
-        if (childInit == null) childInit = new EmptyInit();
         final ServerBootstrap bootstrap = new ServerBootstrap()
         .group(ioGroup, childGroup)
         .channelFactory(() -> new RakNetServerChannel(() -> {
@@ -252,14 +252,19 @@ public class EndToEndTest {
             }
         }))
         .option(RakNet.SERVER_ID, 12345L)
-        .childOption(RakNet.USER_DATA_ID, 0xFE)
         .handler(ioInit)
-        .childHandler(childInit);
+        .childHandler(new ChannelInitializer() {
+            protected void initChannel(Channel ch) throws Exception {
+                ch.pipeline().addLast(UserDataCodec.NAME, new UserDataCodec(0xFE));
+                if (childInit != null) {
+                    ch.pipeline().addLast(childInit);
+                }
+            }
+        });
         return bootstrap.bind(localhost).sync().channel();
     }
 
     public Channel newClient(ChannelInitializer init, MockDatagramPair dgPair) throws InterruptedException {
-        if (init == null) init = new EmptyInit();
         final Bootstrap bootstrap = new Bootstrap()
         .group(ioGroup)
         .channelFactory(() -> new RakNetClientChannel(() -> {
@@ -269,9 +274,15 @@ public class EndToEndTest {
                 return new NioDatagramChannel();
             }
         }))
-        .option(RakNet.USER_DATA_ID, 0xFE)
         .option(RakNet.CLIENT_ID,6789L)
-        .handler(init);
+        .handler(new ChannelInitializer() {
+            protected void initChannel(Channel ch) throws Exception {
+                ch.pipeline().addLast(UserDataCodec.NAME, new UserDataCodec(0xFE));
+                if (init != null) {
+                    ch.pipeline().addLast(init);
+                }
+            }
+        });
         return bootstrap.connect(localhost).sync().channel();
     }
 
@@ -539,4 +550,5 @@ public class EndToEndTest {
     public static class EmptyInit extends ChannelInitializer {
         protected void initChannel(Channel ch) throws Exception { }
     }
+
 }

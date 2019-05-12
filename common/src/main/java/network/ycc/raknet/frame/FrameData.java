@@ -1,4 +1,4 @@
-package network.ycc.raknet.packet;
+package network.ycc.raknet.frame;
 
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.ByteBufAllocator;
@@ -10,20 +10,22 @@ import io.netty.util.ResourceLeakDetector;
 import io.netty.util.ResourceLeakDetectorFactory;
 import io.netty.util.ResourceLeakTracker;
 
-public final class PacketData extends AbstractReferenceCounted implements FramedPacket {
+import network.ycc.raknet.packet.FramedPacket;
 
-    private static final ResourceLeakDetector<PacketData> leakDetector =
-            ResourceLeakDetectorFactory.instance().newResourceLeakDetector(PacketData.class);
-    private static final Recycler<PacketData> recycler = new Recycler<PacketData>() {
+public final class FrameData extends AbstractReferenceCounted implements FramedPacket {
+
+    private static final ResourceLeakDetector<FrameData> leakDetector =
+            ResourceLeakDetectorFactory.instance().newResourceLeakDetector(FrameData.class);
+    private static final Recycler<FrameData> recycler = new Recycler<FrameData>() {
         @Override
-        protected PacketData newObject(Handle<PacketData> handle) {
-            return new PacketData(handle);
+        protected FrameData newObject(Handle<FrameData> handle) {
+            return new FrameData(handle);
         }
     };
 
     @SuppressWarnings("unchecked")
-    private static PacketData createRaw() {
-        final PacketData out = recycler.get();
+    private static FrameData createRaw() {
+        final FrameData out = recycler.get();
         assert out.refCnt() == 0 && out.tracker == null : "bad reuse";
         out.orderId = 0;
         out.fragment = false;
@@ -34,20 +36,20 @@ public final class PacketData extends AbstractReferenceCounted implements Framed
         return out;
     }
 
-    public static PacketData create(ByteBufAllocator alloc, int packetId, ByteBuf buf) {
+    public static FrameData create(ByteBufAllocator alloc, int packetId, ByteBuf buf) {
         final CompositeByteBuf out = alloc.compositeDirectBuffer(2);
         try {
             out.addComponent(true, alloc.ioBuffer(1).writeByte(packetId));
             out.addComponent(true, buf.retain());
-            return PacketData.read(out, out.readableBytes(), false);
+            return FrameData.read(out, out.readableBytes(), false);
         } finally {
             out.release();
         }
     }
 
-    public static PacketData read(ByteBuf buf, int length, boolean fragment) {
+    public static FrameData read(ByteBuf buf, int length, boolean fragment) {
         assert length > 0;
-        final PacketData packet = createRaw();
+        final FrameData packet = createRaw();
         try {
             packet.data = buf.readRetainedSlice(length);
             packet.fragment = fragment;
@@ -59,26 +61,14 @@ public final class PacketData extends AbstractReferenceCounted implements Framed
         }
     }
 
-    public static PacketData create(ByteBufAllocator alloc, FramedPacket packet) {
-        final ByteBuf data = packet.createData(alloc);
-        try {
-            final PacketData out = PacketData.read(data, data.readableBytes(), false);
-            out.setReliability(packet.getReliability());
-            out.setOrderChannel(packet.getOrderChannel());
-            return out;
-        } finally {
-            data.release();
-        }
-    }
-
-    private final Recycler.Handle<PacketData> handle;
-    private ResourceLeakTracker<PacketData> tracker;
+    private final Recycler.Handle<FrameData> handle;
+    private ResourceLeakTracker<FrameData> tracker;
     private int orderId;
     private boolean fragment;
     private ByteBuf data;
     private FramedPacket.Reliability reliability;
 
-    private PacketData(Recycler.Handle<PacketData> handle) {
+    private FrameData(Recycler.Handle<FrameData> handle) {
         this.handle = handle;
         setRefCnt(0);
     }
@@ -97,8 +87,8 @@ public final class PacketData extends AbstractReferenceCounted implements Framed
     }
 
     @Override
-    public PacketData retain() {
-        return (PacketData) super.retain();
+    public FrameData retain() {
+        return (FrameData) super.retain();
     }
 
     @Override

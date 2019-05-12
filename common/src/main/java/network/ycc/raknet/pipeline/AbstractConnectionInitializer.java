@@ -1,5 +1,6 @@
 package network.ycc.raknet.pipeline;
 
+import io.netty.channel.Channel;
 import io.netty.channel.ChannelFutureListener;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelPromise;
@@ -46,14 +47,15 @@ public abstract class AbstractConnectionInitializer extends SimpleChannelInbound
     }
 
     protected void finish(ChannelHandlerContext ctx) {
-        connectPromise.trySuccess();
-        ctx.pipeline().remove(this);
-        ctx.pipeline().fireChannelActive();
+        final Channel channel = ctx.channel();
         final ScheduledFuture<?> pingTask = ctx.channel().eventLoop().scheduleAtFixedRate(
-                () -> ctx.channel().writeAndFlush(new Ping()).addListener(ChannelFutureListener.FIRE_EXCEPTION_ON_FAILURE),
+                () -> channel.writeAndFlush(new Ping()).addListener(ChannelFutureListener.FIRE_EXCEPTION_ON_FAILURE),
                 100, 250, TimeUnit.MILLISECONDS
         );
-        ctx.channel().closeFuture().addListener(x -> pingTask.cancel(false));
+        channel.closeFuture().addListener(x -> pingTask.cancel(false));
+        channel.pipeline().remove(this);
+        channel.pipeline().fireChannelActive();
+        connectPromise.trySuccess();
     }
 
     protected void fail(Throwable cause) {

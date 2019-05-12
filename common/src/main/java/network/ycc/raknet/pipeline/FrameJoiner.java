@@ -11,7 +11,7 @@ import io.netty.util.ReferenceCountUtil;
 import it.unimi.dsi.fastutil.ints.Int2ObjectOpenHashMap;
 import network.ycc.raknet.utils.Constants;
 import network.ycc.raknet.frame.Frame;
-import network.ycc.raknet.packet.PacketData;
+import network.ycc.raknet.frame.FrameData;
 
 public class FrameJoiner extends MessageToMessageDecoder<Frame> {
 
@@ -56,7 +56,7 @@ public class FrameJoiner extends MessageToMessageDecoder<Frame> {
 		protected CompositeByteBuf data;
 		protected int splitIdx;
 		protected int orderId;
-		protected PacketData.Reliability reliability;
+		protected FrameData.Reliability reliability;
 
 		private static Builder create(ByteBufAllocator alloc, Frame frame) {
 			final Builder out = new Builder(frame.getSplitCount());

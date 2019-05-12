@@ -1,0 +1,31 @@
+package network.ycc.raknet.pipeline;
+
+import io.netty.channel.ChannelHandler;
+import io.netty.channel.ChannelHandlerContext;
+import io.netty.handler.codec.MessageToMessageCodec;
+
+import network.ycc.raknet.RakNet;
+import network.ycc.raknet.frame.FrameData;
+import network.ycc.raknet.packet.FramedPacket;
+
+import java.util.List;
+
+@ChannelHandler.Sharable
+public class FramedPacketCodec extends MessageToMessageCodec<FrameData, FramedPacket> {
+
+    public static final String NAME = "rn-framed-codec";
+    public static final FramedPacketCodec INSTANCE = new FramedPacketCodec();
+
+    @Override
+    protected void encode(ChannelHandlerContext ctx, FramedPacket in, List<Object> out) throws Exception {
+        final RakNet.Config config = RakNet.config(ctx);
+        out.add(config.getCodec().encode(in, ctx.alloc()));
+    }
+
+    @Override
+    protected void decode(ChannelHandlerContext ctx, FrameData in, List<Object> out) throws Exception {
+        final RakNet.Config config = RakNet.config(ctx);
+        out.add(config.getCodec().decode(in));
+    }
+
+}

@@ -2,26 +2,48 @@ package network.ycc.raknet.packet;
 
 import io.netty.buffer.ByteBuf;
 
-import network.ycc.raknet.utils.DataSerializer;
+import network.ycc.raknet.config.Magic;
 
 public class UnconnectedPing extends SimplePacket implements Packet {
 
-	private long clientTime;
+    private Magic magic;
+    private long clientTime;
+    private long clientId;
 
-	@Override
-	public void decode(ByteBuf buf) {
-		this.clientTime = buf.readLong();
-		DataSerializer.readMagic(buf);
-		buf.skipBytes(8); //guid
-	}
+    public void decode(ByteBuf buf) {
+        clientTime = buf.readLong();
+        magic = Magic.decode(buf);
+        clientId = buf.readLong();
+    }
 
-	@Override
-	public void encode(ByteBuf buf) {
-		throw new UnsupportedOperationException();
-	}
+    public void encode(ByteBuf buf) {
+        buf.writeLong(clientTime);
+        magic.write(buf);
+        buf.writeLong(clientId);
+    }
 
-	public long getClientTime() {
-		return clientTime;
-	}
+    public Magic getMagic() {
+        return magic;
+    }
+
+    public void setMagic(Magic magic) {
+        this.magic = magic;
+    }
+
+    public long getClientTime() {
+        return clientTime;
+    }
+
+    public void setClientTime(long clientTime) {
+        this.clientTime = clientTime;
+    }
+
+    public long getClientId() {
+        return clientId;
+    }
+
+    public void setClientId(long clientId) {
+        this.clientId = clientId;
+    }
 
 }

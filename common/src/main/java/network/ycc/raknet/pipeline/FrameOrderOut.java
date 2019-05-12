@@ -5,8 +5,9 @@ import java.util.List;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.codec.MessageToMessageEncoder;
 
+import network.ycc.raknet.RakNet;
 import network.ycc.raknet.packet.FramedPacket;
-import network.ycc.raknet.packet.PacketData;
+import network.ycc.raknet.frame.FrameData;
 import network.ycc.raknet.utils.UINT;
 import network.ycc.raknet.frame.Frame;
 
@@ -18,7 +19,8 @@ public class FrameOrderOut extends MessageToMessageEncoder<FramedPacket> {
     protected int[] nextSequenceIndex = new int[8];
 
     protected void encode(ChannelHandlerContext ctx, FramedPacket packet, List<Object> list) {
-        final PacketData data = PacketData.create(ctx.alloc(), packet);
+        final RakNet.Config config = RakNet.config(ctx);
+        final FrameData data = config.getCodec().encode(packet, ctx.alloc());
         try {
             if (data.getReliability().isOrdered) {
                 final int channel = data.getOrderChannel();

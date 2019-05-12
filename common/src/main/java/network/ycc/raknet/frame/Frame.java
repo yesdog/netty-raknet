@@ -12,8 +12,6 @@ import io.netty.util.ResourceLeakDetectorFactory;
 import io.netty.util.ResourceLeakTracker;
 
 import network.ycc.raknet.packet.FramedPacket;
-import network.ycc.raknet.packet.PacketData;
-import network.ycc.raknet.packet.Packets;
 import network.ycc.raknet.utils.UINT;
 
 import java.util.List;
@@ -63,21 +61,21 @@ public final class Frame extends AbstractReferenceCounted {
             out.hasSplit = true;
         }
 
-        out.packet = PacketData.read(buf, length, hasSplit);
+        out.packet = FrameData.read(buf, length, hasSplit);
         out.packet.setReliability(reliability);
         out.packet.setOrderChannel(orderChannel);
 
         return out;
     }
 
-    public static Frame create(PacketData packet) {
+    public static Frame create(FrameData packet) {
         assert !packet.getReliability().isOrdered;
         final Frame out = createRaw();
         out.packet = packet.retain();
         return out;
     }
 
-    public static Frame createOrdered(PacketData packet, int orderIndex, int sequenceIndex) {
+    public static Frame createOrdered(FrameData packet, int orderIndex, int sequenceIndex) {
         assert packet.getReliability().isOrdered;
         final Frame out = createRaw();
         out.packet = packet.retain();
@@ -113,7 +111,7 @@ public final class Frame extends AbstractReferenceCounted {
     private int splitIndex;
 
     private final Recycler.Handle<Frame> handle;
-    private PacketData packet = null;
+    private FrameData packet = null;
     private ResourceLeakTracker<Frame> tracker = null;
     private ChannelPromise promise = null;
 
@@ -151,7 +149,7 @@ public final class Frame extends AbstractReferenceCounted {
         out.reliableIndex = reliableIndex;
         out.sequenceIndex = sequenceIndex;
         out.orderIndex = orderIndex;
-        out.packet = PacketData.read(fullData, fullData.readableBytes(), false);
+        out.packet = FrameData.read(fullData, fullData.readableBytes(), false);
         out.packet.setOrderChannel(getOrderChannel());
         out.packet.setReliability(getReliability());
         return out;
@@ -172,7 +170,7 @@ public final class Frame extends AbstractReferenceCounted {
                 out.splitID = splitID;
                 out.splitIndex = splitIndex;
                 out.hasSplit = true;
-                out.packet = PacketData.read(data, length, true);
+                out.packet = FrameData.read(data, length, true);
                 out.packet.setOrderChannel(getOrderChannel());
                 out.packet.setReliability(getReliability().makeReliable()); //reliable form only
                 assert out.packet.isFragment();
@@ -187,10 +185,6 @@ public final class Frame extends AbstractReferenceCounted {
         }
     }
 
-    public FramedPacket decodePacket() {
-        return Packets.decodeFramed(packet);
-    }
-
     public ByteBuf retainedFragmentData() {
         assert packet.isFragment();
         return packet.createData();
@@ -198,6 +192,10 @@ public final class Frame extends AbstractReferenceCounted {
 
     public Frame retain() {
         return (Frame) super.retain();
+    }
+
+    public FrameData retainedFrameData() {
+        return packet.retain();
     }
 
     public void write(ByteBuf out) {
