@@ -64,7 +64,8 @@ public class ConnectionInitializer extends AbstractConnectionInitializer {
                 }
                 break;
             }
-            default: throw new IllegalStateException("Unknown state " + state);
+            default:
+                throw new IllegalStateException("Unknown state " + state);
         }
 
         sendRequest(ctx);
@@ -86,7 +87,10 @@ public class ConnectionInitializer extends AbstractConnectionInitializer {
                         ChannelFutureListener.CLOSE_ON_FAILURE, ChannelFutureListener.FIRE_EXCEPTION_ON_FAILURE);
                 break;
             }
-            default: throw new IllegalStateException("Unknown state " + state);
+            case CR3:
+                break;
+            default:
+                throw new IllegalStateException("Unknown state " + state);
         }
     }
 }
