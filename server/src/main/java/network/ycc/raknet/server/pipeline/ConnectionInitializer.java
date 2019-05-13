@@ -33,7 +33,7 @@ public class ConnectionInitializer extends AbstractConnectionInitializer {
                     final ConnectionRequest1 cr1 = (ConnectionRequest1) msg;
                     cr1.getMagic().verify(config.getMagic());
                     if (cr1.getProtocolVersion() != config.getProtocolVersion()) {
-                        final InvalidVersion packet = new InvalidVersion(config.getServerId());
+                        final InvalidVersion packet = new InvalidVersion(config.getMagic(), config.getServerId());
                         ctx.writeAndFlush(packet).addListener(ChannelFutureListener.CLOSE);
                         return;
                     }

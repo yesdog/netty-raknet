@@ -7,9 +7,9 @@ import io.netty.channel.ChannelConfig;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInitializer;
 import io.netty.channel.ChannelOption;
+import io.netty.handler.codec.CorruptedFrameException;
 import io.netty.util.AttributeKey;
 
-import network.ycc.raknet.config.Magic;
 import network.ycc.raknet.packet.FramedPacket;
 import network.ycc.raknet.packet.Packet;
 import network.ycc.raknet.frame.FrameData;
@@ -26,11 +26,14 @@ import network.ycc.raknet.pipeline.ReliabilityHandler;
 public class RakNet {
 
     public static final AttributeKey<Boolean> WRITABLE = AttributeKey.valueOf("RN_WRITABLE");
+
     public static final ChannelOption<Long> SERVER_ID = ChannelOption.valueOf("RN_SERVER_ID");
     public static final ChannelOption<Long> CLIENT_ID = ChannelOption.valueOf("RN_CLIENT_ID");
     public static final ChannelOption<MetricsLogger> METRICS = ChannelOption.valueOf("RN_METRICS");
     public static final ChannelOption<Integer> MTU = ChannelOption.valueOf("RN_MTU");
     public static final ChannelOption<Long> RTT = ChannelOption.valueOf("RN_RTT");
+    public static final ChannelOption<Integer> PROTOCOL_VERSION = ChannelOption.valueOf("RN_PROTOCOL_VERSION");
+    public static final ChannelOption<Magic> MAGIC = ChannelOption.valueOf("RN_MAGIC");
 
     public static final Config config(ChannelHandlerContext ctx) {
         return (Config) ctx.channel().config();
@@ -142,6 +145,20 @@ public class RakNet {
         Packet decode(ByteBuf in);
         FramedPacket decode(FrameData data);
         int packetIdFor(Class<? extends Packet> type);
+    }
+
+    public interface Magic {
+        class MagicMismatchException extends CorruptedFrameException {
+            public static final long serialVersionUID = 590681756L;
+
+            public MagicMismatchException() {
+                super("Incorrect RakNet magic value");
+            }
+        }
+
+        void write(ByteBuf buf);
+        void read(ByteBuf buf);
+        void verify(Magic other);
     }
 
 }

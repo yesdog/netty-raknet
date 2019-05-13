@@ -8,6 +8,10 @@ import network.ycc.raknet.frame.FrameData;
 
 import java.util.List;
 
+/**
+ * Configure a user data packet ID that will be used for ByteBuf messages
+ * in the channel.
+ */
 public class UserDataCodec extends MessageToMessageCodec<FrameData, ByteBuf> {
 
     public static final String NAME = "rn-user-data-codec";

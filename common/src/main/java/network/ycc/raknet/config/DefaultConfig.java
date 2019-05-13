@@ -14,7 +14,7 @@ import java.util.concurrent.TimeUnit;
 
 public class DefaultConfig extends DefaultChannelConfig implements RakNet.Config {
 
-    public static final Magic DEFAULT_MAGIC = new Magic.Simple(new byte[] {
+    public static final RakNet.Magic DEFAULT_MAGIC = new DefaultMagic(new byte[] {
             (byte) 0x00, (byte) 0xff, (byte) 0xff, (byte) 0x00, (byte) 0xfe, (byte) 0xfe,
             (byte) 0xfe, (byte) 0xfe, (byte) 0xfd, (byte) 0xfd, (byte) 0xfd, (byte) 0xfd,
             (byte) 0x12, (byte) 0x34, (byte) 0x56, (byte) 0x78 });
@@ -25,11 +25,11 @@ public class DefaultConfig extends DefaultChannelConfig implements RakNet.Config
     private volatile long serverId = rnd.nextLong();
     private volatile long clientId = rnd.nextLong();
     private volatile RakNet.MetricsLogger metrics = RakNet.MetricsLogger.DEFAULT;
-    private volatile int mtu = 1500;
+    private volatile int mtu = 4096;
     private volatile long retryDelayNanos = TimeUnit.NANOSECONDS.convert(100, TimeUnit.MILLISECONDS);
     private volatile int maxPendingFrameSets = 1024;
     private volatile int defaultPendingFrameSets = 64;
-    private volatile Magic magic = DEFAULT_MAGIC;
+    private volatile RakNet.Magic magic = DEFAULT_MAGIC;
     private volatile RakNet.Codec codec = DefaultCodec.INSTANCE;
     private volatile int protocolVersion = 9;
 
@@ -45,8 +45,8 @@ public class DefaultConfig extends DefaultChannelConfig implements RakNet.Config
     public Map<ChannelOption<?>, Object> getOptions() {
         return getOptions(
                 super.getOptions(),
-                RakNet.SERVER_ID, RakNet.CLIENT_ID, RakNet.METRICS,
-                RakNet.MTU, RakNet.RTT);
+                RakNet.SERVER_ID, RakNet.CLIENT_ID, RakNet.METRICS, RakNet.MTU,
+                RakNet.RTT, RakNet.PROTOCOL_VERSION, RakNet.MAGIC);
     }
 
     @Override
@@ -62,6 +62,10 @@ public class DefaultConfig extends DefaultChannelConfig implements RakNet.Config
             mtu = (Integer) value;
         } else if (option == RakNet.RTT) {
             setRTTNanos((Long) value);
+        } else if (option == RakNet.PROTOCOL_VERSION) {
+            protocolVersion = (Integer) value;
+        } else if (option == RakNet.MAGIC) {
+            magic = (RakNet.Magic) value;
         } else {
             return super.setOption(option, value);
         }
@@ -81,6 +85,10 @@ public class DefaultConfig extends DefaultChannelConfig implements RakNet.Config
             return (T) (Integer) mtu;
         } else if (option == RakNet.RTT) {
             return (T) (Long) getRTTNanos();
+        } else if (option == RakNet.PROTOCOL_VERSION) {
+            return (T) (Integer) protocolVersion;
+        } else if (option == RakNet.MAGIC) {
+            return (T) magic;
         }
         return super.getOption(option);
     }
@@ -160,11 +168,11 @@ public class DefaultConfig extends DefaultChannelConfig implements RakNet.Config
         this.defaultPendingFrameSets = defaultPendingFrameSets;
     }
 
-    public Magic getMagic() {
+    public RakNet.Magic getMagic() {
         return magic;
     }
 
-    public void setMagic(Magic magic) {
+    public void setMagic(RakNet.Magic magic) {
         this.magic = magic;
     }
 

@@ -47,7 +47,7 @@ public class EndToEndTest {
     @Test
     public void serverCloseTest() throws Throwable {
         for (int i = 0 ; i < 20 ; i++) {
-            newServer(null, null, null).close().get();
+            newServer(null, null, null).close().sync();
         }
     }
 
@@ -57,8 +57,8 @@ public class EndToEndTest {
             Channel server = newServer(null, null, null);
             Channel client = newClient(null, null);
 
-            server.close().get();
-            client.close().get();
+            server.close().sync();
+            client.close().sync();
         }
     }
 
@@ -79,8 +79,8 @@ public class EndToEndTest {
 
         Thread.sleep(1000); //give pings time to run
 
-        server.close().get();
-        client.close().get();
+        server.close().sync();
+        client.close().sync();
 
         Assert.assertEquals(bytesSent, bytesRecvd.get());
     }
@@ -215,10 +215,10 @@ public class EndToEndTest {
 
         try {
             donePromise.get(15, TimeUnit.SECONDS);
-            Thread.sleep(1000);
+            Thread.sleep(250);
         } finally {
-            server.close().get();
-            client.close().get();
+            server.close().sync();
+            client.close().sync();
         }
         System.gc();
         Assert.assertTrue(reliableSet.isEmpty());

@@ -29,7 +29,7 @@ public abstract class AbstractConnectionInitializer extends SimpleChannelInbound
     @Override
     public void handlerAdded(ChannelHandlerContext ctx) {
         sendTimer = ctx.channel().eventLoop().scheduleAtFixedRate(() -> sendRequest(ctx),
-                250, 250, TimeUnit.MILLISECONDS);
+                0, 250, TimeUnit.MILLISECONDS);
         connectTimer = ctx.channel().eventLoop().schedule(this::doTimeout,
                 ctx.channel().config().getConnectTimeoutMillis(), TimeUnit.MILLISECONDS);
         sendRequest(ctx);
@@ -50,7 +50,7 @@ public abstract class AbstractConnectionInitializer extends SimpleChannelInbound
         final Channel channel = ctx.channel();
         final ScheduledFuture<?> pingTask = ctx.channel().eventLoop().scheduleAtFixedRate(
                 () -> channel.writeAndFlush(new Ping()).addListener(ChannelFutureListener.FIRE_EXCEPTION_ON_FAILURE),
-                100, 250, TimeUnit.MILLISECONDS
+                0, 250, TimeUnit.MILLISECONDS
         );
         channel.closeFuture().addListener(x -> pingTask.cancel(false));
         channel.pipeline().remove(this);
@@ -67,8 +67,8 @@ public abstract class AbstractConnectionInitializer extends SimpleChannelInbound
     }
 
     protected enum State {
-        CR1, //UDP: ConnectionRequest1 -> ConnectionReply1, InvalidVersion
-        CR2, //UDP: ConnectionRequest2 -> ConnectionReply2, ConnectionFailed
+        CR1, //Raw: ConnectionRequest1 -> ConnectionReply1, InvalidVersion
+        CR2, //Raw: ConnectionRequest2 -> ConnectionReply2, ConnectionFailed
         CR3, //Framed: ConnectionRequest -> Handshake -> ClientHandshake
     }
 }

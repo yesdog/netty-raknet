@@ -2,17 +2,18 @@ package network.ycc.raknet.packet;
 
 import io.netty.buffer.ByteBuf;
 
-import network.ycc.raknet.config.Magic;
+import network.ycc.raknet.RakNet;
+import network.ycc.raknet.config.DefaultMagic;
 
 public class UnconnectedPing extends SimplePacket implements Packet {
 
-    private Magic magic;
+    private RakNet.Magic magic;
     private long clientTime;
     private long clientId;
 
     public void decode(ByteBuf buf) {
         clientTime = buf.readLong();
-        magic = Magic.decode(buf);
+        magic = DefaultMagic.decode(buf);
         clientId = buf.readLong();
     }
 
@@ -22,11 +23,11 @@ public class UnconnectedPing extends SimplePacket implements Packet {
         buf.writeLong(clientId);
     }
 
-    public Magic getMagic() {
+    public RakNet.Magic getMagic() {
         return magic;
     }
 
-    public void setMagic(Magic magic) {
+    public void setMagic(RakNet.Magic magic) {
         this.magic = magic;
     }
 

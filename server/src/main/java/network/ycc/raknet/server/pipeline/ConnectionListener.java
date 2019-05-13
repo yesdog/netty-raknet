@@ -4,7 +4,6 @@ import io.netty.buffer.ByteBuf;
 import io.netty.channel.ChannelFutureListener;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.socket.DatagramPacket;
-
 import io.netty.util.ReferenceCountUtil;
 
 import network.ycc.raknet.RakNet;
@@ -27,11 +26,11 @@ public class ConnectionListener extends UdpPacketHandler<ConnectionRequest1> {
         final RakNet.Config config = (RakNet.Config) ctx.channel().config();
         final Packet response;
         if (request.getProtocolVersion() == config.getProtocolVersion()) {
-            //use connect to create a new child for this address
+            //use connect to create a new child for this remote address
             ctx.connect(sender).addListener(ChannelFutureListener.FIRE_EXCEPTION_ON_FAILURE);
             response = new ConnectionReply1(config.getMagic(), request.getMtu(), config.getServerId());
         } else {
-            response = new InvalidVersion(config.getServerId());
+            response = new InvalidVersion(config.getMagic(), config.getServerId());
         }
         final ByteBuf buf = ctx.alloc().ioBuffer(response.sizeHint());
         try {

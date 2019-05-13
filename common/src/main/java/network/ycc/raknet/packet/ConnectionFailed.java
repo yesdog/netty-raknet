@@ -1,22 +1,24 @@
 package network.ycc.raknet.packet;
 
 import io.netty.buffer.ByteBuf;
-import network.ycc.raknet.config.Magic;
+
+import network.ycc.raknet.RakNet;
+import network.ycc.raknet.config.DefaultMagic;
 
 public class ConnectionFailed extends SimplePacket implements Packet {
 
-    protected Magic magic;
+    protected RakNet.Magic magic;
     protected long code = 0;
 
     public ConnectionFailed() {}
 
-    public ConnectionFailed(Magic magic) {
+    public ConnectionFailed(RakNet.Magic magic) {
         this.magic = magic;
     }
 
     @Override
     public void decode(ByteBuf buf) {
-        magic = Magic.decode(buf);
+        magic = DefaultMagic.decode(buf);
         code = buf.readLong();
     }
 
@@ -26,11 +28,11 @@ public class ConnectionFailed extends SimplePacket implements Packet {
         buf.writeLong(code);
     }
 
-    public Magic getMagic() {
+    public RakNet.Magic getMagic() {
         return magic;
     }
 
-    public void setMagic(Magic magic) {
+    public void setMagic(RakNet.Magic magic) {
         this.magic = magic;
     }
 

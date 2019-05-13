@@ -1,12 +1,22 @@
 package network.ycc.raknet.packet;
 
 import io.netty.buffer.ByteBuf;
+import io.netty.handler.codec.DecoderException;
 
-import network.ycc.raknet.config.Magic;
+import network.ycc.raknet.RakNet;
+import network.ycc.raknet.config.DefaultMagic;
 
 public class InvalidVersion extends SimplePacket implements Packet {
 
-    private Magic magic;
+    public static class InvalidVersionException extends DecoderException {
+        public static final long serialVersionUID = 590681756L;
+
+        public InvalidVersionException() {
+            super("Incorrect RakNet version");
+        }
+    }
+
+    private RakNet.Magic magic;
     private int version;
     private long serverId;
 
@@ -14,13 +24,14 @@ public class InvalidVersion extends SimplePacket implements Packet {
 
     }
 
-    public InvalidVersion(long serverId) {
+    public InvalidVersion(RakNet.Magic magic, long serverId) {
+        this.magic = magic;
         this.serverId = serverId;
     }
 
     public void decode(ByteBuf buf) {
         version = buf.readUnsignedByte();
-        magic = Magic.decode(buf);
+        magic = DefaultMagic.decode(buf);
         serverId = buf.readLong();
     }
 
@@ -30,11 +41,11 @@ public class InvalidVersion extends SimplePacket implements Packet {
         buf.writeLong(serverId);
     }
 
-    public Magic getMagic() {
+    public RakNet.Magic getMagic() {
         return magic;
     }
 
-    public void setMagic(Magic magic) {
+    public void setMagic(RakNet.Magic magic) {
         this.magic = magic;
     }
 

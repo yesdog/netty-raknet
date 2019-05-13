@@ -3,13 +3,8 @@ package network.ycc.raknet.client.pipeline;
 import io.netty.channel.ChannelException;
 import io.netty.channel.ChannelFutureListener;
 import io.netty.channel.ChannelHandlerContext;
-
 import io.netty.channel.ChannelPromise;
-import io.netty.channel.ConnectTimeoutException;
-import io.netty.channel.SimpleChannelInboundHandler;
-import io.netty.handler.codec.DecoderException;
-import io.netty.handler.codec.UnsupportedMessageTypeException;
-import io.netty.util.concurrent.ScheduledFuture;
+
 import network.ycc.raknet.RakNet;
 import network.ycc.raknet.packet.ClientHandshake;
 import network.ycc.raknet.packet.ConnectionFailed;
@@ -20,12 +15,10 @@ import network.ycc.raknet.packet.ConnectionRequest1;
 import network.ycc.raknet.packet.ConnectionRequest2;
 import network.ycc.raknet.packet.InvalidVersion;
 import network.ycc.raknet.packet.Packet;
-import network.ycc.raknet.packet.Ping;
 import network.ycc.raknet.packet.ServerHandshake;
 import network.ycc.raknet.pipeline.AbstractConnectionInitializer;
 
 import java.net.InetSocketAddress;
-import java.util.concurrent.TimeUnit;
 
 public class ConnectionInitializer extends AbstractConnectionInitializer {
 
@@ -45,7 +38,7 @@ public class ConnectionInitializer extends AbstractConnectionInitializer {
                     config.setServerId(cr1.getServerId());
                     state = State.CR2;
                 } else if (msg instanceof InvalidVersion) {
-                    fail(new UnsupportedMessageTypeException("Invalid RakNet version"));
+                    fail(new InvalidVersion.InvalidVersionException());
                 }
                 break;
             }

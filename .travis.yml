@@ -9,10 +9,7 @@ dist: trusty
 jdk:
 - oraclejdk8
 
-script: "mvn clean package cobertura:cobertura"
+script: "mvn clean verify"
 
 notifications:
   email: false
-
-after_success:
-  - bash <(curl -s https://codecov.io/bash)

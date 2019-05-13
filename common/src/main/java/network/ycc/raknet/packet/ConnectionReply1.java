@@ -2,26 +2,27 @@ package network.ycc.raknet.packet;
 
 import io.netty.buffer.ByteBuf;
 
-import network.ycc.raknet.config.Magic;
+import network.ycc.raknet.RakNet;
+import network.ycc.raknet.config.DefaultMagic;
 
 public class ConnectionReply1 extends SimplePacket implements Packet {
 
     private static final boolean hasSecurity = false;
 
-    private Magic magic;
+    private RakNet.Magic magic;
     private int mtu;
     private long serverId;
 
     public ConnectionReply1() {}
 
-    public ConnectionReply1(Magic magic, int mtu, long serverId) {
+    public ConnectionReply1(RakNet.Magic magic, int mtu, long serverId) {
         this.magic = magic;
         this.mtu = mtu;
         this.serverId = serverId;
     }
 
     public void decode(ByteBuf buf) {
-        magic = Magic.decode(buf);
+        magic = DefaultMagic.decode(buf);
         serverId = buf.readLong();
         if (buf.readBoolean()) {
             throw new IllegalArgumentException("No security support yet"); //TODO: security i guess?
@@ -36,11 +37,11 @@ public class ConnectionReply1 extends SimplePacket implements Packet {
         buf.writeShort(mtu);
     }
 
-    public Magic getMagic() {
+    public RakNet.Magic getMagic() {
         return magic;
     }
 
-    public void setMagic(Magic magic) {
+    public void setMagic(RakNet.Magic magic) {
         this.magic = magic;
     }
 

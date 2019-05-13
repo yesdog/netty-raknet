@@ -123,10 +123,6 @@ public final class FrameData extends AbstractReferenceCounted implements FramedP
         return data.getUnsignedByte(data.readerIndex());
     }
 
-    public ByteBuf createData(ByteBufAllocator alloc) {
-        return createData();
-    }
-
     public FramedPacket.Reliability getReliability() {
         return reliability;
     }

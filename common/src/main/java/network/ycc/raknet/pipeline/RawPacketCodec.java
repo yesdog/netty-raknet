@@ -18,12 +18,11 @@ public class RawPacketCodec extends MessageToMessageCodec<ByteBuf, Packet> {
 
     @Override
     protected void encode(ChannelHandlerContext ctx, Packet in, List<Object> out) throws Exception {
-        final RakNet.Config config = RakNet.config(ctx);
         final ByteBuf buf = ctx.alloc().ioBuffer(in.sizeHint());
         try {
-            config.getCodec().encode(in, buf);
-            out.add(buf.retain());
+            RakNet.config(ctx).getCodec().encode(in, buf);
             RakNet.metrics(ctx).bytesOut(buf.readableBytes());
+            out.add(buf.retain());
         } finally {
             buf.release();
         }
@@ -31,10 +30,9 @@ public class RawPacketCodec extends MessageToMessageCodec<ByteBuf, Packet> {
 
     @Override
     protected void decode(ChannelHandlerContext ctx, ByteBuf in, List<Object> out) throws Exception {
-        final RakNet.Config config = RakNet.config(ctx);
         if (in.readableBytes() != 0) {
             RakNet.metrics(ctx).bytesIn(in.readableBytes());
-            out.add(config.getCodec().decode(in));
+            out.add(RakNet.config(ctx).getCodec().decode(in));
         }
     }
 
