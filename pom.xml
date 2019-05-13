@@ -104,6 +104,7 @@
                 <version>0.8.4</version>
                 <configuration>
                     <destFile>${sonar.jacoco.reportPath}</destFile>
+                    <dataFile>${sonar.jacoco.reportPath}</dataFile>
                     <append>true</append>
                 </configuration>
                 <inherited>true</inherited>

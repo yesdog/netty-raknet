@@ -66,6 +66,7 @@ public class ConnectionInitializer extends AbstractConnectionInitializer {
                 }
                 break;
             }
+            default:
         }
 
         sendRequest(ctx);
@@ -86,6 +87,7 @@ public class ConnectionInitializer extends AbstractConnectionInitializer {
                 ctx.writeAndFlush(packet).addListener(ChannelFutureListener.FIRE_EXCEPTION_ON_FAILURE);
                 break;
             }
+            default:
         }
     }
 

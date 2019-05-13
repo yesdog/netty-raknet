@@ -55,7 +55,7 @@ public final class FrameData extends AbstractReferenceCounted implements FramedP
             packet.fragment = fragment;
             assert packet.getDataSize() == length;
             return packet;
-        } catch (Throwable t) {
+        } catch (Exception t) {
             packet.release();
             throw t;
         }

@@ -18,7 +18,7 @@ import java.util.List;
 
 public final class Frame extends AbstractReferenceCounted {
 
-    public static FrameComparator COMPARATOR = new FrameComparator();
+    public static final FrameComparator COMPARATOR = new FrameComparator();
     public static final int HEADER_SIZE = 24;
 
     private static final ResourceLeakDetector<Frame> leakDetector =
@@ -190,6 +190,7 @@ public final class Frame extends AbstractReferenceCounted {
         return packet.createData();
     }
 
+    @Override
     public Frame retain() {
         return (Frame) super.retain();
     }

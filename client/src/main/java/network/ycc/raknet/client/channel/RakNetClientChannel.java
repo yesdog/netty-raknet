@@ -71,11 +71,11 @@ public class RakNetClientChannel extends RakNetUDPChannel {
                            });
                        }
                     });
-                    final PromiseCombiner combiner = new PromiseCombiner();
+                    final PromiseCombiner combiner = new PromiseCombiner(eventLoop());
                     combiner.add(listenerConnect);
                     combiner.add((ChannelFuture) connectPromise);
                     combiner.finish(promise);
-                } catch (Throwable t) {
+                } catch (Exception t) {
                     promise.tryFailure(t);
                 }
             }

@@ -38,7 +38,7 @@ public abstract class RakNetUDPChannel extends AbstractChannel {
         });
     }
 
-    abstract protected ChannelHandler newChannelHandler();
+    protected abstract ChannelHandler newChannelHandler();
 
     @Override
     protected DefaultChannelPipeline newChannelPipeline() {

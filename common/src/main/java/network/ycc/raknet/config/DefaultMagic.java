@@ -13,7 +13,7 @@ public class DefaultMagic implements RakNet.Magic {
         return new DefaultMagic(magicData);
     }
 
-    final protected byte[] magicData;
+    protected final byte[] magicData;
 
     public DefaultMagic(byte[] magicData) {
         this.magicData = magicData;

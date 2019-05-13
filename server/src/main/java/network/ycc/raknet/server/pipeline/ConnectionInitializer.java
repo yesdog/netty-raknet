@@ -63,6 +63,7 @@ public class ConnectionInitializer extends AbstractConnectionInitializer {
                 }
                 break;
             }
+            default:
         }
 
         sendRequest(ctx);
@@ -84,6 +85,7 @@ public class ConnectionInitializer extends AbstractConnectionInitializer {
                         ChannelFutureListener.CLOSE_ON_FAILURE, ChannelFutureListener.FIRE_EXCEPTION_ON_FAILURE);
                 break;
             }
+            default:
         }
     }
 }
