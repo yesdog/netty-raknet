@@ -13,9 +13,6 @@ channels to provide a fast and effective [RakNet](http://www.raknet.net) server,
 offering the full feature set of the transport protocol, while providing
 room for extension with any plugins or custom behavior. 
 
-### Examples
-See the test case [here](./test/network/ycc/raknet/EndToEndTest.java#L144).
-
 ## Features
 * Recylable objects:
   * Heavily used objects are recycled.
@@ -41,13 +38,20 @@ See the test case [here](./test/network/ycc/raknet/EndToEndTest.java#L144).
   * Recommended to write to pipeline with no flush. 
   * Flush cycles condense outbound data for best use of MTU.
   
+# Usage
+
 ## Maven Use (at CodeMC)
 ```xml
     <dependencies>
         <dependency>
             <groupId>network.ycc</groupId>
-            <artifactId>raknet</artifactId>
-            <version>0.5</version>
+            <artifactId>raknet-server</artifactId>
+            <version>0.7-SNAPSHOT</version>
+        </dependency>
+        <dependency>
+            <groupId>network.ycc</groupId>
+            <artifactId>raknet-client</artifactId>
+            <version>0.7-SNAPSHOT</version>
         </dependency>
     </dependencies>
 
@@ -58,5 +62,11 @@ See the test case [here](./test/network/ycc/raknet/EndToEndTest.java#L144).
         </repository>
     </repositories>
 ```
+
+## Example
+
+A good example can be seen in the simple 
+[Hello World](https://github.com/yesdog/netty-raknet/blob/master/tests/src/test/java/network/ycc/raknet/HelloWorld.java) 
+test case.
 
 # [License](./LICENSE)
