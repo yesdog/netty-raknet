@@ -90,6 +90,7 @@ public class RakNetServerChannel extends RakNetUDPChannel implements ServerChann
         return new ServerUnsafe();
     }
 
+    @Override
     protected final Object filterOutboundMessage(Object msg) {
         throw new UnsupportedOperationException();
     }

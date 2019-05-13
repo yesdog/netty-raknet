@@ -12,10 +12,6 @@ public class UnconnectedPong extends SimplePacket implements Packet {
     private RakNet.Magic magic;
     private String info = "";
 
-    public UnconnectedPong() {
-        
-    }
-
     public void decode(ByteBuf buf) {
         clientTime = buf.readLong();
         serverId = buf.readLong();

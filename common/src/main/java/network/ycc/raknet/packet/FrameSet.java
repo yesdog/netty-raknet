@@ -68,6 +68,7 @@ public final class FrameSet extends AbstractReferenceCounted implements Packet {
         frames.forEach(frame -> frame.write(out));
     }
 
+    @Override
     public int sizeHint() {
         return getRoughSize();
     }

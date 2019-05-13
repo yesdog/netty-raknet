@@ -1,7 +1,7 @@
 # netty-raknet
 [![Build Status](https://ci.codemc.org/job/yesdog/job/netty-raknet/badge/icon)](https://ci.codemc.org/job/yesdog/job/netty-raknet/)
-[![Known Vulnerabilities](https://snyk.io/test/github/yesdog/netty-raknet/badge.svg)](https://snyk.io/test/github/yesdog/netty-raknet)
 [![Discord Chat](https://img.shields.io/discord/574240965351571477.svg)](https://discord.gg/MhhWfSW)
+[![Known Vulnerabilities](https://snyk.io/test/github/yesdog/netty-raknet/badge.svg)](https://snyk.io/test/github/yesdog/netty-raknet)
 [![SonarCloud Bugs](https://sonarcloud.io/api/project_badges/measure?project=yesdog_netty-raknet&metric=bugs)](https://sonarcloud.io/component_measures/metric/reliability_rating/list?id=yesdog_netty-raknet)
 [![SonarCloud Coverage](https://sonarcloud.io/api/project_badges/measure?project=yesdog_netty-raknet&metric=coverage)](https://sonarcloud.io/component_measures/metric/coverage/list?id=yesdog_netty-raknet)
 

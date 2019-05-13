@@ -24,7 +24,7 @@ public abstract class UdpPacketHandler<T extends Packet> extends SimpleChannelIn
         this.type = type;
     }
 
-    abstract protected void handle(ChannelHandlerContext ctx, InetSocketAddress sender, T packet);
+    protected abstract void handle(ChannelHandlerContext ctx, InetSocketAddress sender, T packet);
 
     @Override
     public void handlerAdded(ChannelHandlerContext ctx) throws Exception {

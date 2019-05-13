@@ -77,8 +77,8 @@ public abstract class SimplePacket implements Packet {
         }
     }
 
-    abstract public void encode(ByteBuf buf);
-    abstract public void decode(ByteBuf buf);
+    public abstract void encode(ByteBuf buf);
+    public abstract void decode(ByteBuf buf);
 
     @Override
     public String toString() {
