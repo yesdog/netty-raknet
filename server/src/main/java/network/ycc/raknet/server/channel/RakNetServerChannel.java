@@ -45,12 +45,11 @@ public class RakNetServerChannel extends RakNetUDPChannel implements ServerChann
     @SuppressWarnings("unchecked")
     protected void doBind(SocketAddress local) {
         localAddress = local;
-        try {
-            listener.bind(local).addListeners(
-                    ChannelFutureListener.FIRE_EXCEPTION_ON_FAILURE,
-                    ChannelFutureListener.CLOSE_ON_FAILURE)
-                    .sync(); //TODO: really not happy about this
-        } catch (InterruptedException e) {}
+        assert listener.eventLoop().inEventLoop();
+        listener.bind(local).addListeners(
+                ChannelFutureListener.FIRE_EXCEPTION_ON_FAILURE,
+                ChannelFutureListener.CLOSE_ON_FAILURE);
+        assert listener.isActive() : "listener does not bind inline";
     }
 
     @Override
@@ -99,7 +98,7 @@ public class RakNetServerChannel extends RakNetUDPChannel implements ServerChann
         public void connect(SocketAddress remoteAddress, SocketAddress localAddress, ChannelPromise promise) {
             //TODO: session limit check
             try {
-                if (localAddress != null && !localAddress.equals(localAddress)) {
+                if (localAddress != null && !RakNetServerChannel.this.localAddress.equals(localAddress)) {
                     throw new IllegalArgumentException("Bound localAddress does not match provided " + localAddress);
                 }
                 if (!(remoteAddress instanceof InetSocketAddress)) {

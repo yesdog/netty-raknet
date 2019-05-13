@@ -14,8 +14,8 @@ import java.net.InetSocketAddress;
 
 public abstract class UdpPacketHandler<T extends Packet> extends SimpleChannelInboundHandler<DatagramPacket> {
 
-    public final Class<T> type;
-    public int packetId;
+    private final Class<T> type;
+    private int packetId;
 
     public UdpPacketHandler(Class<T> type) {
         if (FramedPacket.class.isAssignableFrom(type)) {
@@ -53,6 +53,18 @@ public abstract class UdpPacketHandler<T extends Packet> extends SimpleChannelIn
         } finally {
             ReferenceCountUtil.release(packet);
         }
+    }
+
+    public Class<T> getType() {
+        return type;
+    }
+
+    public int getPacketId() {
+        return packetId;
+    }
+
+    public void setPacketId(int packetId) {
+        this.packetId = packetId;
     }
 
 }

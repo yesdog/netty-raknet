@@ -7,21 +7,14 @@ import network.ycc.raknet.config.DefaultMagic;
 
 import java.net.InetSocketAddress;
 
-public class ConnectionReply2 extends SimplePacket implements Packet {
+public class ConnectionReply2 extends AbstractConnectionReply implements Packet {
 
-    private static final boolean needsSecurity = false;
-
-    protected RakNet.Magic magic;
-    private int mtu;
-    private long serverId;
     private InetSocketAddress address = null;
 
     public ConnectionReply2() {}
 
     public ConnectionReply2(RakNet.Magic magic, int mtu, long serverId, InetSocketAddress address) {
-        this.magic = magic;
-        this.mtu = mtu;
-        this.serverId = serverId;
+        super(magic, mtu, serverId);
         this.address = address;
     }
 
@@ -45,30 +38,6 @@ public class ConnectionReply2 extends SimplePacket implements Packet {
         }
         buf.writeShort(mtu);
         buf.writeBoolean(needsSecurity);
-    }
-
-    public RakNet.Magic getMagic() {
-        return magic;
-    }
-
-    public void setMagic(RakNet.Magic magic) {
-        this.magic = magic;
-    }
-
-    public int getMtu() {
-        return mtu;
-    }
-
-    public void setMtu(int mtu) {
-        this.mtu = mtu;
-    }
-
-    public long getServerId() {
-        return serverId;
-    }
-
-    public void setServerId(long serverId) {
-        this.serverId = serverId;
     }
 
     public InetSocketAddress getAddress() {
