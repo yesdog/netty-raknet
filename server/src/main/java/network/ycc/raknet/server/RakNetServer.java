@@ -11,7 +11,9 @@ import network.ycc.raknet.server.channel.RakNetChildChannel;
 import network.ycc.raknet.server.pipeline.ConnectionInitializer;
 import network.ycc.raknet.server.pipeline.ConnectionListener;
 
-public final class RakNetServer {
+public final class RakNetServer extends RakNet {
+
+    public static final Class<RakNetServerChannel> CHANNEL = RakNetServerChannel.class;
 
     public static class DefaultIoInitializer extends ChannelInitializer<RakNetServerChannel> {
         public static final ChannelInitializer<RakNetServerChannel> INSTANCE = new DefaultIoInitializer();

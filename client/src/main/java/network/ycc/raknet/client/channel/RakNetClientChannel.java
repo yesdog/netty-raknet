@@ -3,6 +3,7 @@ package network.ycc.raknet.client.channel;
 import io.netty.channel.*;
 import io.netty.channel.socket.DatagramChannel;
 import io.netty.channel.socket.DatagramPacket;
+import io.netty.channel.socket.nio.NioDatagramChannel;
 import io.netty.util.ReferenceCountUtil;
 import io.netty.util.concurrent.PromiseCombiner;
 
@@ -23,7 +24,7 @@ public class RakNetClientChannel extends RakNetUDPChannel {
     protected volatile InetSocketAddress remoteAddress = null;
 
     public RakNetClientChannel() {
-        this(DEFAULT_CHANNEL_CLASS);
+        this(NioDatagramChannel.class);
     }
 
     public RakNetClientChannel(Supplier<? extends DatagramChannel> ioChannelSupplier) {

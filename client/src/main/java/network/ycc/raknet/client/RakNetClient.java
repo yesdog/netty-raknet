@@ -9,7 +9,9 @@ import network.ycc.raknet.client.channel.RakNetClientChannel;
 import network.ycc.raknet.pipeline.FlushTickHandler;
 import network.ycc.raknet.pipeline.RawPacketCodec;
 
-public class RakNetClient {
+public class RakNetClient extends RakNet {
+
+    public static final Class<RakNetClientChannel> CHANNEL = RakNetClientChannel.class;
 
     public static class DefaultInitializer extends ChannelInitializer<RakNetClientChannel> {
         public static final DefaultInitializer INSTANCE = new DefaultInitializer();

@@ -3,6 +3,7 @@ package network.ycc.raknet.server.channel;
 import io.netty.channel.*;
 import io.netty.channel.socket.DatagramChannel;
 import io.netty.channel.socket.DatagramPacket;
+import io.netty.channel.socket.nio.NioDatagramChannel;
 import io.netty.util.ReferenceCountUtil;
 
 import network.ycc.raknet.channel.RakNetUDPChannel;
@@ -20,7 +21,7 @@ public class RakNetServerChannel extends RakNetUDPChannel implements ServerChann
     protected volatile SocketAddress localAddress = null;
 
     public RakNetServerChannel() {
-        this(RakNetUDPChannel.DEFAULT_CHANNEL_CLASS);
+        this(NioDatagramChannel.class);
     }
 
     public RakNetServerChannel(Supplier<? extends DatagramChannel> ioChannelSupplier) {
