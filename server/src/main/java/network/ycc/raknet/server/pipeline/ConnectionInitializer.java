@@ -26,7 +26,7 @@ public class ConnectionInitializer extends AbstractConnectionInitializer {
     @SuppressWarnings("unchecked")
     @Override
     public void channelRead0(ChannelHandlerContext ctx, Packet msg) {
-        final RakNet.Config config = (RakNet.Config) ctx.channel().config();
+        final RakNet.Config config = RakNet.config(ctx);
         switch (state) {
             case CR1:
                 if (msg instanceof ConnectionRequest1) {
@@ -45,6 +45,7 @@ public class ConnectionInitializer extends AbstractConnectionInitializer {
                     config.setClientId(cr2.getClientId());
                     state = State.CR2;
                 }
+                break;
             case CR2: {
                 if (msg instanceof ConnectionRequest) {
                     final Packet packet = new ServerHandshake(
@@ -63,14 +64,14 @@ public class ConnectionInitializer extends AbstractConnectionInitializer {
                 }
                 break;
             }
-            default:
+            default: throw new IllegalStateException("Unknown state " + state);
         }
 
         sendRequest(ctx);
     }
 
     public void sendRequest(ChannelHandlerContext ctx) {
-        final RakNet.Config config = (RakNet.Config) ctx.channel().config();
+        final RakNet.Config config = RakNet.config(ctx);
         switch(state) {
             case CR1: {
                 final Packet packet = new ConnectionReply1(config.getMagic(), config.getMTU(), config.getServerId());
@@ -85,7 +86,7 @@ public class ConnectionInitializer extends AbstractConnectionInitializer {
                         ChannelFutureListener.CLOSE_ON_FAILURE, ChannelFutureListener.FIRE_EXCEPTION_ON_FAILURE);
                 break;
             }
-            default:
+            default: throw new IllegalStateException("Unknown state " + state);
         }
     }
 }

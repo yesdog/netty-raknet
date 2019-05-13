@@ -47,7 +47,7 @@ public interface FramedPacket extends Packet {
                 case UNRELIABLE: return RELIABLE;
                 case UNRELIABLE_SEQUENCED: return RELIABLE_SEQUENCED;
                 case UNRELIABLE_ACK: return RELIABLE_ACK;
-                default: throw new RuntimeException("No reliable form of " + this);
+                default: throw new IllegalArgumentException("No reliable form of " + this);
             }
         }
     }

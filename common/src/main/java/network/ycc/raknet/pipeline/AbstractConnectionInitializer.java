@@ -24,7 +24,7 @@ public abstract class AbstractConnectionInitializer extends SimpleChannelInbound
         this.connectPromise = connectPromise;
     }
 
-    abstract public void sendRequest(ChannelHandlerContext ctx);
+    public abstract void sendRequest(ChannelHandlerContext ctx);
 
     @Override
     public void handlerAdded(ChannelHandlerContext ctx) {

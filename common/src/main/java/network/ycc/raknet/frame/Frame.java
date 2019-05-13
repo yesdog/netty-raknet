@@ -69,14 +69,18 @@ public final class Frame extends AbstractReferenceCounted {
     }
 
     public static Frame create(FrameData packet) {
-        assert !packet.getReliability().isOrdered;
+        if (packet.getReliability().isOrdered) {
+            throw new IllegalArgumentException("Must provided indices for ordered data.");
+        }
         final Frame out = createRaw();
         out.packet = packet.retain();
         return out;
     }
 
     public static Frame createOrdered(FrameData packet, int orderIndex, int sequenceIndex) {
-        assert packet.getReliability().isOrdered;
+        if (!packet.getReliability().isOrdered) {
+            throw new IllegalArgumentException("No indices needed for non-ordered data.");
+        }
         final Frame out = createRaw();
         out.packet = packet.retain();
         out.orderIndex = orderIndex;
@@ -159,27 +163,29 @@ public final class Frame extends AbstractReferenceCounted {
         final ByteBuf data = packet.createData();
         try {
             final int dataSplitSize = splitSize - HEADER_SIZE;
-            final int splitCount = (data.readableBytes() + dataSplitSize - 1) / dataSplitSize; //round up
-            for (int splitIndex = 0; splitIndex < splitCount; splitIndex++) {
+            final int splitCountTotal = (data.readableBytes() + dataSplitSize - 1) / dataSplitSize; //round up
+            for (int splitIndexIterator = 0; splitIndexIterator < splitCountTotal; splitIndexIterator++) {
                 final int length = Math.min(dataSplitSize, data.readableBytes());
                 final Frame out = createRaw();
                 out.reliableIndex = reliableIndex;
                 out.sequenceIndex = sequenceIndex;
                 out.orderIndex = orderIndex;
-                out.splitCount = splitCount;
+                out.splitCount = splitCountTotal;
                 out.splitID = splitID;
-                out.splitIndex = splitIndex;
+                out.splitIndex = splitIndexIterator;
                 out.hasSplit = true;
                 out.packet = FrameData.read(data, length, true);
                 out.packet.setOrderChannel(getOrderChannel());
                 out.packet.setReliability(getReliability().makeReliable()); //reliable form only
                 assert out.packet.isFragment();
-                assert out.getRoughPacketSize() <= splitSize : "mtu fragment mismatch";
+                if (out.getRoughPacketSize() > splitSize) {
+                    throw new IllegalStateException("mtu fragment mismatch");
+                }
                 reliableIndex = UINT.B3.plus(reliableIndex, 1);
                 outList.add(out);
             }
             assert !data.isReadable();
-            return splitCount;
+            return splitCountTotal;
         } finally {
             data.release();
         }

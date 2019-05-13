@@ -23,20 +23,19 @@ public class UserDataCodec extends MessageToMessageCodec<FrameData, ByteBuf> {
     }
 
     protected void encode(ChannelHandlerContext ctx, ByteBuf buf, List<Object> out) {
-        if (!buf.isReadable()) {
-            return;
+        if (buf.isReadable()) {
+            out.add(FrameData.create(ctx.alloc(), packetId, buf));
         }
-        out.add(FrameData.create(ctx.alloc(), packetId, buf));
     }
 
     protected void decode(ChannelHandlerContext ctx, FrameData packet, List<Object> out) {
         assert !packet.isFragment();
-        if (packet.getDataSize() <= 1) {
-            return;
-        } else if (packetId == packet.getPacketId()) {
-            out.add(packet.createData().skipBytes(1));
-        } else {
-            out.add(packet.retain());
+        if (packet.getDataSize() > 0) {
+            if (packetId == packet.getPacketId()) {
+                out.add(packet.createData().skipBytes(1));
+            } else {
+                out.add(packet.retain());
+            }
         }
     }
 

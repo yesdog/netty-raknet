@@ -43,7 +43,7 @@ public abstract class SimplePacket implements Packet {
             buf.skipBytes(4); //flow info
             addr = new byte[16];
             buf.readBytes(addr);
-            buf.skipBytes(4); //scope id;
+            buf.skipBytes(4); //scope id
         } else {
             throw new DecoderException("Unknown inet addr version: " + type);
         }

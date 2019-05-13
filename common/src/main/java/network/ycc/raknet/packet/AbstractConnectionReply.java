@@ -4,7 +4,7 @@ import network.ycc.raknet.RakNet;
 
 public abstract class AbstractConnectionReply extends SimplePacket {
 
-    protected static final boolean needsSecurity = false;
+    protected static final boolean NEEDS_SECURITY = false;
 
     protected RakNet.Magic magic;
     protected int mtu;

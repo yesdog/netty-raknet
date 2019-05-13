@@ -86,7 +86,9 @@ public class RakNetChildChannel extends AbstractChannel {
         open = false;
     }
 
-    protected void doBeginRead() {}
+    protected void doBeginRead() {
+        // NOOP
+    }
 
     protected void doWrite(ChannelOutboundBuffer buffer) {
         throw new UnsupportedOperationException();

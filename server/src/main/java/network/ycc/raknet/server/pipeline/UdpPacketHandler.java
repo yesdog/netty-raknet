@@ -28,7 +28,7 @@ public abstract class UdpPacketHandler<T extends Packet> extends SimpleChannelIn
 
     @Override
     public void handlerAdded(ChannelHandlerContext ctx) throws Exception {
-        final RakNet.Config config = (RakNet.Config) ctx.channel().config();
+        final RakNet.Config config = RakNet.config(ctx);
         packetId = config.getCodec().packetIdFor(type);
         if (packetId == -1) {
             throw new IllegalArgumentException("Unknown packet ID for class " + type);
@@ -46,7 +46,7 @@ public abstract class UdpPacketHandler<T extends Packet> extends SimpleChannelIn
 
     @SuppressWarnings("unchecked")
     protected void channelRead0(ChannelHandlerContext ctx, DatagramPacket msg) {
-        final RakNet.Config config = (RakNet.Config) ctx.channel().config();
+        final RakNet.Config config = RakNet.config(ctx);
         final T packet = (T) config.getCodec().decode(msg.content());
         try {
             handle(ctx, msg.sender(), packet);

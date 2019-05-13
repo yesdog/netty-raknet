@@ -23,7 +23,7 @@ public class ConnectionListener extends UdpPacketHandler<ConnectionRequest1> {
     }
 
     protected void handle(ChannelHandlerContext ctx, InetSocketAddress sender, ConnectionRequest1 request) {
-        final RakNet.Config config = (RakNet.Config) ctx.channel().config();
+        final RakNet.Config config = RakNet.config(ctx);
         final Packet response;
         if (request.getProtocolVersion() == config.getProtocolVersion()) {
             //use connect to create a new child for this remote address

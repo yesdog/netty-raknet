@@ -28,7 +28,7 @@ public class ConnectionInitializer extends AbstractConnectionInitializer {
 
     @Override
     public void channelRead0(ChannelHandlerContext ctx, Packet msg) {
-        final RakNet.Config config = (RakNet.Config) ctx.channel().config();
+        final RakNet.Config config = RakNet.config(ctx);
         switch (state) {
             case CR1: {
                 if (msg instanceof ConnectionReply1) {
@@ -66,14 +66,14 @@ public class ConnectionInitializer extends AbstractConnectionInitializer {
                 }
                 break;
             }
-            default:
+            default: throw new IllegalStateException("Unknown state " + state);
         }
 
         sendRequest(ctx);
     }
 
     public void sendRequest(ChannelHandlerContext ctx) {
-        final RakNet.Config config = (RakNet.Config) ctx.channel().config();
+        final RakNet.Config config = RakNet.config(ctx);
         switch(state) {
             case CR1: {
                 final Packet packet = new ConnectionRequest1(config.getMagic(),
@@ -87,7 +87,7 @@ public class ConnectionInitializer extends AbstractConnectionInitializer {
                 ctx.writeAndFlush(packet).addListener(ChannelFutureListener.FIRE_EXCEPTION_ON_FAILURE);
                 break;
             }
-            default:
+            default: throw new IllegalStateException("Unknown state " + state);
         }
     }
 

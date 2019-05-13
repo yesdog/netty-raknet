@@ -25,7 +25,7 @@ public class ConnectionReply1 extends AbstractConnectionReply implements Packet 
     public void encode(ByteBuf buf) {
         magic.write(buf);
         buf.writeLong(serverId);
-        buf.writeBoolean(needsSecurity);
+        buf.writeBoolean(NEEDS_SECURITY);
         buf.writeShort(mtu);
     }
 

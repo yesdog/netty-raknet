@@ -37,7 +37,7 @@ public class ConnectionReply2 extends AbstractConnectionReply implements Packet 
             writeAddress(buf, address);
         }
         buf.writeShort(mtu);
-        buf.writeBoolean(needsSecurity);
+        buf.writeBoolean(NEEDS_SECURITY);
     }
 
     public InetSocketAddress getAddress() {
