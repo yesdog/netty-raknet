@@ -18,7 +18,7 @@ import java.util.List;
 
 public final class Frame extends AbstractReferenceCounted {
 
-    public static Comparator COMPARATOR = new Comparator();
+    public static FrameComparator COMPARATOR = new FrameComparator();
     public static final int HEADER_SIZE = 24;
 
     private static final ResourceLeakDetector<Frame> leakDetector =
@@ -290,7 +290,7 @@ public final class Frame extends AbstractReferenceCounted {
         this.promise = promise;
     }
 
-    protected static final class Comparator implements java.util.Comparator<Frame> {
+    protected static final class FrameComparator implements java.util.Comparator<Frame> {
         @Override
         public int compare(Frame a, Frame b) {
             if (a == b) {

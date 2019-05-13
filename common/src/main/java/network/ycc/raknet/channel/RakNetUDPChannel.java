@@ -33,7 +33,7 @@ public abstract class RakNetUDPChannel extends AbstractChannel {
             try {
                 return ioChannelType.newInstance();
             } catch (InstantiationException | IllegalAccessException e) {
-                throw new RuntimeException("Failed to create instance", e);
+                throw new IllegalArgumentException("Failed to create instance", e);
             }
         });
     }
@@ -188,10 +188,10 @@ public abstract class RakNetUDPChannel extends AbstractChannel {
         @Override
         public void close(ChannelHandlerContext ctx, ChannelPromise promise) {
             try {
-                final PromiseCombiner combiner = new PromiseCombiner();
+                final PromiseCombiner combiner = new PromiseCombiner(eventLoop());
                 combiner.addAll(ctx.close(), listener.close());
                 combiner.finish(promise);
-            } catch (Throwable t) {
+            } catch (Exception t) {
                 promise.tryFailure(t);
             }
         }

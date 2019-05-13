@@ -72,8 +72,6 @@ public class RakNet {
      * Channel specific metrics logging interface.
      */
     public interface MetricsLogger {
-        MetricsLogger DEFAULT = new MetricsLogger() {};
-
         default void packetsIn(int delta) {}
         default void framesIn(int delta) {}
         default void bytesIn(int delta) {}
