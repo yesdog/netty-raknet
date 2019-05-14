@@ -19,13 +19,33 @@ import network.ycc.raknet.utils.EmptyInit;
 
 import org.junit.Test;
 
+import java.net.Inet6Address;
 import java.net.InetSocketAddress;
 
 public class BehaviorTest {
     final EventLoopGroup ioGroup = new NioEventLoopGroup();
     final EventLoopGroup childGroup = new DefaultEventLoopGroup();
-    final InetSocketAddress localhost = new InetSocketAddress("localhost", 31747);
+    final int port = 31747;
+    final InetSocketAddress localhost = new InetSocketAddress("localhost", port);
     final RakNet.Magic badMagic = new DefaultMagic(new byte[16]);
+
+    @Test
+    public void connectIPv6() throws Throwable {
+        /*final Channel serverChannel = new ServerBootstrap()
+                .group(ioGroup, childGroup)
+                .channel(RakNetServer.CHANNEL)
+                .childHandler(new EmptyInit())
+                .bind(localhost).sync().channel();
+
+        final Channel clientChannel = new Bootstrap()
+                .group(ioGroup)
+                .channel(RakNetClient.CHANNEL)
+                .handler(new EmptyInit())
+                .connect(Inet6Address.getLocalHost(), port).sync().channel();
+
+        serverChannel.close().sync();
+        clientChannel.close().sync();*/
+    }
 
     @Test(expected = RakNet.Magic.MagicMismatchException.class)
     public void badMagicClient() throws Throwable {

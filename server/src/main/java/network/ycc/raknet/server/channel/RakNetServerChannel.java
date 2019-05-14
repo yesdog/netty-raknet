@@ -6,7 +6,7 @@ import io.netty.channel.socket.DatagramPacket;
 import io.netty.channel.socket.nio.NioDatagramChannel;
 import io.netty.util.ReferenceCountUtil;
 
-import network.ycc.raknet.channel.RakNetUDPChannel;
+import network.ycc.raknet.channel.ExtendedDatagramChannel;
 import network.ycc.raknet.server.RakNetServer;
 
 import java.net.InetSocketAddress;
@@ -15,10 +15,9 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.function.Supplier;
 
-public class RakNetServerChannel extends RakNetUDPChannel implements ServerChannel {
+public class RakNetServerChannel extends ExtendedDatagramChannel implements ServerChannel {
 
     protected final Map<SocketAddress, RakNetChildChannel> childMap = new HashMap<>();
-    protected volatile SocketAddress localAddress = null;
 
     public RakNetServerChannel() {
         this(NioDatagramChannel.class);
@@ -35,71 +34,26 @@ public class RakNetServerChannel extends RakNetUDPChannel implements ServerChann
     }
 
     protected void addDefaultPipeline() {
-        pipeline().addLast(RakNetServer.DefaultIoInitializer.INSTANCE);
+        pipeline()
+        .addLast(newServerHandler())
+        .addLast(RakNetServer.DefaultIoInitializer.INSTANCE);
+    }
+
+    protected ChannelHandler newServerHandler() {
+        return new ServerHandler();
     }
 
     protected RakNetChildChannel newChild(InetSocketAddress remoteAddress) {
         return new RakNetChildChannel(this, remoteAddress);
     }
 
-    @SuppressWarnings("unchecked")
-    protected void doBind(SocketAddress local) {
-        localAddress = local;
-        assert listener.eventLoop().inEventLoop();
-        listener.bind(local).addListeners(
-                ChannelFutureListener.FIRE_EXCEPTION_ON_FAILURE,
-                ChannelFutureListener.CLOSE_ON_FAILURE);
-        assert listener.isActive() : "listener does not bind inline";
-    }
-
-    @Override
-    protected void doClose() {
-        super.doClose();
-        childMap.values().forEach(Channel::close);
-    }
-
-    protected void doDisconnect() {
-        throw new UnsupportedOperationException();
-    }
-
-    protected void doWrite(ChannelOutboundBuffer in) {
-        throw new UnsupportedOperationException();
-    }
-
-    protected ServerHandler newChannelHandler() {
-        return new ServerHandler();
-    }
-
-    public ChannelMetadata metadata() {
-        return RakNetUDPChannel.METADATA;
-    }
-
-    protected SocketAddress localAddress0() {
-        return localAddress;
-    }
-
-    public SocketAddress remoteAddress() {
-        return null;
-    }
-
-    protected SocketAddress remoteAddress0() {
-        return null;
-    }
-
-    protected AbstractChannel.AbstractUnsafe newUnsafe() {
-        return new ServerUnsafe();
-    }
-
-    @Override
-    protected final Object filterOutboundMessage(Object msg) {
-        throw new UnsupportedOperationException();
-    }
-
-    protected final class ServerUnsafe extends AbstractChannel.AbstractUnsafe {
-        public void connect(SocketAddress remoteAddress, SocketAddress localAddress, ChannelPromise promise) {
+    protected class ServerHandler extends ChannelDuplexHandler {
+        @Override
+        public void connect(ChannelHandlerContext ctx, SocketAddress remoteAddress,
+                            SocketAddress localAddress, ChannelPromise promise) throws Exception {
             //TODO: session limit check
             try {
-                if (localAddress != null && !RakNetServerChannel.this.localAddress.equals(localAddress)) {
+                if (localAddress != null && !RakNetServerChannel.this.localAddress().equals(localAddress)) {
                     throw new IllegalArgumentException("Bound localAddress does not match provided " + localAddress);
                 }
                 if (!(remoteAddress instanceof InetSocketAddress)) {
@@ -121,9 +75,7 @@ public class RakNetServerChannel extends RakNetUDPChannel implements ServerChann
                 throw e;
             }
         }
-    }
 
-    protected class ServerHandler extends ChannelHandler {
         @Override
         public void channelRead(ChannelHandlerContext ctx, Object msg) {
             if (msg instanceof DatagramPacket) {
@@ -153,3 +105,4 @@ public class RakNetServerChannel extends RakNetUDPChannel implements ServerChann
     }
 
 }
+

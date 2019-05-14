@@ -66,6 +66,7 @@ public abstract class SimplePacket implements Packet {
             buf.writeInt(~addri);
             buf.writeShort(address.getPort());
         } else if (addr instanceof Inet6Address) {
+            buf.writeByte((byte) 6);
             //socaddr_in6 structure
             buf.writeShort(10); //family AF_INET6
             buf.writeShort(address.getPort());

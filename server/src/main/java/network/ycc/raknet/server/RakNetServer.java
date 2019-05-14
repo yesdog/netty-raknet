@@ -1,5 +1,6 @@
 package network.ycc.raknet.server;
 
+import io.netty.channel.Channel;
 import io.netty.channel.ChannelInboundHandlerAdapter;
 import io.netty.channel.ChannelInitializer;
 
@@ -15,20 +16,20 @@ public final class RakNetServer extends RakNet {
 
     public static final Class<RakNetServerChannel> CHANNEL = RakNetServerChannel.class;
 
-    public static class DefaultIoInitializer extends ChannelInitializer<RakNetServerChannel> {
-        public static final ChannelInitializer<RakNetServerChannel> INSTANCE = new DefaultIoInitializer();
+    public static class DefaultIoInitializer extends ChannelInitializer<Channel> {
+        public static final ChannelInitializer<Channel> INSTANCE = new DefaultIoInitializer();
 
-        protected void initChannel(RakNetServerChannel channel) {
+        protected void initChannel(Channel channel) {
             //TODO: blackhole unhandled Datagram messages. respond with disconnect?
             channel.pipeline()
                     .addLast(ConnectionListener.NAME, new ConnectionListener());
         }
     }
 
-    public static class DefaultChildInitializer extends ChannelInitializer<RakNetChildChannel> {
-        public static final ChannelInitializer<RakNetChildChannel> INSTANCE = new DefaultChildInitializer();
+    public static class DefaultChildInitializer extends ChannelInitializer<Channel> {
+        public static final ChannelInitializer<Channel> INSTANCE = new DefaultChildInitializer();
 
-        protected void initChannel(RakNetChildChannel channel) {
+        protected void initChannel(Channel channel) {
             channel.pipeline()
                     .addLast(FlushTickHandler.NAME,      new FlushTickHandler())
                     .addLast(RawPacketCodec.NAME,           RawPacketCodec.INSTANCE)

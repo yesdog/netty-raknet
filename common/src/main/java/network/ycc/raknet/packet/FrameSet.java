@@ -73,16 +73,6 @@ public final class FrameSet extends AbstractReferenceCounted implements Packet {
         return getRoughSize();
     }
 
-    public CompositeByteBuf createData(ByteBufAllocator alloc) {
-        final ByteBuf header = alloc.ioBuffer(4);
-        final CompositeByteBuf out = alloc.compositeDirectBuffer(1 + frames.size());
-        writeHeader(header);
-        assert header.readableBytes() <= HEADER_SIZE;
-        out.addComponent(true, header);
-        frames.forEach(frame -> out.addComponent(true, frame.createData(alloc)));
-        return out;
-    }
-
     protected void writeHeader(ByteBuf out) {
         out.writeByte(DefaultCodec.FRAME_DATA_START); //TODO: erm... ?
         out.writeMediumLE(seqId);

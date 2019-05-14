@@ -19,7 +19,7 @@ import io.netty.channel.socket.nio.NioDatagramChannel;
 import io.netty.util.ReferenceCountUtil;
 import io.netty.util.concurrent.PromiseCombiner;
 
-import network.ycc.raknet.channel.RakNetUDPChannel;
+import network.ycc.raknet.channel.ExtendedDatagramChannel;
 import network.ycc.raknet.client.channel.RakNetClientChannel;
 import network.ycc.raknet.packet.FramedPacket;
 import network.ycc.raknet.frame.FrameData;
@@ -158,7 +158,7 @@ public class EndToEndTest {
         Channel client = newClient(null, mockPair);
         ChannelPromise donePromise = client.newPromise();
 
-        client.pipeline().addAfter(RakNetUDPChannel.LISTENER_HANDLER_NAME, "brutalizer", brutalizer);
+        client.pipeline().addAfter(ExtendedDatagramChannel.LISTENER_HANDLER_NAME, "brutalizer", brutalizer);
         brutalizer.rnd = rnd;
         brutalizer.brutalizeRead = brutalizeRead;
         brutalizer.brutalizeWrite = brutalizeWrite;

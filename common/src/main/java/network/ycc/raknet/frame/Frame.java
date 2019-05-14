@@ -210,18 +210,6 @@ public final class Frame extends AbstractReferenceCounted {
         packet.write(out);
     }
 
-    public ByteBuf createData(ByteBufAllocator alloc) {
-        final ByteBuf header = alloc.ioBuffer(HEADER_SIZE);
-        final CompositeByteBuf out = alloc.compositeDirectBuffer(2);
-        writeHeader(header);
-        assert header.readableBytes() <= HEADER_SIZE;
-        out.addComponent(true, header);
-        final int preWriterIndex = out.writerIndex();
-        out.addComponent(true, packet.createData());
-        assert out.writerIndex() - preWriterIndex == packet.getDataSize();
-        return out;
-    }
-
     protected void writeHeader(ByteBuf out) {
         out.writeByte((getReliability().code() << 5) | (hasSplit ? SPLIT_FLAG : 0));
         out.writeShort(packet.getDataSize() * Byte.SIZE);
