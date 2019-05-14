@@ -20,6 +20,7 @@ import network.ycc.raknet.utils.EmptyInit;
 import org.junit.Test;
 
 import java.net.InetSocketAddress;
+import java.nio.channels.UnsupportedAddressTypeException;
 
 public class BehaviorTest {
     final EventLoopGroup ioGroup = new NioEventLoopGroup();
@@ -38,14 +39,20 @@ public class BehaviorTest {
                 .childHandler(new EmptyInit())
                 .bind(localhostIPv6).sync().channel();
 
-        final Channel clientChannel = new Bootstrap()
-                .group(ioGroup)
-                .channel(RakNetClient.CHANNEL)
-                .handler(new EmptyInit())
-                .connect(localhostIPv6).sync().channel();
+        final ChannelFuture connectFuture = new Bootstrap()
+        .group(ioGroup)
+        .channel(RakNetClient.CHANNEL)
+        .handler(new EmptyInit())
+        .connect(localhostIPv6);
 
-        serverChannel.close().sync();
-        clientChannel.close().sync();
+        try {
+            connectFuture.sync();
+        } catch(UnsupportedAddressTypeException e) {
+            // NOOP
+        } finally {
+            connectFuture.channel().close().sync();
+            serverChannel.close().sync();
+        }
     }
 
     @Test(expected = RakNet.Magic.MagicMismatchException.class)
