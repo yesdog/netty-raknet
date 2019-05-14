@@ -1,7 +1,7 @@
 package network.ycc.raknet.pipeline;
 
 import io.netty.channel.*;
-import io.netty.handler.codec.DecoderException;
+import io.netty.handler.codec.CorruptedFrameException;
 import io.netty.util.ReferenceCountUtil;
 
 import it.unimi.dsi.fastutil.ints.IntRBTreeSet;
@@ -46,16 +46,19 @@ public class ReliabilityHandler extends ChannelDuplexHandler {
 
     @Override
     public void handlerRemoved(ChannelHandlerContext ctx) throws Exception {
+        //TODO: figure out how to resolve this without an explosion of exceptions
         super.handlerRemoved(ctx);
-        final Throwable t = new ClosedChannelException();
+        //final Throwable t = new ClosedChannelException();
         frameQueue.forEach(frame -> {
             if (frame.getPromise() != null) {
-                frame.getPromise().tryFailure(t);
+                //frame.getPromise().tryFailure(t);
+                frame.getPromise().trySuccess();
             }
             frame.release();
         });
         frameQueue.clear();
-        pendingFrameSets.values().forEach(frameSet -> frameSet.fail(t));
+        //pendingFrameSets.values().forEach(frameSet -> frameSet.fail(t));
+        pendingFrameSets.values().forEach(frameSet -> frameSet.succeed());
         pendingFrameSets.values().forEach(FrameSet::release);
         pendingFrameSets.clear();
     }
@@ -175,6 +178,9 @@ public class ReliabilityHandler extends ChannelDuplexHandler {
     }
 
     protected void queueFrame(Frame frame) {
+        if (frame.getRoughPacketSize() > config.getMTU()) {
+            throw new CorruptedFrameException("Finished frame larger than the MTU by " + (frame.getRoughPacketSize() - config.getMTU()));
+        }
         frameQueue.add(frame);
         Constants.packetLossCheck(frameQueue.size(), "frame queue");
     }
@@ -207,7 +213,7 @@ public class ReliabilityHandler extends ChannelDuplexHandler {
             assert frame.refCnt() > 0 : "Frame has lost reference";
             if (frameSet.getRoughSize() + frame.getRoughPacketSize() > maxSize) {
                 if (frameSet.isEmpty()) {
-                    throw new DecoderException("Finished frame larger than the MTU by " + (frame.getRoughPacketSize() - maxSize));
+                    throw new CorruptedFrameException("Finished frame larger than the MTU by " + (frame.getRoughPacketSize() - maxSize));
                 }
                 break;
             }

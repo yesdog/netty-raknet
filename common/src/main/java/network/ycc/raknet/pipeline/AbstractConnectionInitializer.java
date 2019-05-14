@@ -52,10 +52,10 @@ public abstract class AbstractConnectionInitializer extends SimpleChannelInbound
                 () -> channel.writeAndFlush(new Ping()).addListener(ChannelFutureListener.FIRE_EXCEPTION_ON_FAILURE),
                 0, 250, TimeUnit.MILLISECONDS
         );
+        connectPromise.trySuccess();
         channel.closeFuture().addListener(x -> pingTask.cancel(false));
         channel.pipeline().remove(this);
         channel.pipeline().fireChannelActive();
-        connectPromise.trySuccess();
     }
 
     protected void fail(Throwable cause) {

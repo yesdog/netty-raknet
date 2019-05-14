@@ -13,15 +13,16 @@ public class RakNetClient extends RakNet {
 
     public static final Class<RakNetClientChannel> CHANNEL = RakNetClientChannel.class;
 
-    public static class DefaultInitializer extends ChannelInitializer<RakNetClientChannel> {
-        public static final DefaultInitializer INSTANCE = new DefaultInitializer();
+    public static class DefaultClientInitializer extends ChannelInitializer<RakNetClientChannel> {
+        public static final DefaultClientInitializer INSTANCE = new DefaultClientInitializer();
+
         protected void initChannel(RakNetClientChannel channel) {
             channel.pipeline()
-            .addLast(FlushTickHandler.NAME,      new FlushTickHandler())
+            .addLast(FlushTickHandler.NAME,         new FlushTickHandler())
             .addLast(RawPacketCodec.NAME,           RawPacketCodec.INSTANCE)
-            .addLast(RakNet.ReliableFrameHandling.INSTANCE)
-            .addLast(ConnectionInitializer.NAME, new ChannelInboundHandlerAdapter()) //replace later
-            .addLast(RakNet.PacketHandling.INSTANCE);
+            .addLast(                               RakNet.ReliableFrameHandling.INSTANCE)
+            .addLast(ConnectionInitializer.NAME,    new ChannelInboundHandlerAdapter()) //replace later
+            .addLast(                               RakNet.PacketHandling.INSTANCE);
         }
     }
 

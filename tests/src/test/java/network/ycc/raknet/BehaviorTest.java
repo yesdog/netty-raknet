@@ -19,7 +19,6 @@ import network.ycc.raknet.utils.EmptyInit;
 
 import org.junit.Test;
 
-import java.net.Inet6Address;
 import java.net.InetSocketAddress;
 
 public class BehaviorTest {
@@ -31,20 +30,22 @@ public class BehaviorTest {
 
     @Test
     public void connectIPv6() throws Throwable {
-        /*final Channel serverChannel = new ServerBootstrap()
+        final InetSocketAddress localhostIPv6 = new InetSocketAddress("::1", port);
+
+        final Channel serverChannel = new ServerBootstrap()
                 .group(ioGroup, childGroup)
                 .channel(RakNetServer.CHANNEL)
                 .childHandler(new EmptyInit())
-                .bind(localhost).sync().channel();
+                .bind(localhostIPv6).sync().channel();
 
         final Channel clientChannel = new Bootstrap()
                 .group(ioGroup)
                 .channel(RakNetClient.CHANNEL)
                 .handler(new EmptyInit())
-                .connect(Inet6Address.getLocalHost(), port).sync().channel();
+                .connect(localhostIPv6).sync().channel();
 
         serverChannel.close().sync();
-        clientChannel.close().sync();*/
+        clientChannel.close().sync();
     }
 
     @Test(expected = RakNet.Magic.MagicMismatchException.class)

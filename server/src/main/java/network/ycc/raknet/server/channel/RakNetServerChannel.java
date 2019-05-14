@@ -6,7 +6,7 @@ import io.netty.channel.socket.DatagramPacket;
 import io.netty.channel.socket.nio.NioDatagramChannel;
 import io.netty.util.ReferenceCountUtil;
 
-import network.ycc.raknet.channel.ExtendedDatagramChannel;
+import network.ycc.raknet.channel.DatagramChannelProxy;
 import network.ycc.raknet.server.RakNetServer;
 
 import java.net.InetSocketAddress;
@@ -15,7 +15,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.function.Supplier;
 
-public class RakNetServerChannel extends ExtendedDatagramChannel implements ServerChannel {
+public class RakNetServerChannel extends DatagramChannelProxy implements ServerChannel {
 
     protected final Map<SocketAddress, RakNetChildChannel> childMap = new HashMap<>();
 
@@ -36,7 +36,7 @@ public class RakNetServerChannel extends ExtendedDatagramChannel implements Serv
     protected void addDefaultPipeline() {
         pipeline()
         .addLast(newServerHandler())
-        .addLast(RakNetServer.DefaultIoInitializer.INSTANCE);
+        .addLast(RakNetServer.DefaultDatagramInitializer.INSTANCE);
     }
 
     protected ChannelHandler newServerHandler() {

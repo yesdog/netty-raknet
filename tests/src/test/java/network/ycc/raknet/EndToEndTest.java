@@ -19,10 +19,11 @@ import io.netty.channel.socket.nio.NioDatagramChannel;
 import io.netty.util.ReferenceCountUtil;
 import io.netty.util.concurrent.PromiseCombiner;
 
-import network.ycc.raknet.channel.ExtendedDatagramChannel;
+import network.ycc.raknet.channel.DatagramChannelProxy;
 import network.ycc.raknet.client.channel.RakNetClientChannel;
 import network.ycc.raknet.packet.FramedPacket;
 import network.ycc.raknet.frame.FrameData;
+import network.ycc.raknet.packet.Ping;
 import network.ycc.raknet.pipeline.UserDataCodec;
 import network.ycc.raknet.server.channel.RakNetServerChannel;
 import network.ycc.raknet.utils.EmptyInit;
@@ -158,7 +159,7 @@ public class EndToEndTest {
         Channel client = newClient(null, mockPair);
         ChannelPromise donePromise = client.newPromise();
 
-        client.pipeline().addAfter(ExtendedDatagramChannel.LISTENER_HANDLER_NAME, "brutalizer", brutalizer);
+        client.pipeline().addAfter(DatagramChannelProxy.LISTENER_HANDLER_NAME, "brutalizer", brutalizer);
         brutalizer.rnd = rnd;
         brutalizer.brutalizeRead = brutalizeRead;
         brutalizer.brutalizeWrite = brutalizeWrite;
@@ -168,7 +169,7 @@ public class EndToEndTest {
         for (int i = 0 ; i < nSend ; i++) {
             int size = rnd.nextInt(maxSize) + 1;
             if (size == 8) size = 9; //reserve 8 size for the other tests
-            while (!client.isWritable() || pending.get() > 2046) {
+            while (!client.isWritable() || pending.get() > 3000) {
                 try {
                     Thread.sleep(1);
                 } catch (InterruptedException e) {
@@ -208,6 +209,7 @@ public class EndToEndTest {
         }
 
         client.pipeline().flush();
+        client.write(new Ping()).sync();
 
         testLoop.execute(() -> combiner.finish(donePromise));
 
@@ -215,7 +217,6 @@ public class EndToEndTest {
 
         try {
             donePromise.get(15, TimeUnit.SECONDS);
-            Thread.sleep(250);
         } finally {
             server.close().sync();
             client.close().sync();
@@ -239,6 +240,7 @@ public class EndToEndTest {
             }
         }))
         .option(RakNet.SERVER_ID, 12345L)
+        .option(RakNet.RETRY_DELAY_NANOS, TimeUnit.NANOSECONDS.convert(10, TimeUnit.MILLISECONDS))
         .handler(ioInit)
         .childHandler(new ChannelInitializer() {
             protected void initChannel(Channel ch) throws Exception {
@@ -262,6 +264,7 @@ public class EndToEndTest {
             }
         }))
         .option(RakNet.CLIENT_ID,6789L)
+        .option(RakNet.RETRY_DELAY_NANOS, TimeUnit.NANOSECONDS.convert(10, TimeUnit.MILLISECONDS))
         .handler(new ChannelInitializer() {
             protected void initChannel(Channel ch) throws Exception {
                 ch.pipeline().addLast(UserDataCodec.NAME, new UserDataCodec(0xFE));

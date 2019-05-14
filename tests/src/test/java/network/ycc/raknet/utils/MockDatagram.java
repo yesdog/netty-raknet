@@ -42,7 +42,7 @@ public class MockDatagram extends AbstractChannel implements DatagramChannel {
         pipeline().addFirst(new ChannelOutboundHandlerAdapter() {
             @Override
             public void write(ChannelHandlerContext ctx, Object msg, ChannelPromise promise) throws Exception {
-                ByteBuf buf;
+                final ByteBuf buf;
                 if (msg instanceof ByteBuf) {
                     buf = (ByteBuf) msg;
                 } else {

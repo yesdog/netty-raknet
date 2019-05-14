@@ -8,7 +8,7 @@ import io.netty.util.ReferenceCountUtil;
 import io.netty.util.concurrent.PromiseCombiner;
 
 import network.ycc.raknet.RakNet;
-import network.ycc.raknet.channel.ExtendedDatagramChannel;
+import network.ycc.raknet.channel.DatagramChannelProxy;
 import network.ycc.raknet.client.RakNetClient;
 import network.ycc.raknet.client.pipeline.ConnectionInitializer;
 
@@ -16,7 +16,7 @@ import java.net.InetSocketAddress;
 import java.net.SocketAddress;
 import java.util.function.Supplier;
 
-public class RakNetClientChannel extends ExtendedDatagramChannel {
+public class RakNetClientChannel extends DatagramChannelProxy {
     protected final ChannelPromise connectPromise;
 
     public RakNetClientChannel() {
@@ -49,7 +49,7 @@ public class RakNetClientChannel extends ExtendedDatagramChannel {
     protected void addDefaultPipeline() {
         pipeline()
         .addLast(newClientHandler())
-        .addLast(RakNetClient.DefaultInitializer.INSTANCE);
+        .addLast(RakNetClient.DefaultClientInitializer.INSTANCE);
     }
 
     protected ChannelHandler newClientHandler() {
@@ -68,13 +68,14 @@ public class RakNetClientChannel extends ExtendedDatagramChannel {
                     throw new IllegalStateException("Channel connection already started");
                 }
                 final ChannelFuture listenerConnect = listener.connect(remoteAddress, localAddress);
-                listenerConnect.addListener(x -> {
-                    if (x.isSuccess()) {
+                listenerConnect.addListener(udpConnectResult -> {
+                    if (udpConnectResult.isSuccess()) {
                         //start connection process
                         pipeline().replace(ConnectionInitializer.NAME, ConnectionInitializer.NAME,
                                 new ConnectionInitializer(connectPromise));
-                        connectPromise.addListener(x2 -> {
-                            if (!x2.isSuccess()) {
+                        connectPromise.addListener(rnConnectResult -> {
+                            if (!rnConnectResult.isSuccess()) {
+                                pipeline.fireExceptionCaught(rnConnectResult.cause());
                                 RakNetClientChannel.this.close();
                             }
                         });
@@ -91,8 +92,7 @@ public class RakNetClientChannel extends ExtendedDatagramChannel {
 
         @Override
         public void write(ChannelHandlerContext ctx, Object msg, ChannelPromise promise) {
-            listener.write(msg).addListeners(ChannelFutureListener.FIRE_EXCEPTION_ON_FAILURE);
-            promise.trySuccess();
+            listener.write(msg, wrapPromise(promise));
         }
 
         @Override

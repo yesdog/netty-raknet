@@ -47,7 +47,7 @@ public class DefaultConfig extends DefaultChannelConfig implements RakNet.Config
         return getOptions(
                 super.getOptions(),
                 RakNet.SERVER_ID, RakNet.CLIENT_ID, RakNet.METRICS, RakNet.MTU,
-                RakNet.RTT, RakNet.PROTOCOL_VERSION, RakNet.MAGIC);
+                RakNet.RTT, RakNet.PROTOCOL_VERSION, RakNet.MAGIC, RakNet.RETRY_DELAY_NANOS);
     }
 
     @Override
@@ -67,6 +67,8 @@ public class DefaultConfig extends DefaultChannelConfig implements RakNet.Config
             protocolVersion = (Integer) value;
         } else if (option == RakNet.MAGIC) {
             magic = (RakNet.Magic) value;
+        } else if (option == RakNet.RETRY_DELAY_NANOS) {
+            retryDelayNanos = (Long) value;
         } else {
             return super.setOption(option, value);
         }
@@ -90,6 +92,8 @@ public class DefaultConfig extends DefaultChannelConfig implements RakNet.Config
             return (T) (Integer) protocolVersion;
         } else if (option == RakNet.MAGIC) {
             return (T) magic;
+        } else if (option == RakNet.RETRY_DELAY_NANOS) {
+            return (T) (Long) retryDelayNanos;
         }
         return super.getOption(option);
     }

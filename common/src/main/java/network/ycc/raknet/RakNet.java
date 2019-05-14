@@ -34,6 +34,7 @@ public class RakNet {
     public static final ChannelOption<Long> RTT = ChannelOption.valueOf("RN_RTT");
     public static final ChannelOption<Integer> PROTOCOL_VERSION = ChannelOption.valueOf("RN_PROTOCOL_VERSION");
     public static final ChannelOption<Magic> MAGIC = ChannelOption.valueOf("RN_MAGIC");
+    public static final ChannelOption<Long> RETRY_DELAY_NANOS = ChannelOption.valueOf("RN_RETRY_DELAY_NANOS");
 
     public static final Config config(ChannelHandlerContext ctx) {
         return (Config) ctx.channel().config();

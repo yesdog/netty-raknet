@@ -13,9 +13,7 @@ import java.net.SocketAddress;
 import java.nio.channels.ClosedChannelException;
 import java.util.function.Supplier;
 
-//TODO: implement DatagramChannel?
-//TODO: ExtendedDatagramChannel ?
-public class ExtendedDatagramChannel implements Channel {
+public class DatagramChannelProxy implements Channel {
 
     public static final String LISTENER_HANDLER_NAME = "rn-udp-listener-handler";
 
@@ -23,7 +21,7 @@ public class ExtendedDatagramChannel implements Channel {
     protected final DatagramChannel listener;
     protected final Config config;
 
-    public ExtendedDatagramChannel(Supplier<? extends DatagramChannel> ioChannelSupplier) {
+    public DatagramChannelProxy(Supplier<? extends DatagramChannel> ioChannelSupplier) {
         listener = ioChannelSupplier.get();
         pipeline = newChannelPipeline();
         listener.pipeline().addLast(new ListenerInboundProxy());
@@ -31,7 +29,7 @@ public class ExtendedDatagramChannel implements Channel {
         config = new Config();
     }
 
-    public ExtendedDatagramChannel(Class<? extends DatagramChannel> ioChannelType) {
+    public DatagramChannelProxy(Class<? extends DatagramChannel> ioChannelType) {
         this(() -> {
             try {
                 return ioChannelType.newInstance();
@@ -240,8 +238,9 @@ public class ExtendedDatagramChannel implements Channel {
     }
 
     protected class Config extends DefaultConfig {
+
         protected Config() {
-            super(ExtendedDatagramChannel.this);
+            super(DatagramChannelProxy.this);
         }
 
         @Override
@@ -261,6 +260,7 @@ public class ExtendedDatagramChannel implements Channel {
             }
             return thisOption;
         }
+
     }
 
     protected class ListnerOutboundProxy implements ChannelOutboundHandler {
@@ -330,7 +330,7 @@ public class ExtendedDatagramChannel implements Channel {
         }
 
         public void channelActive(ChannelHandlerContext ctx) throws Exception {
-            pipeline.fireChannelActive();
+            // NOOP - active status managed by connection sequence
         }
 
         public void channelInactive(ChannelHandlerContext ctx) throws Exception {
