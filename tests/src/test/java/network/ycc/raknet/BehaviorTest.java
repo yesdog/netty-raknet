@@ -31,27 +31,25 @@ public class BehaviorTest {
 
     @Test
     public void connectIPv6() throws Throwable {
-        final InetSocketAddress localhostIPv6 = new InetSocketAddress("::1", port);
-
-        final Channel serverChannel = new ServerBootstrap()
-                .group(ioGroup, childGroup)
-                .channel(RakNetServer.CHANNEL)
-                .childHandler(new EmptyInit())
-                .bind(localhostIPv6).sync().channel();
-
-        final ChannelFuture connectFuture = new Bootstrap()
-        .group(ioGroup)
-        .channel(RakNetClient.CHANNEL)
-        .handler(new EmptyInit())
-        .connect(localhostIPv6);
-
         try {
-            connectFuture.sync();
-        } catch(UnsupportedAddressTypeException e) {
-            // NOOP
-        } finally {
-            connectFuture.channel().close().sync();
+            final InetSocketAddress localhostIPv6 = new InetSocketAddress("::1", port);
+
+            final Channel serverChannel = new ServerBootstrap()
+                    .group(ioGroup, childGroup)
+                    .channel(RakNetServer.CHANNEL)
+                    .childHandler(new EmptyInit())
+                    .bind(localhostIPv6).sync().channel();
+
+            final Channel clientChannel = new Bootstrap()
+                    .group(ioGroup)
+                    .channel(RakNetClient.CHANNEL)
+                    .handler(new EmptyInit())
+                    .connect(localhostIPv6).sync().channel();
+
             serverChannel.close().sync();
+            clientChannel.close().sync();
+        } catch (UnsupportedAddressTypeException e) {
+            // NOOP
         }
     }
 
