@@ -19,8 +19,6 @@ import network.ycc.raknet.utils.UINT;
 import network.ycc.raknet.RakNet;
 import network.ycc.raknet.frame.Frame;
 
-import java.nio.channels.ClosedChannelException;
-
 //TODO: instead of immediate recall, mark framesets as 'recalled', and flush at flush cycle
 public class ReliabilityHandler extends ChannelDuplexHandler {
 
@@ -54,7 +52,7 @@ public class ReliabilityHandler extends ChannelDuplexHandler {
             frame.release();
         });
         frameQueue.clear();
-        pendingFrameSets.values().forEach(frameSet -> frameSet.succeed());
+        pendingFrameSets.values().forEach(FrameSet::succeed);
         pendingFrameSets.values().forEach(FrameSet::release);
         pendingFrameSets.clear();
     }

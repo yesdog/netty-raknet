@@ -17,6 +17,7 @@ import network.ycc.raknet.packet.InvalidVersion;
 import network.ycc.raknet.server.RakNetServer;
 import network.ycc.raknet.utils.EmptyInit;
 
+import org.junit.Assert;
 import org.junit.Test;
 
 import java.net.InetSocketAddress;
@@ -46,10 +47,14 @@ public class BehaviorTest {
                     .handler(new EmptyInit())
                     .connect(localhostIPv6).sync().channel();
 
-            serverChannel.close().sync();
-            clientChannel.close().sync();
+            try {
+                Assert.assertTrue(clientChannel.isActive());
+            } finally {
+                serverChannel.close().sync();
+                clientChannel.close().sync();
+            }
         } catch (UnsupportedAddressTypeException e) {
-            // NOOP
+            // NOOP - ipv6 not supported
         }
     }
 

@@ -1,38 +1,34 @@
 package network.ycc.raknet.pipeline;
 
-import io.netty.channel.*;
-import io.netty.util.concurrent.ScheduledFuture;
+import io.netty.channel.Channel;
+import io.netty.channel.ChannelHandlerContext;
+import io.netty.channel.ChannelInboundHandlerAdapter;
+import io.netty.channel.ChannelOutboundHandlerAdapter;
+import io.netty.channel.ChannelPromise;
 
 import java.util.concurrent.TimeUnit;
 
-//TODO: keep a channel atr that stores a long # of ticks?
+//TODO: keep a channel attr that stores a long # of ticks?
 public class FlushTickHandler extends ChannelInboundHandlerAdapter {
 
     public static final String NAME = "rn-tick-in";
     public static final String NAME_OUT = "rn-tick-out";
     public static final long TICK_RESOLUTION = TimeUnit.NANOSECONDS.convert(5, TimeUnit.MILLISECONDS);
 
-    protected static final long COARSE_TIMER_RESOLUTION = 50; //in ms, limited by netty timer resolution
-
     protected long tickAccum = 0;
     protected long lastTickAccum = System.nanoTime();
     protected Channel channel;
-    protected ScheduledFuture<?> timer;
 
     @Override
     public void handlerAdded(ChannelHandlerContext ctx) throws Exception {
         super.handlerAdded(ctx);
         channel = ctx.channel();
-        timer = channel.eventLoop().scheduleAtFixedRate(
-                this::maybeFlush, COARSE_TIMER_RESOLUTION, COARSE_TIMER_RESOLUTION, TimeUnit.MILLISECONDS);
         channel.eventLoop().execute(() -> channel.pipeline().addLast(NAME_OUT, new OutboundHandler()));
     }
 
     @Override
     public void handlerRemoved(ChannelHandlerContext ctx) throws Exception {
         super.handlerRemoved(ctx);
-        timer.cancel(true);
-        timer = null;
         channel = null;
     }
 
@@ -56,6 +52,7 @@ public class FlushTickHandler extends ChannelInboundHandlerAdapter {
     }
 
     protected final class OutboundHandler extends ChannelOutboundHandlerAdapter {
+
         @Override
         public void write(ChannelHandlerContext ctx, Object msg, ChannelPromise promise) throws Exception {
             super.write(ctx, msg, promise);
@@ -72,6 +69,7 @@ public class FlushTickHandler extends ChannelInboundHandlerAdapter {
             }
             super.flush(ctx);
         }
+
     }
 
 }
