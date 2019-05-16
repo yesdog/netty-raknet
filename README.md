@@ -41,7 +41,7 @@ room for extension with any plugins or custom behavior.
   
 # Usage
 
-## Maven Use (at CodeMC)
+## Maven
 ```xml
     <dependencies>
         <dependency>
@@ -64,7 +64,7 @@ room for extension with any plugins or custom behavior.
     </repositories>
 ```
 
-## Example
+### Example
 
 A good example can be seen in the simple 
 [Hello World](https://github.com/yesdog/netty-raknet/blob/master/tests/src/test/java/network/ycc/raknet/HelloWorld.java) 
