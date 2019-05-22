@@ -36,7 +36,6 @@ public class ReliabilityHandler extends ChannelDuplexHandler {
     protected int resendGauge = 0;
     protected int burstTokens = 0;
     protected RakNet.Config config = null; //TODO: not really needed anymore
-    protected ChannelHandlerContext flushHandlerContext = null;
 
     @Override
     public void handlerAdded(ChannelHandlerContext ctx) throws Exception {
@@ -87,7 +86,7 @@ public class ReliabilityHandler extends ChannelDuplexHandler {
             ctx.write(msg, promise);
         }
         Constants.packetLossCheck(pendingFrameSets.size(), "unconfirmed sent packets");
-        maybeFireFlushHandler(ctx);
+        FlushTickHandler.checkFlushTick(ctx.channel());
     }
 
     @Override
@@ -121,16 +120,6 @@ public class ReliabilityHandler extends ChannelDuplexHandler {
         updateBackPressure(ctx);
         Constants.packetLossCheck(pendingFrameSets.size(), "resend queue");
         super.flush(ctx);
-    }
-
-    protected void maybeFireFlushHandler(ChannelHandlerContext ctx) {
-        if (flushHandlerContext == null || flushHandlerContext.isRemoved()) {
-            flushHandlerContext = ctx.pipeline().context(FlushTickHandler.NAME);
-        }
-        if (flushHandlerContext == null) {
-            throw new IllegalStateException("Cannot find FlushTickHandler on pipeline.");
-        }
-        ((FlushTickHandler) flushHandlerContext.handler()).maybeFlush();
     }
 
     protected void readFrameSet(ChannelHandlerContext ctx, FrameSet frameSet) {
