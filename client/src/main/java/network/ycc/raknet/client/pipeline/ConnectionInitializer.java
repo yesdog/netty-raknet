@@ -1,7 +1,6 @@
 package network.ycc.raknet.client.pipeline;
 
 import io.netty.channel.ChannelException;
-import io.netty.channel.ChannelFutureListener;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelPromise;
 
@@ -50,7 +49,7 @@ public class ConnectionInitializer extends AbstractConnectionInitializer {
                     config.setServerId(cr2.getServerId());
                     state = State.CR3;
                     final Packet packet = new ConnectionRequest(config.getClientId());
-                    ctx.writeAndFlush(packet).addListener(ChannelFutureListener.FIRE_EXCEPTION_ON_FAILURE);
+                    ctx.writeAndFlush(packet).addListener(RakNet.INTERNAL_WRITE_LISTENER);
                 } else if (msg instanceof ConnectionFailed) {
                     fail(new ChannelException("RakNet connection failed"));
                 }
@@ -60,7 +59,7 @@ public class ConnectionInitializer extends AbstractConnectionInitializer {
                 if (msg instanceof ServerHandshake) {
                     final Packet packet = new ClientHandshake(((ServerHandshake) msg).getTimestamp(),
                             (InetSocketAddress) ctx.channel().remoteAddress(), ((ServerHandshake) msg).getnExtraAddresses());
-                    ctx.writeAndFlush(packet).addListener(ChannelFutureListener.FIRE_EXCEPTION_ON_FAILURE);
+                    ctx.writeAndFlush(packet).addListener(RakNet.INTERNAL_WRITE_LISTENER);
                     finish(ctx);
                     return;
                 }
@@ -79,17 +78,17 @@ public class ConnectionInitializer extends AbstractConnectionInitializer {
             case CR1: {
                 final Packet packet = new ConnectionRequest1(config.getMagic(),
                         config.getProtocolVersion(), config.getMTU());
-                ctx.writeAndFlush(packet).addListener(ChannelFutureListener.FIRE_EXCEPTION_ON_FAILURE);
+                ctx.writeAndFlush(packet).addListener(RakNet.INTERNAL_WRITE_LISTENER);
                 break;
             }
             case CR2: {
                 final Packet packet = new ConnectionRequest2(config.getMagic(), config.getMTU(),
                         config.getClientId(), (InetSocketAddress) ctx.channel().remoteAddress());
-                ctx.writeAndFlush(packet).addListener(ChannelFutureListener.FIRE_EXCEPTION_ON_FAILURE);
+                ctx.writeAndFlush(packet).addListener(RakNet.INTERNAL_WRITE_LISTENER);
                 break;
             }
             case CR3:
-                break;
+                break; // NOOP - ClientHandshake is sent as reliable.
             default:
                 throw new IllegalStateException("Unknown state " + state);
         }

@@ -305,6 +305,7 @@ public class DatagramChannelProxy implements Channel {
             listener.flush();
         }
 
+        @SuppressWarnings("deprecation")
         public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) throws Exception {
             ctx.fireExceptionCaught(cause);
         }
@@ -353,6 +354,7 @@ public class DatagramChannelProxy implements Channel {
             pipeline.fireChannelWritabilityChanged();
         }
 
+        @SuppressWarnings("deprecation")
         public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) throws Exception {
             if (cause instanceof ClosedChannelException) {
                 return;

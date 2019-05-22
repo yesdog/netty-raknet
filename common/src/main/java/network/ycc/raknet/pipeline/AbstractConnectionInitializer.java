@@ -29,7 +29,7 @@ public abstract class AbstractConnectionInitializer extends SimpleChannelInbound
     @Override
     public void handlerAdded(ChannelHandlerContext ctx) {
         sendTimer = ctx.channel().eventLoop().scheduleAtFixedRate(() -> sendRequest(ctx),
-                0, 100, TimeUnit.MILLISECONDS);
+                0, 200, TimeUnit.MILLISECONDS);
         connectTimer = ctx.channel().eventLoop().schedule(this::doTimeout,
                 ctx.channel().config().getConnectTimeoutMillis(), TimeUnit.MILLISECONDS);
         sendRequest(ctx);
@@ -49,7 +49,7 @@ public abstract class AbstractConnectionInitializer extends SimpleChannelInbound
     protected void finish(ChannelHandlerContext ctx) {
         final Channel channel = ctx.channel();
         final ScheduledFuture<?> pingTask = ctx.channel().eventLoop().scheduleAtFixedRate(
-                () -> channel.writeAndFlush(new Ping()).addListener(ChannelFutureListener.FIRE_EXCEPTION_ON_FAILURE),
+                () -> channel.writeAndFlush(new Ping()),
                 0, 100, TimeUnit.MILLISECONDS
         );
         connectPromise.trySuccess();

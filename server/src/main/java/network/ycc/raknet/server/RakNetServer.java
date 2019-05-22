@@ -32,9 +32,9 @@ public final class RakNetServer extends RakNet {
             channel.pipeline()
             .addLast(FlushTickHandler.NAME,         new FlushTickHandler())
             .addLast(RawPacketCodec.NAME,           RawPacketCodec.INSTANCE)
-            .addLast(                               RakNet.ReliableFrameHandling.INSTANCE)
+            .addLast(                               ReliableFrameHandling.INSTANCE)
             .addLast(ConnectionInitializer.NAME,    new ChannelInboundHandlerAdapter()) //replace later
-            .addLast(                               RakNet.PacketHandling.INSTANCE);
+            .addLast(                               PacketHandling.INSTANCE);
         }
     }
 

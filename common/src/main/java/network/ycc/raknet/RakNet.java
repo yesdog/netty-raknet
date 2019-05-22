@@ -4,6 +4,7 @@ import io.netty.buffer.ByteBuf;
 import io.netty.buffer.ByteBufAllocator;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelConfig;
+import io.netty.channel.ChannelFutureListener;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInitializer;
 import io.netty.channel.ChannelOption;
@@ -22,6 +23,8 @@ import network.ycc.raknet.pipeline.FramedPacketCodec;
 import network.ycc.raknet.pipeline.PingHandler;
 import network.ycc.raknet.pipeline.PongHandler;
 import network.ycc.raknet.pipeline.ReliabilityHandler;
+
+import java.nio.channels.ClosedChannelException;
 
 public class RakNet {
 
@@ -43,6 +46,13 @@ public class RakNet {
     public static final MetricsLogger metrics(ChannelHandlerContext ctx) {
         return config(ctx).getMetrics();
     }
+
+    public static final ChannelFutureListener INTERNAL_WRITE_LISTENER = future -> {
+        if (!future.isSuccess() && !(future.cause() instanceof ClosedChannelException)) {
+            future.channel().pipeline().fireExceptionCaught(future.cause());
+            future.channel().close();
+        }
+    };
 
     public static class ReliableFrameHandling extends ChannelInitializer<Channel> {
         public static final ReliableFrameHandling INSTANCE = new ReliableFrameHandling();

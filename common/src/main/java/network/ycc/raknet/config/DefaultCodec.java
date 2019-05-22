@@ -70,6 +70,7 @@ public class DefaultCodec implements RakNet.Codec {
         idFromClass.defaultReturnValue(-1);
     }
 
+    @SuppressWarnings("unchecked")
     public void encode(Packet packet, ByteBuf out) {
         if (!idFromClass.containsKey(packet.getClass())) {
             throw new IllegalArgumentException("Unknown encoder for " + packet.getClass());

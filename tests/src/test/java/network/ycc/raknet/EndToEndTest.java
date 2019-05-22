@@ -228,7 +228,7 @@ public class EndToEndTest {
         Assert.assertEquals(bytesSent.get(), bytesRecvd.get());
     }
 
-    public Channel newServer(ChannelInitializer ioInit, final ChannelInitializer childInit, MockDatagramPair dgPair) throws InterruptedException {
+    public Channel newServer(ChannelInitializer<Channel> ioInit, final ChannelInitializer<Channel> childInit, MockDatagramPair dgPair) throws InterruptedException {
         if (ioInit == null) ioInit = new EmptyInit();
         final ServerBootstrap bootstrap = new ServerBootstrap()
         .group(ioGroup, childGroup)
@@ -242,7 +242,7 @@ public class EndToEndTest {
         .option(RakNet.SERVER_ID, 12345L)
         .option(RakNet.RETRY_DELAY_NANOS, TimeUnit.NANOSECONDS.convert(10, TimeUnit.MILLISECONDS))
         .handler(ioInit)
-        .childHandler(new ChannelInitializer() {
+        .childHandler(new ChannelInitializer<Channel>() {
             protected void initChannel(Channel ch) throws Exception {
                 ch.pipeline().addLast(UserDataCodec.NAME, new UserDataCodec(0xFE));
                 if (childInit != null) {
@@ -253,7 +253,7 @@ public class EndToEndTest {
         return bootstrap.bind(localhost).sync().channel();
     }
 
-    public Channel newClient(ChannelInitializer init, MockDatagramPair dgPair) throws InterruptedException {
+    public Channel newClient(ChannelInitializer<Channel> init, MockDatagramPair dgPair) throws InterruptedException {
         final Bootstrap bootstrap = new Bootstrap()
         .group(ioGroup)
         .channelFactory(() -> new RakNetClientChannel(() -> {
@@ -265,7 +265,7 @@ public class EndToEndTest {
         }))
         .option(RakNet.CLIENT_ID,6789L)
         .option(RakNet.RETRY_DELAY_NANOS, TimeUnit.NANOSECONDS.convert(10, TimeUnit.MILLISECONDS))
-        .handler(new ChannelInitializer() {
+        .handler(new ChannelInitializer<Channel>() {
             protected void initChannel(Channel ch) throws Exception {
                 ch.pipeline().addLast(UserDataCodec.NAME, new UserDataCodec(0xFE));
                 if (init != null) {
@@ -276,8 +276,8 @@ public class EndToEndTest {
         return bootstrap.connect(localhost).sync().channel();
     }
 
-    public static ChannelInitializer simpleHandler(BiConsumer<ChannelHandlerContext, Object> func) {
-        return new ChannelInitializer() {
+    public static ChannelInitializer<Channel> simpleHandler(BiConsumer<ChannelHandlerContext, Object> func) {
+        return new ChannelInitializer<Channel>() {
             protected void initChannel(Channel ch) {
                 ch.pipeline().addLast(new ChannelInboundHandlerAdapter() {
                     public void channelRead(ChannelHandlerContext ctx, Object msg) {

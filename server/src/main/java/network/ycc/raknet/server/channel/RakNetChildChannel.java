@@ -133,7 +133,7 @@ public class RakNetChildChannel extends AbstractChannel {
                 //TODO: want to do real promise resolution here, but is it worth it?
                 promise.trySuccess();
                 parent().write(new DatagramPacket((ByteBuf) msg, remoteAddress))
-                        .addListener(ChannelFutureListener.FIRE_EXCEPTION_ON_FAILURE);
+                        .addListener(RakNet.INTERNAL_WRITE_LISTENER);
             } else {
                 super.write(ctx, msg, promise);
             }

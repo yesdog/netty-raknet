@@ -51,8 +51,7 @@ public class ConnectionInitializer extends AbstractConnectionInitializer {
                     final Packet packet = new ServerHandshake(
                             (InetSocketAddress) ctx.channel().remoteAddress(),
                             ((ConnectionRequest) msg).getTimestamp());
-                    ctx.writeAndFlush(packet).addListeners(
-                            ChannelFutureListener.CLOSE_ON_FAILURE, ChannelFutureListener.FIRE_EXCEPTION_ON_FAILURE);
+                    ctx.writeAndFlush(packet).addListener(RakNet.INTERNAL_WRITE_LISTENER);
                     state = State.CR3;
                 }
                 break;
@@ -71,24 +70,23 @@ public class ConnectionInitializer extends AbstractConnectionInitializer {
         sendRequest(ctx);
     }
 
+    @SuppressWarnings("unchecked")
     public void sendRequest(ChannelHandlerContext ctx) {
         final RakNet.Config config = RakNet.config(ctx);
         switch(state) {
             case CR1: {
                 final Packet packet = new ConnectionReply1(config.getMagic(), config.getMTU(), config.getServerId());
-                ctx.writeAndFlush(packet).addListeners(
-                        ChannelFutureListener.CLOSE_ON_FAILURE, ChannelFutureListener.FIRE_EXCEPTION_ON_FAILURE);
+                ctx.writeAndFlush(packet).addListener(RakNet.INTERNAL_WRITE_LISTENER);
                 break;
             }
             case CR2: {
                 final Packet packet = new ConnectionReply2(config.getMagic(), config.getMTU(),
                         config.getServerId(), (InetSocketAddress) ctx.channel().remoteAddress());
-                ctx.writeAndFlush(packet).addListeners(
-                        ChannelFutureListener.CLOSE_ON_FAILURE, ChannelFutureListener.FIRE_EXCEPTION_ON_FAILURE);
+                ctx.writeAndFlush(packet).addListener(RakNet.INTERNAL_WRITE_LISTENER);
                 break;
             }
             case CR3:
-                break;
+                break; // NOOP - ServerHandshake is sent as reliable.
             default:
                 throw new IllegalStateException("Unknown state " + state);
         }

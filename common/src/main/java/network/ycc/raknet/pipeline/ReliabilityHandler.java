@@ -19,7 +19,9 @@ import network.ycc.raknet.utils.UINT;
 import network.ycc.raknet.RakNet;
 import network.ycc.raknet.frame.Frame;
 
-//TODO: instead of immediate recall, mark framesets as 'recalled', and flush at flush cycle
+/**
+ * This handler handles the bulk of reliable (framed) transport.
+ */
 public class ReliabilityHandler extends ChannelDuplexHandler {
 
     public static final String NAME = "rn-reliability";
@@ -34,6 +36,7 @@ public class ReliabilityHandler extends ChannelDuplexHandler {
     protected int resendGauge = 0;
     protected int burstTokens = 0;
     protected RakNet.Config config = null; //TODO: not really needed anymore
+    protected ChannelHandlerContext flushHandlerContext = null;
 
     @Override
     public void handlerAdded(ChannelHandlerContext ctx) throws Exception {
@@ -84,18 +87,19 @@ public class ReliabilityHandler extends ChannelDuplexHandler {
             ctx.write(msg, promise);
         }
         Constants.packetLossCheck(pendingFrameSets.size(), "unconfirmed sent packets");
+        maybeFireFlushHandler(ctx);
     }
 
     @Override
     public void flush(ChannelHandlerContext ctx) throws Exception {
         //all data sent in order of priority
         if (!ackSet.isEmpty()) {
-            ctx.write(new Reliability.ACK(ackSet)).addListener(ChannelFutureListener.FIRE_EXCEPTION_ON_FAILURE);
+            ctx.write(new Reliability.ACK(ackSet)).addListener(RakNet.INTERNAL_WRITE_LISTENER);
             config.getMetrics().acksSent(ackSet.size());
             ackSet.clear();
         }
         if (!nackSet.isEmpty()) {
-            ctx.write(new Reliability.NACK(nackSet)).addListener(ChannelFutureListener.FIRE_EXCEPTION_ON_FAILURE);
+            ctx.write(new Reliability.NACK(nackSet)).addListener(RakNet.INTERNAL_WRITE_LISTENER);
             config.getMetrics().nacksSent(nackSet.size());
             nackSet.clear();
         }
@@ -117,6 +121,16 @@ public class ReliabilityHandler extends ChannelDuplexHandler {
         updateBackPressure(ctx);
         Constants.packetLossCheck(pendingFrameSets.size(), "resend queue");
         super.flush(ctx);
+    }
+
+    protected void maybeFireFlushHandler(ChannelHandlerContext ctx) {
+        if (flushHandlerContext == null || flushHandlerContext.isRemoved()) {
+            flushHandlerContext = ctx.pipeline().context(FlushTickHandler.NAME);
+        }
+        if (flushHandlerContext == null) {
+            throw new IllegalStateException("Cannot find FlushTickHandler on pipeline.");
+        }
+        ((FlushTickHandler) flushHandlerContext.handler()).maybeFlush();
     }
 
     protected void readFrameSet(ChannelHandlerContext ctx, FrameSet frameSet) {
@@ -219,7 +233,7 @@ public class ReliabilityHandler extends ChannelDuplexHandler {
             nextSendSeqId = UINT.B3.plus(nextSendSeqId, 1);
             pendingFrameSets.put(frameSet.getSeqId(), frameSet);
             frameSet.touch("Added to pending FrameSet list");
-            ctx.write(frameSet.retain()).addListener(ChannelFutureListener.FIRE_EXCEPTION_ON_FAILURE);
+            ctx.write(frameSet.retain()).addListener(RakNet.INTERNAL_WRITE_LISTENER);
             config.getMetrics().packetsOut(1);
             config.getMetrics().framesOut(frameSet.getNumPackets());
             assert frameSet.refCnt() > 0;
@@ -235,6 +249,7 @@ public class ReliabilityHandler extends ChannelDuplexHandler {
         }
     }
 
+    //TODO: instead of immediate recall, mark framesets as 'recalled', and flush at flush cycle
     protected void recallFrameSet(FrameSet frameSet) {
         try {
             adjustResendGauge(-1);

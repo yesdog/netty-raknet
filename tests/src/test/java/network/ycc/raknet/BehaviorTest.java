@@ -54,7 +54,7 @@ public class BehaviorTest {
                 clientChannel.close().sync();
             }
         } catch (UnsupportedAddressTypeException e) {
-            // NOOP - ipv6 not supported
+            System.out.println("No IPv6 support, skipping.");
         }
     }
 
