@@ -87,7 +87,10 @@ public class DefaultCodec implements RakNet.Codec {
         final ByteBuf out = alloc.ioBuffer(packet.sizeHint());
         try {
             encode(packet, out);
-            return FrameData.read(out, out.readableBytes(), false);
+            final FrameData frameData = FrameData.read(out, out.readableBytes(), false);
+            frameData.setReliability(packet.getReliability());
+            frameData.setOrderChannel(packet.getOrderChannel());
+            return frameData;
         } finally {
             out.release();
         }

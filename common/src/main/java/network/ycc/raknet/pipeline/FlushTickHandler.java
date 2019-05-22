@@ -54,9 +54,6 @@ public class FlushTickHandler extends ChannelDuplexHandler {
     }
 
     protected void maybeFlush(Channel channel) {
-        if (channel == null) {
-            return;
-        }
         final long curTime = System.nanoTime();
         tickAccum += curTime - lastTickAccum;
         lastTickAccum = curTime;
