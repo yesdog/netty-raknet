@@ -1,12 +1,12 @@
 package network.ycc.raknet.pipeline;
 
 import io.netty.channel.Channel;
-import io.netty.channel.ChannelFutureListener;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelPromise;
 import io.netty.channel.ConnectTimeoutException;
 import io.netty.channel.SimpleChannelInboundHandler;
 import io.netty.util.concurrent.ScheduledFuture;
+
 import network.ycc.raknet.packet.Packet;
 import network.ycc.raknet.packet.Ping;
 

@@ -39,20 +39,20 @@ public class RakNet {
     public static final ChannelOption<Magic> MAGIC = ChannelOption.valueOf("RN_MAGIC");
     public static final ChannelOption<Long> RETRY_DELAY_NANOS = ChannelOption.valueOf("RN_RETRY_DELAY_NANOS");
 
-    public static final Config config(ChannelHandlerContext ctx) {
-        return (Config) ctx.channel().config();
-    }
-
-    public static final MetricsLogger metrics(ChannelHandlerContext ctx) {
-        return config(ctx).getMetrics();
-    }
-
     public static final ChannelFutureListener INTERNAL_WRITE_LISTENER = future -> {
         if (!future.isSuccess() && !(future.cause() instanceof ClosedChannelException)) {
             future.channel().pipeline().fireExceptionCaught(future.cause());
             future.channel().close();
         }
     };
+
+    public static Config config(ChannelHandlerContext ctx) {
+        return (Config) ctx.channel().config();
+    }
+
+    public static MetricsLogger metrics(ChannelHandlerContext ctx) {
+        return config(ctx).getMetrics();
+    }
 
     public static class ReliableFrameHandling extends ChannelInitializer<Channel> {
         public static final ReliableFrameHandling INSTANCE = new ReliableFrameHandling();

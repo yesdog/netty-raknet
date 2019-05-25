@@ -2,6 +2,7 @@ package network.ycc.raknet.frame;
 
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.ChannelPromise;
+import io.netty.handler.codec.CorruptedFrameException;
 import io.netty.util.AbstractReferenceCounted;
 import io.netty.util.Recycler;
 import io.netty.util.ReferenceCounted;
@@ -31,39 +32,40 @@ public final class Frame extends AbstractReferenceCounted {
     protected static final int SPLIT_FLAG = 0x10;
 
     public static Frame read(ByteBuf buf) {
-        final Frame out = createRaw();
-        final int flags = buf.readUnsignedByte();
-        final int bitLength = buf.readUnsignedShort();
-        final int length = (bitLength + Byte.SIZE - 1) / Byte.SIZE; //round up
-        final boolean hasSplit = (flags & SPLIT_FLAG) != 0;
-        final FramedPacket.Reliability reliability = FramedPacket.Reliability.get(flags >> 5);
-        int orderChannel = 0;
+        try {
+            final Frame out = createRaw();
+            final int flags = buf.readUnsignedByte();
+            final int bitLength = buf.readUnsignedShort();
+            final int length = (bitLength + Byte.SIZE - 1) / Byte.SIZE; //round up
+            final boolean hasSplit = (flags & SPLIT_FLAG) != 0;
+            final FramedPacket.Reliability reliability = FramedPacket.Reliability.get(flags >> 5);
+            int orderChannel = 0;
 
-        //TODO: some raknet impls are bad. what to do about this?
-        //assert !(hasSplit && !reliability.isReliable) : "Frame is unreliable, but split";
+            if (reliability.isReliable) {
+                out.reliableIndex = buf.readUnsignedMediumLE();
+            }
+            if (reliability.isSequenced) {
+                out.sequenceIndex = buf.readUnsignedMediumLE();
+            }
+            if (reliability.isOrdered) {
+                out.orderIndex = buf.readUnsignedMediumLE();
+                orderChannel = buf.readUnsignedByte();
+            }
+            if (hasSplit) {
+                out.splitCount = buf.readInt();
+                out.splitID = buf.readUnsignedShort();
+                out.splitIndex = buf.readInt();
+                out.hasSplit = true;
+            }
 
-        if (reliability.isReliable) {
-            out.reliableIndex = buf.readUnsignedMediumLE();
-        }
-        if (reliability.isSequenced) {
-            out.sequenceIndex = buf.readUnsignedMediumLE();
-        }
-        if (reliability.isOrdered) {
-            out.orderIndex = buf.readUnsignedMediumLE();
-            orderChannel = buf.readUnsignedByte();
-        }
-        if (hasSplit) {
-            out.splitCount = buf.readInt();
-            out.splitID = buf.readUnsignedShort();
-            out.splitIndex = buf.readInt();
-            out.hasSplit = true;
-        }
+            out.packet = FrameData.read(buf, length, hasSplit);
+            out.packet.setReliability(reliability);
+            out.packet.setOrderChannel(orderChannel);
 
-        out.packet = FrameData.read(buf, length, hasSplit);
-        out.packet.setReliability(reliability);
-        out.packet.setOrderChannel(orderChannel);
-
-        return out;
+            return out;
+        } catch (IndexOutOfBoundsException e) {
+            throw new CorruptedFrameException("Failed to parse Frame", e);
+        }
     }
 
     public static Frame create(FrameData packet) {
