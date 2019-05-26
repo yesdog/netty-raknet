@@ -21,6 +21,7 @@ import io.netty.util.concurrent.PromiseCombiner;
 
 import network.ycc.raknet.channel.DatagramChannelProxy;
 import network.ycc.raknet.client.channel.RakNetClientChannel;
+import network.ycc.raknet.config.DefaultCodec;
 import network.ycc.raknet.packet.FramedPacket;
 import network.ycc.raknet.frame.FrameData;
 import network.ycc.raknet.packet.Ping;
@@ -74,6 +75,10 @@ public class EndToEndTest {
             }
         }), null);
         Channel client = newClient(null, null);
+
+        //add some bad frame data, should be ignore safely
+        client.pipeline().fireChannelRead(Unpooled.wrappedBuffer(
+                new byte[] {(byte) DefaultCodec.FRAME_DATA_START, 1, 2, 3, 4, 5, 6, 7, 8, 9}));
 
         client.pipeline().write(Unpooled.wrappedBuffer(new byte[bytesSent]));
         client.pipeline().flush();

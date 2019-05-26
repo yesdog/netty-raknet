@@ -2,6 +2,7 @@ package network.ycc.raknet;
 
 import io.netty.bootstrap.Bootstrap;
 import io.netty.bootstrap.ServerBootstrap;
+import io.netty.buffer.Unpooled;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelOption;
@@ -10,9 +11,11 @@ import io.netty.channel.DefaultEventLoopGroup;
 import io.netty.channel.EventLoopGroup;
 import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.nio.NioDatagramChannel;
+import io.netty.handler.codec.CorruptedFrameException;
 
 import network.ycc.raknet.client.RakNetClient;
 import network.ycc.raknet.config.DefaultMagic;
+import network.ycc.raknet.packet.FrameSet;
 import network.ycc.raknet.packet.InvalidVersion;
 import network.ycc.raknet.server.RakNetServer;
 import network.ycc.raknet.utils.EmptyInit;
@@ -181,5 +184,10 @@ public class BehaviorTest {
             serverChannel.close().sync();
             clientChannel.close().sync();
         }
+    }
+
+    @Test(expected = CorruptedFrameException.class)
+    public void corruptFrameTest() throws Throwable {
+        FrameSet.read(Unpooled.wrappedBuffer(new byte[] {1, 2, 3, 4, 5, 6, 7, 8, 9}));
     }
 }
