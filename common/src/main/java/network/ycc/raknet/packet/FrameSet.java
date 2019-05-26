@@ -5,6 +5,7 @@ import java.util.function.Consumer;
 
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.ChannelPromise;
+import io.netty.handler.codec.CorruptedFrameException;
 import io.netty.util.AbstractReferenceCounted;
 import io.netty.util.Recycler;
 import io.netty.util.ReferenceCounted;
@@ -42,12 +43,18 @@ public final class FrameSet extends AbstractReferenceCounted implements Packet {
 
     public static FrameSet read(ByteBuf buf) {
         final FrameSet out = create();
-        buf.skipBytes(1);
-        out.seqId = buf.readUnsignedMediumLE();
-        while (buf.isReadable()) {
-            out.frames.add(Frame.read(buf));
+        try {
+            buf.skipBytes(1);
+            out.seqId = buf.readUnsignedMediumLE();
+            while (buf.isReadable()) {
+                out.frames.add(Frame.read(buf));
+            }
+            return out.retain();
+        } catch (IndexOutOfBoundsException e) {
+            throw new CorruptedFrameException("Failed to parse Frame", e);
+        } finally {
+            out.release();
         }
-        return out;
     }
 
     protected final ArrayList<Frame> frames = new ArrayList<>(8);
@@ -61,14 +68,20 @@ public final class FrameSet extends AbstractReferenceCounted implements Packet {
         setRefCnt(0);
     }
 
-    public void write(ByteBuf out) {
-        writeHeader(out);
-        frames.forEach(frame -> frame.write(out));
-    }
-
     @Override
     public int sizeHint() {
         return getRoughSize();
+    }
+
+    @Override
+    public FrameSet retain() {
+        super.retain();
+        return this;
+    }
+
+    public void write(ByteBuf out) {
+        writeHeader(out);
+        frames.forEach(frame -> frame.write(out));
     }
 
     protected void writeHeader(ByteBuf out) {

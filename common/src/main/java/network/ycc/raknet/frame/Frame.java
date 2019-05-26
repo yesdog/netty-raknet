@@ -32,40 +32,36 @@ public final class Frame extends AbstractReferenceCounted {
     protected static final int SPLIT_FLAG = 0x10;
 
     public static Frame read(ByteBuf buf) {
-        try {
-            final Frame out = createRaw();
-            final int flags = buf.readUnsignedByte();
-            final int bitLength = buf.readUnsignedShort();
-            final int length = (bitLength + Byte.SIZE - 1) / Byte.SIZE; //round up
-            final boolean hasSplit = (flags & SPLIT_FLAG) != 0;
-            final FramedPacket.Reliability reliability = FramedPacket.Reliability.get(flags >> 5);
-            int orderChannel = 0;
+        final Frame out = createRaw();
+        final int flags = buf.readUnsignedByte();
+        final int bitLength = buf.readUnsignedShort();
+        final int length = (bitLength + Byte.SIZE - 1) / Byte.SIZE; //round up
+        final boolean hasSplit = (flags & SPLIT_FLAG) != 0;
+        final FramedPacket.Reliability reliability = FramedPacket.Reliability.get(flags >> 5);
+        int orderChannel = 0;
 
-            if (reliability.isReliable) {
-                out.reliableIndex = buf.readUnsignedMediumLE();
-            }
-            if (reliability.isSequenced) {
-                out.sequenceIndex = buf.readUnsignedMediumLE();
-            }
-            if (reliability.isOrdered) {
-                out.orderIndex = buf.readUnsignedMediumLE();
-                orderChannel = buf.readUnsignedByte();
-            }
-            if (hasSplit) {
-                out.splitCount = buf.readInt();
-                out.splitID = buf.readUnsignedShort();
-                out.splitIndex = buf.readInt();
-                out.hasSplit = true;
-            }
-
-            out.packet = FrameData.read(buf, length, hasSplit);
-            out.packet.setReliability(reliability);
-            out.packet.setOrderChannel(orderChannel);
-
-            return out;
-        } catch (IndexOutOfBoundsException e) {
-            throw new CorruptedFrameException("Failed to parse Frame", e);
+        if (reliability.isReliable) {
+            out.reliableIndex = buf.readUnsignedMediumLE();
         }
+        if (reliability.isSequenced) {
+            out.sequenceIndex = buf.readUnsignedMediumLE();
+        }
+        if (reliability.isOrdered) {
+            out.orderIndex = buf.readUnsignedMediumLE();
+            orderChannel = buf.readUnsignedByte();
+        }
+        if (hasSplit) {
+            out.splitCount = buf.readInt();
+            out.splitID = buf.readUnsignedShort();
+            out.splitIndex = buf.readInt();
+            out.hasSplit = true;
+        }
+
+        out.packet = FrameData.read(buf, length, hasSplit);
+        out.packet.setReliability(reliability);
+        out.packet.setOrderChannel(orderChannel);
+
+        return out;
     }
 
     public static Frame create(FrameData packet) {

@@ -3,6 +3,7 @@ package network.ycc.raknet.pipeline;
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.ChannelHandler;
 import io.netty.channel.ChannelHandlerContext;
+import io.netty.handler.codec.CorruptedFrameException;
 import io.netty.handler.codec.MessageToMessageCodec;
 
 import network.ycc.raknet.RakNet;
@@ -32,7 +33,11 @@ public class RawPacketCodec extends MessageToMessageCodec<ByteBuf, Packet> {
     protected void decode(ChannelHandlerContext ctx, ByteBuf in, List<Object> out) throws Exception {
         if (in.readableBytes() != 0) {
             RakNet.metrics(ctx).bytesIn(in.readableBytes());
-            out.add(RakNet.config(ctx).getCodec().decode(in));
+            try {
+                out.add(RakNet.config(ctx).getCodec().decode(in));
+            } catch (CorruptedFrameException e) {
+                RakNet.metrics(ctx).frameError(1);
+            }
         }
     }
 

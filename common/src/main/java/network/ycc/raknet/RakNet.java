@@ -85,6 +85,7 @@ public class RakNet {
     public interface MetricsLogger {
         default void packetsIn(int delta) {}
         default void framesIn(int delta) {}
+        default void frameError(int delta) {}
         default void bytesIn(int delta) {}
         default void packetsOut(int delta) {}
         default void framesOut(int delta) {}
