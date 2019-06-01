@@ -31,8 +31,11 @@ public class DefaultCodec implements RakNet.Codec {
     public static final int SND_RECEIPT_LOSS = 0x0F;
     public static final int SERVER_HANDSHAKE = 0x10;
     public static final int CONNECTION_FAILED = 0x11;
+    public static final int ALREADY_CONNECTED = 0x12;
     public static final int CLIENT_HANDSHAKE = 0x13;
+    public static final int NO_FREE_CONNECTIONS = 0x14;
     public static final int CLIENT_DISCONNECT = 0x15;
+    public static final int CONNECTION_BANNED = 0x17;
     public static final int INVALID_VERSION = 0x19;
     public static final int UNCONNECTED_PONG = 0x1C;
     public static final int FRAME_DATA_START = 0x80;
@@ -57,8 +60,11 @@ public class DefaultCodec implements RakNet.Codec {
         register(CONNECTION_REQUEST,        ConnectionRequest.class,    ConnectionRequest::new);
         register(SERVER_HANDSHAKE,          ServerHandshake.class,      ServerHandshake::new);
         register(CONNECTION_FAILED,         ConnectionFailed.class,     ConnectionFailed::new);
+        register(ALREADY_CONNECTED,         AlreadyConnected.class,     AlreadyConnected::new);
         register(CLIENT_HANDSHAKE,          ClientHandshake.class,      ClientHandshake::new);
+        register(NO_FREE_CONNECTIONS,       NoFreeConnections.class,    NoFreeConnections::new);
         register(CLIENT_DISCONNECT,         Disconnect.class,           Disconnect::new);
+        register(CONNECTION_BANNED,         ConnectionBanned.class,     ConnectionBanned::new);
         register(INVALID_VERSION,           InvalidVersion.class,       InvalidVersion::new);
         register(UNCONNECTED_PONG,          UnconnectedPong.class,      UnconnectedPong::new);
         for (int i = FRAME_DATA_START ; i <= FRAME_DATA_END ; i++) {

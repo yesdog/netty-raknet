@@ -36,7 +36,7 @@ public class RawPacketCodec extends MessageToMessageCodec<ByteBuf, Packet> {
             try {
                 out.add(RakNet.config(ctx).getCodec().decode(in));
             } catch (CorruptedFrameException e) {
-                RakNet.metrics(ctx).frameError(1);
+                RakNet.metrics(ctx).frameError(1); //tolerate frame errors, they'll get resent.
             }
         }
     }

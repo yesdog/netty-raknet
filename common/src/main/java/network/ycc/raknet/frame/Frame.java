@@ -2,7 +2,6 @@ package network.ycc.raknet.frame;
 
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.ChannelPromise;
-import io.netty.handler.codec.CorruptedFrameException;
 import io.netty.util.AbstractReferenceCounted;
 import io.netty.util.Recycler;
 import io.netty.util.ReferenceCounted;

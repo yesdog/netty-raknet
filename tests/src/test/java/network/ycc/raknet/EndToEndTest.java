@@ -221,7 +221,7 @@ public class EndToEndTest {
         //TODO: new test loop for UNRELIABLE + RELIABLE
 
         try {
-            donePromise.get(15, TimeUnit.SECONDS);
+            donePromise.get(25, TimeUnit.SECONDS);
         } finally {
             server.close().sync();
             client.close().sync();
