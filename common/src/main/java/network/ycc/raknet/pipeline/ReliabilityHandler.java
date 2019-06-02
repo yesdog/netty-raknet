@@ -90,7 +90,7 @@ public class ReliabilityHandler extends ChannelDuplexHandler {
     }
 
     @Override
-    public void flush(ChannelHandlerContext ctx) throws Exception {
+    public void flush(ChannelHandlerContext ctx) {
         //all data sent in order of priority
         if (!ackSet.isEmpty()) {
             ctx.write(new Reliability.ACK(ackSet)).addListener(RakNet.INTERNAL_WRITE_LISTENER);
@@ -119,7 +119,7 @@ public class ReliabilityHandler extends ChannelDuplexHandler {
         produceFrameSets(ctx);
         updateBackPressure(ctx);
         Constants.packetLossCheck(pendingFrameSets.size(), "resend queue");
-        super.flush(ctx);
+        ctx.flush();
     }
 
     protected void readFrameSet(ChannelHandlerContext ctx, FrameSet frameSet) {

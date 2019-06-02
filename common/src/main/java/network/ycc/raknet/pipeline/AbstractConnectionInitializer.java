@@ -49,8 +49,8 @@ public abstract class AbstractConnectionInitializer extends SimpleChannelInbound
     protected void finish(ChannelHandlerContext ctx) {
         final Channel channel = ctx.channel();
         final ScheduledFuture<?> pingTask = ctx.channel().eventLoop().scheduleAtFixedRate(
-                () -> channel.writeAndFlush(new Ping()),
-                0, 100, TimeUnit.MILLISECONDS
+                () -> channel.write(new Ping()),
+                0, 250, TimeUnit.MILLISECONDS
         );
         connectPromise.trySuccess();
         channel.closeFuture().addListener(x -> pingTask.cancel(false));
