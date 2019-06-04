@@ -82,7 +82,6 @@ public class RakNetChildChannel extends AbstractChannel {
     }
 
     protected void doClose() {
-        pipeline().writeAndFlush(new Disconnect());
         open = false;
     }
 

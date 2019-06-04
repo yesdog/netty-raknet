@@ -32,12 +32,12 @@ public class ConnectionInitializer extends AbstractConnectionInitializer {
                 if (msg instanceof ConnectionRequest1) {
                     final ConnectionRequest1 cr1 = (ConnectionRequest1) msg;
                     cr1.getMagic().verify(config.getMagic());
+                    config.setMTU(cr1.getMtu());
                     if (cr1.getProtocolVersion() != config.getProtocolVersion()) {
                         final InvalidVersion packet = new InvalidVersion(config.getMagic(), config.getServerId());
                         ctx.writeAndFlush(packet).addListener(ChannelFutureListener.CLOSE);
                         return;
                     }
-                    config.setMTU(cr1.getMtu());
                 } else if (msg instanceof ConnectionRequest2) {
                     final ConnectionRequest2 cr2 = (ConnectionRequest2) msg;
                     cr2.getMagic().verify(config.getMagic());

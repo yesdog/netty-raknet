@@ -1,6 +1,7 @@
 package network.ycc.raknet.pipeline;
 
 import io.netty.channel.*;
+import io.netty.handler.codec.CodecException;
 import io.netty.handler.codec.CorruptedFrameException;
 import io.netty.util.ReferenceCountUtil;
 
@@ -12,6 +13,7 @@ import it.unimi.dsi.fastutil.objects.ObjectIterator;
 import it.unimi.dsi.fastutil.objects.ObjectRBTreeSet;
 import it.unimi.dsi.fastutil.objects.ObjectSortedSet;
 
+import network.ycc.raknet.packet.Disconnect;
 import network.ycc.raknet.packet.FrameSet;
 import network.ycc.raknet.packet.Reliability;
 import network.ycc.raknet.utils.Constants;
@@ -31,6 +33,7 @@ public class ReliabilityHandler extends ChannelDuplexHandler {
     protected final ObjectSortedSet<Frame> frameQueue = new ObjectRBTreeSet<>(Frame.COMPARATOR);
     protected final Int2ObjectMap<FrameSet> pendingFrameSets = new Int2ObjectOpenHashMap<>();
 
+    protected boolean wasOpen = true;
     protected int lastReceivedSeqId = 0;
     protected int nextSendSeqId = 0;
     protected int resendGauge = 0;
@@ -57,6 +60,15 @@ public class ReliabilityHandler extends ChannelDuplexHandler {
         pendingFrameSets.values().forEach(FrameSet::succeed);
         pendingFrameSets.values().forEach(FrameSet::release);
         pendingFrameSets.clear();
+    }
+
+    @Override
+    public void close(ChannelHandlerContext ctx, ChannelPromise promise) throws Exception {
+        if (wasOpen) {
+            wasOpen = false;
+            ctx.channel().writeAndFlush(new Disconnect());
+        }
+        super.close(ctx, promise);
     }
 
     @Override
@@ -91,6 +103,9 @@ public class ReliabilityHandler extends ChannelDuplexHandler {
 
     @Override
     public void flush(ChannelHandlerContext ctx) {
+        if (!ctx.channel().isOpen()) {
+            return;
+        }
         //all data sent in order of priority
         if (!ackSet.isEmpty()) {
             ctx.write(new Reliability.ACK(ackSet)).addListener(RakNet.INTERNAL_WRITE_LISTENER);
@@ -179,7 +194,6 @@ public class ReliabilityHandler extends ChannelDuplexHandler {
             throw new CorruptedFrameException("Finished frame larger than the MTU by " + (frame.getRoughPacketSize() - config.getMTU()));
         }
         frameQueue.add(frame);
-        Constants.packetLossCheck(frameQueue.size(), "frame queue");
     }
 
     protected void adjustResendGauge(int n) {
@@ -261,7 +275,9 @@ public class ReliabilityHandler extends ChannelDuplexHandler {
         final int queuedBytes = getQueuedBytes();
         final boolean oldWritable = ctx.channel().attr(RakNet.WRITABLE).get();
         boolean newWritable = oldWritable;
-        if (queuedBytes > config.getWriteBufferHighWaterMark()) {
+        if (queuedBytes > config.getMaxQueuedBytes()) {
+            throw new CodecException("Frame queue is too large");
+        } else if (queuedBytes > config.getWriteBufferHighWaterMark()) {
             newWritable = false;
         } else if (queuedBytes < config.getWriteBufferLowWaterMark()) {
             newWritable = true;

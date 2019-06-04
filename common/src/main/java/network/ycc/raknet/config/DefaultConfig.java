@@ -30,6 +30,7 @@ public class DefaultConfig extends DefaultChannelConfig implements RakNet.Config
     private volatile long retryDelayNanos = TimeUnit.NANOSECONDS.convert(100, TimeUnit.MILLISECONDS);
     private volatile int maxPendingFrameSets = 1024;
     private volatile int defaultPendingFrameSets = 64;
+    private volatile int maxQueuedBytes = 2 * 1024 * 1024;
     private volatile RakNet.Magic magic = DEFAULT_MAGIC;
     private volatile RakNet.Codec codec = DefaultCodec.INSTANCE;
     private volatile int protocolVersion = 9;
@@ -171,6 +172,14 @@ public class DefaultConfig extends DefaultChannelConfig implements RakNet.Config
 
     public void setDefaultPendingFrameSets(int defaultPendingFrameSets) {
         this.defaultPendingFrameSets = defaultPendingFrameSets;
+    }
+
+    public int getMaxQueuedBytes() {
+        return maxQueuedBytes;
+    }
+
+    public void setMaxQueuedBytes(int maxQueuedBytes) {
+        this.maxQueuedBytes = maxQueuedBytes;
     }
 
     public RakNet.Magic getMagic() {

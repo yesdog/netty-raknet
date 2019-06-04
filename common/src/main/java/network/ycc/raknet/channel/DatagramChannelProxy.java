@@ -5,6 +5,7 @@ import io.netty.channel.*;
 import io.netty.channel.socket.DatagramChannel;
 import io.netty.util.Attribute;
 import io.netty.util.AttributeKey;
+import io.netty.util.ReferenceCountUtil;
 
 import network.ycc.raknet.RakNet;
 import network.ycc.raknet.config.DefaultConfig;
@@ -218,6 +219,7 @@ public class DatagramChannelProxy implements Channel {
             @Override
             protected void onUnhandledInboundException(Throwable cause) {
                 if (cause instanceof ClosedChannelException) {
+                    ReferenceCountUtil.safeRelease(cause);
                     return;
                 }
                 super.onUnhandledInboundException(cause);

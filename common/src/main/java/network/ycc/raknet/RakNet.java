@@ -139,6 +139,9 @@ public class RakNet {
         int getDefaultPendingFrameSets();
         void setDefaultPendingFrameSets(int defaultPendingFrameSets);
 
+        int getMaxQueuedBytes();
+        void setMaxQueuedBytes(int maxQueuedBytes);
+
         Magic getMagic();
         void setMagic(Magic magic);
 
