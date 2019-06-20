@@ -30,12 +30,12 @@ public class DefaultConfig extends DefaultChannelConfig implements RakNet.Config
     private volatile long retryDelayNanos = TimeUnit.NANOSECONDS.convert(100, TimeUnit.MILLISECONDS);
     private volatile int maxPendingFrameSets = 1024;
     private volatile int defaultPendingFrameSets = 64;
-    private volatile int maxQueuedBytes = 2 * 1024 * 1024;
+    private volatile int maxQueuedBytes = 3 * 1024 * 1024;
     private volatile RakNet.Magic magic = DEFAULT_MAGIC;
     private volatile RakNet.Codec codec = DefaultCodec.INSTANCE;
     private volatile int protocolVersion = 9;
 
-    protected final DescriptiveStatistics stats = new DescriptiveStatistics(32);
+    protected final DescriptiveStatistics rttStats = new DescriptiveStatistics(32);
 
     public DefaultConfig(Channel channel) {
         super(channel);
@@ -140,20 +140,21 @@ public class DefaultConfig extends DefaultChannelConfig implements RakNet.Config
     }
 
     public long getRTTNanos() {
-        return (long) stats.getMean(); //ns
+        final long rtt = (long) rttStats.getMean();
+        return Math.max(rtt, 1);
     }
 
     public long getRTTStdDevNanos() {
-        return (long) stats.getStandardDeviation(); //ns
+        return (long) rttStats.getStandardDeviation(); //ns
     }
 
     public void setRTTNanos(long rtt) {
-        stats.clear();
-        stats.addValue(rtt);
+        rttStats.clear();
+        rttStats.addValue(rtt);
     }
 
     public void updateRTTNanos(long rttSample) {
-        stats.addValue(rttSample);
+        rttStats.addValue(rttSample);
         metrics.measureRTTns(getRTTNanos());
         metrics.measureRTTnsStdDev(getRTTStdDevNanos());
     }

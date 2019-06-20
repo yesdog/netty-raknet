@@ -41,34 +41,24 @@ public class ReliabilityHandler extends ChannelDuplexHandler {
     protected RakNet.Config config = null; //TODO: not really needed anymore
 
     @Override
-    public void handlerAdded(ChannelHandlerContext ctx) throws Exception {
+    public void handlerAdded(ChannelHandlerContext ctx) {
         config = RakNet.config(ctx);
         ctx.channel().attr(RakNet.WRITABLE).set(true);
-        super.handlerAdded(ctx);
     }
 
     @Override
-    public void handlerRemoved(ChannelHandlerContext ctx) throws Exception {
-        super.handlerRemoved(ctx);
-        frameQueue.forEach(frame -> {
-            if (frame.getPromise() != null) {
-                frame.getPromise().trySuccess();
-            }
-            frame.release();
-        });
-        frameQueue.clear();
-        pendingFrameSets.values().forEach(FrameSet::succeed);
-        pendingFrameSets.values().forEach(FrameSet::release);
-        pendingFrameSets.clear();
+    public void handlerRemoved(ChannelHandlerContext ctx) {
+        clearQueue(null);
     }
 
     @Override
-    public void close(ChannelHandlerContext ctx, ChannelPromise promise) throws Exception {
+    public void close(ChannelHandlerContext ctx, ChannelPromise promise) {
         if (wasOpen) {
             wasOpen = false;
+            clearQueue(null);
             ctx.channel().writeAndFlush(new Disconnect());
         }
-        super.close(ctx, promise);
+        ctx.close(promise);
     }
 
     @Override
@@ -135,6 +125,21 @@ public class ReliabilityHandler extends ChannelDuplexHandler {
         updateBackPressure(ctx);
         Constants.packetLossCheck(pendingFrameSets.size(), "resend queue");
         ctx.flush();
+    }
+
+    protected void clearQueue(Throwable t) {
+        if (t != null) {
+            frameQueue.forEach(frame -> {
+                if (frame.getPromise() != null) {
+                    frame.getPromise().tryFailure(t);
+                }
+            });
+            pendingFrameSets.values().forEach(set -> set.fail(t));
+        }
+        frameQueue.forEach(Frame::release);
+        frameQueue.clear();
+        pendingFrameSets.values().forEach(FrameSet::release);
+        pendingFrameSets.clear();
     }
 
     protected void readFrameSet(ChannelHandlerContext ctx, FrameSet frameSet) {
@@ -276,7 +281,10 @@ public class ReliabilityHandler extends ChannelDuplexHandler {
         final boolean oldWritable = ctx.channel().attr(RakNet.WRITABLE).get();
         boolean newWritable = oldWritable;
         if (queuedBytes > config.getMaxQueuedBytes()) {
-            throw new CodecException("Frame queue is too large");
+            final CodecException t = new CodecException("Frame queue is too large");
+            clearQueue(t);
+            ctx.close();
+            throw t;
         } else if (queuedBytes > config.getWriteBufferHighWaterMark()) {
             newWritable = false;
         } else if (queuedBytes < config.getWriteBufferLowWaterMark()) {

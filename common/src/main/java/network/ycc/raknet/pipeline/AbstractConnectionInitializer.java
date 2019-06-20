@@ -54,8 +54,13 @@ public abstract class AbstractConnectionInitializer extends SimpleChannelInbound
         );
         connectPromise.trySuccess();
         channel.closeFuture().addListener(x -> pingTask.cancel(false));
-        channel.pipeline().remove(this);
+        removeHandler(ctx);
         channel.pipeline().fireChannelActive();
+    }
+
+    protected void removeHandler(ChannelHandlerContext ctx) {
+        ctx.channel().pipeline().remove(this);
+        //ctx.channel().pipeline().replace(NAME, NAME, newForceDropHandler()); //TODO: post-connection re-connect termination?
     }
 
     protected void fail(Throwable cause) {

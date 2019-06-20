@@ -7,6 +7,8 @@ import network.ycc.raknet.RakNet;
 
 public class DefaultMagic implements RakNet.Magic {
 
+    //TODO: static cache?
+
     public static DefaultMagic decode(ByteBuf buf) {
         final byte[] magicData = new byte[16];
         buf.readBytes(magicData);
