@@ -60,6 +60,10 @@ public class ConnectionInitializer extends AbstractConnectionInitializer {
                 if (msg instanceof ClientHandshake) {
                     finish(ctx);
                     return;
+                } else if (msg instanceof ConnectionRequest1 || msg instanceof ConnectionRequest2) {
+                    // TODO: reconnect fail?
+                    ctx.close();
+                    throw new IllegalStateException("Connection sequence restarted");
                 }
                 break;
             }
