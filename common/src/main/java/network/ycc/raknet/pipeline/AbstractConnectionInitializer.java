@@ -24,7 +24,8 @@ public abstract class AbstractConnectionInitializer extends SimpleChannelInbound
         this.connectPromise = connectPromise;
     }
 
-    public abstract void sendRequest(ChannelHandlerContext ctx);
+    protected abstract void sendRequest(ChannelHandlerContext ctx);
+    protected abstract void removeHandler(ChannelHandlerContext ctx);
 
     @Override
     public void handlerAdded(ChannelHandlerContext ctx) {
@@ -46,21 +47,20 @@ public abstract class AbstractConnectionInitializer extends SimpleChannelInbound
         fail(cause);
     }
 
-    protected void finish(ChannelHandlerContext ctx) {
+    protected void startPing(ChannelHandlerContext ctx) {
         final Channel channel = ctx.channel();
         final ScheduledFuture<?> pingTask = ctx.channel().eventLoop().scheduleAtFixedRate(
                 () -> channel.write(new Ping()),
-                0, 250, TimeUnit.MILLISECONDS
+                0, 150, TimeUnit.MILLISECONDS
         );
-        connectPromise.trySuccess();
         channel.closeFuture().addListener(x -> pingTask.cancel(false));
-        removeHandler(ctx);
-        channel.pipeline().fireChannelActive();
     }
 
-    protected void removeHandler(ChannelHandlerContext ctx) {
-        ctx.channel().pipeline().remove(this);
-        //ctx.channel().pipeline().replace(NAME, NAME, newForceDropHandler()); //TODO: post-connection re-connect termination?
+    protected void finish(ChannelHandlerContext ctx) {
+        final Channel channel = ctx.channel();
+        connectPromise.trySuccess();
+        removeHandler(ctx);
+        channel.pipeline().fireChannelActive();
     }
 
     protected void fail(Throwable cause) {

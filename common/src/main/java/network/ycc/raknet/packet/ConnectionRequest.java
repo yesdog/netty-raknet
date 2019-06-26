@@ -2,7 +2,7 @@ package network.ycc.raknet.packet;
 
 import io.netty.buffer.ByteBuf;
 
-public class ConnectionRequest extends SimpleFramedPacket {
+public class ConnectionRequest extends SimpleFramedPacket implements Packet.ClientIdConnection {
 
     protected long clientId;
     protected long timestamp;

@@ -7,7 +7,7 @@ import network.ycc.raknet.config.DefaultMagic;
 
 import java.net.InetSocketAddress;
 
-public class ConnectionRequest2 extends SimplePacket implements Packet {
+public class ConnectionRequest2 extends SimplePacket implements Packet, Packet.ClientIdConnection {
 
     private RakNet.Magic magic;
     private int mtu;

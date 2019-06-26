@@ -3,6 +3,7 @@ package network.ycc.raknet.server.pipeline;
 import io.netty.channel.ChannelFutureListener;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelPromise;
+import io.netty.channel.SimpleChannelInboundHandler;
 
 import network.ycc.raknet.RakNet;
 import network.ycc.raknet.packet.ClientHandshake;
@@ -29,6 +30,9 @@ public class ConnectionInitializer extends AbstractConnectionInitializer {
     @Override
     public void channelRead0(ChannelHandlerContext ctx, Packet msg) {
         final RakNet.Config config = RakNet.config(ctx);
+        if (msg instanceof Packet.ClientIdConnection) {
+            processClientId(ctx, ((Packet.ClientIdConnection) msg).getClientId());
+        }
         switch (state) {
             case CR1:
                 if (msg instanceof ConnectionRequest1) {
@@ -44,7 +48,6 @@ public class ConnectionInitializer extends AbstractConnectionInitializer {
                     final ConnectionRequest2 cr2 = (ConnectionRequest2) msg;
                     cr2.getMagic().verify(config.getMagic());
                     config.setMTU(cr2.getMtu());
-                    processClientId(ctx, cr2.getClientId());
                     state = State.CR2;
                 }
                 break;
@@ -55,8 +58,8 @@ public class ConnectionInitializer extends AbstractConnectionInitializer {
                             (InetSocketAddress) ctx.channel().remoteAddress(),
                             cr.getTimestamp());
                     ctx.writeAndFlush(packet).addListener(RakNet.INTERNAL_WRITE_LISTENER);
-                    processClientId(ctx, cr.getClientId());
                     state = State.CR3;
+                    startPing(ctx);
                 }
                 break;
             }
@@ -72,6 +75,16 @@ public class ConnectionInitializer extends AbstractConnectionInitializer {
         }
 
         sendRequest(ctx);
+    }
+
+    protected void removeHandler(ChannelHandlerContext ctx)  {
+        ctx.channel().pipeline().replace(NAME, NAME, new SimpleChannelInboundHandler<Packet.ClientIdConnection>() {
+            protected void channelRead0(ChannelHandlerContext ctx, Packet.ClientIdConnection msg) {
+                if (msg instanceof Packet.ClientIdConnection) {
+                    processClientId(ctx, msg.getClientId());
+                }
+            }
+        });
     }
 
     @SuppressWarnings("unchecked")

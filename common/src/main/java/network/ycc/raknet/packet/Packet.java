@@ -6,4 +6,8 @@ public interface Packet {
         return 128;
     }
 
+    interface ClientIdConnection extends Packet {
+        long getClientId();
+    }
+
 }

@@ -60,6 +60,7 @@ public class ConnectionInitializer extends AbstractConnectionInitializer {
                     final Packet packet = new ClientHandshake(((ServerHandshake) msg).getTimestamp(),
                             (InetSocketAddress) ctx.channel().remoteAddress(), ((ServerHandshake) msg).getnExtraAddresses());
                     ctx.writeAndFlush(packet).addListener(RakNet.INTERNAL_WRITE_LISTENER);
+                    startPing(ctx);
                     finish(ctx);
                     return;
                 }
@@ -70,6 +71,10 @@ public class ConnectionInitializer extends AbstractConnectionInitializer {
         }
 
         sendRequest(ctx);
+    }
+
+    protected void removeHandler(ChannelHandlerContext ctx) {
+        ctx.channel().pipeline().remove(this);
     }
 
     public void sendRequest(ChannelHandlerContext ctx) {

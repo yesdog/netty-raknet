@@ -21,8 +21,8 @@ public class RakNetClient extends RakNet {
             .addLast(FlushTickHandler.NAME,         new FlushTickHandler())
             .addLast(RawPacketCodec.NAME,           RawPacketCodec.INSTANCE)
             .addLast(                               ReliableFrameHandling.INSTANCE)
-            .addLast(ConnectionInitializer.NAME,    new ChannelInboundHandlerAdapter()) //replace later
-            .addLast(                               PacketHandling.INSTANCE);
+            .addLast(                               PacketHandling.INSTANCE)
+            .addLast(ConnectionInitializer.NAME,    new ChannelInboundHandlerAdapter()); //will be removed
         }
     }
 
