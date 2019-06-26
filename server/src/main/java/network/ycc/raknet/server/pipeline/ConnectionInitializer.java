@@ -23,6 +23,8 @@ public class ConnectionInitializer extends AbstractConnectionInitializer {
         super(connectPromise);
     }
 
+    protected boolean clientIdSet = false;
+
     @SuppressWarnings("unchecked")
     @Override
     public void channelRead0(ChannelHandlerContext ctx, Packet msg) {
@@ -42,16 +44,18 @@ public class ConnectionInitializer extends AbstractConnectionInitializer {
                     final ConnectionRequest2 cr2 = (ConnectionRequest2) msg;
                     cr2.getMagic().verify(config.getMagic());
                     config.setMTU(cr2.getMtu());
-                    config.setClientId(cr2.getClientId());
+                    processClientId(ctx, cr2.getClientId());
                     state = State.CR2;
                 }
                 break;
             case CR2: {
                 if (msg instanceof ConnectionRequest) {
+                    final ConnectionRequest cr = (ConnectionRequest) msg;
                     final Packet packet = new ServerHandshake(
                             (InetSocketAddress) ctx.channel().remoteAddress(),
-                            ((ConnectionRequest) msg).getTimestamp());
+                            cr.getTimestamp());
                     ctx.writeAndFlush(packet).addListener(RakNet.INTERNAL_WRITE_LISTENER);
+                    processClientId(ctx, cr.getClientId());
                     state = State.CR3;
                 }
                 break;
@@ -60,10 +64,6 @@ public class ConnectionInitializer extends AbstractConnectionInitializer {
                 if (msg instanceof ClientHandshake) {
                     finish(ctx);
                     return;
-                } else if (msg instanceof ConnectionRequest1 || msg instanceof ConnectionRequest2) {
-                    // TODO: reconnect fail?
-                    ctx.close();
-                    throw new IllegalStateException("Connection sequence restarted");
                 }
                 break;
             }
@@ -93,6 +93,18 @@ public class ConnectionInitializer extends AbstractConnectionInitializer {
                 break; // NOOP - ServerHandshake is sent as reliable.
             default:
                 throw new IllegalStateException("Unknown state " + state);
+        }
+    }
+
+    protected void processClientId(ChannelHandlerContext ctx, long clientId) {
+        final RakNet.Config config = RakNet.config(ctx);
+        if (!clientIdSet) {
+            config.setClientId(clientId);
+            clientIdSet = true;
+            return;
+        } else if (config.getClientId() != clientId) {
+            ctx.close();
+            throw new IllegalStateException("Connection sequence restarted");
         }
     }
 }
