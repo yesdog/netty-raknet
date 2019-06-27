@@ -1,7 +1,7 @@
 package network.ycc.raknet.packet;
 
-import java.util.ArrayList;
-import java.util.function.Consumer;
+import network.ycc.raknet.config.DefaultCodec;
+import network.ycc.raknet.frame.Frame;
 
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.ChannelPromise;
@@ -13,8 +13,8 @@ import io.netty.util.ResourceLeakDetector;
 import io.netty.util.ResourceLeakDetectorFactory;
 import io.netty.util.ResourceLeakTracker;
 
-import network.ycc.raknet.config.DefaultCodec;
-import network.ycc.raknet.frame.Frame;
+import java.util.ArrayList;
+import java.util.function.Consumer;
 
 public final class FrameSet extends AbstractReferenceCounted implements Packet {
 
@@ -28,6 +28,15 @@ public final class FrameSet extends AbstractReferenceCounted implements Packet {
             return new FrameSet(handle);
         }
     };
+    protected final ArrayList<Frame> frames = new ArrayList<>(8);
+    protected final Recycler.Handle<FrameSet> handle;
+    protected int seqId;
+    protected long sentTime;
+    protected ResourceLeakTracker<FrameSet> tracker;
+    private FrameSet(Recycler.Handle<FrameSet> handle) {
+        this.handle = handle;
+        setRefCnt(0);
+    }
 
     @SuppressWarnings("unchecked")
     public static FrameSet create() {
@@ -57,17 +66,6 @@ public final class FrameSet extends AbstractReferenceCounted implements Packet {
         }
     }
 
-    protected final ArrayList<Frame> frames = new ArrayList<>(8);
-    protected final Recycler.Handle<FrameSet> handle;
-    protected int seqId;
-    protected long sentTime;
-    protected ResourceLeakTracker<FrameSet> tracker;
-
-    private FrameSet(Recycler.Handle<FrameSet> handle) {
-        this.handle = handle;
-        setRefCnt(0);
-    }
-
     @Override
     public int sizeHint() {
         return getRoughSize();
@@ -77,6 +75,16 @@ public final class FrameSet extends AbstractReferenceCounted implements Packet {
     public FrameSet retain() {
         super.retain();
         return this;
+    }
+
+    protected void deallocate() {
+        frames.forEach(Frame::release);
+        frames.clear();
+        if (tracker != null) {
+            tracker.close(this);
+            tracker = null;
+        }
+        handle.recycle(this);
     }
 
     public void write(ByteBuf out) {
@@ -107,16 +115,6 @@ public final class FrameSet extends AbstractReferenceCounted implements Packet {
                 frame.setPromise(null);
             }
         });
-    }
-
-    protected void deallocate() {
-        frames.forEach(Frame::release);
-        frames.clear();
-        if (tracker != null) {
-            tracker.close(this);
-            tracker = null;
-        }
-        handle.recycle(this);
     }
 
     public ReferenceCounted touch(Object hint) {

@@ -18,17 +18,17 @@ public class ConnectionRequest extends SimpleFramedPacket implements Packet.Clie
     }
 
     @Override
-    public void decode(ByteBuf buf) {
-        clientId = buf.readLong(); //client id
-        timestamp = buf.readLong();
-        buf.readBoolean(); //use security
-    }
-
-    @Override
     public void encode(ByteBuf buf) {
         buf.writeLong(clientId);
         buf.writeLong(timestamp);
         buf.writeBoolean(false);
+    }
+
+    @Override
+    public void decode(ByteBuf buf) {
+        clientId = buf.readLong(); //client id
+        timestamp = buf.readLong();
+        buf.readBoolean(); //use security
     }
 
     public long getClientId() {

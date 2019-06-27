@@ -1,14 +1,14 @@
 package network.ycc.raknet.pipeline;
 
-import java.util.List;
+import network.ycc.raknet.RakNet;
+import network.ycc.raknet.frame.Frame;
+import network.ycc.raknet.packet.FrameSet;
+import network.ycc.raknet.utils.UINT;
 
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.codec.MessageToMessageEncoder;
 
-import network.ycc.raknet.packet.FrameSet;
-import network.ycc.raknet.utils.UINT;
-import network.ycc.raknet.RakNet;
-import network.ycc.raknet.frame.Frame;
+import java.util.List;
 
 public class FrameSplitter extends MessageToMessageEncoder<Frame> {
 

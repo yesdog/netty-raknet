@@ -1,9 +1,5 @@
 package network.ycc.raknet.client.pipeline;
 
-import io.netty.channel.ChannelException;
-import io.netty.channel.ChannelHandlerContext;
-import io.netty.channel.ChannelPromise;
-
 import network.ycc.raknet.RakNet;
 import network.ycc.raknet.packet.ClientHandshake;
 import network.ycc.raknet.packet.ConnectionFailed;
@@ -16,6 +12,10 @@ import network.ycc.raknet.packet.InvalidVersion;
 import network.ycc.raknet.packet.Packet;
 import network.ycc.raknet.packet.ServerHandshake;
 import network.ycc.raknet.pipeline.AbstractConnectionInitializer;
+
+import io.netty.channel.ChannelException;
+import io.netty.channel.ChannelHandlerContext;
+import io.netty.channel.ChannelPromise;
 
 import java.net.InetSocketAddress;
 
@@ -57,8 +57,10 @@ public class ConnectionInitializer extends AbstractConnectionInitializer {
             }
             case CR3: {
                 if (msg instanceof ServerHandshake) {
-                    final Packet packet = new ClientHandshake(((ServerHandshake) msg).getTimestamp(),
-                            (InetSocketAddress) ctx.channel().remoteAddress(), ((ServerHandshake) msg).getnExtraAddresses());
+                    final Packet packet = new ClientHandshake(
+                            ((ServerHandshake) msg).getTimestamp(),
+                            (InetSocketAddress) ctx.channel().remoteAddress(),
+                            ((ServerHandshake) msg).getnExtraAddresses());
                     ctx.writeAndFlush(packet).addListener(RakNet.INTERNAL_WRITE_LISTENER);
                     startPing(ctx);
                     finish(ctx);
@@ -73,13 +75,9 @@ public class ConnectionInitializer extends AbstractConnectionInitializer {
         sendRequest(ctx);
     }
 
-    protected void removeHandler(ChannelHandlerContext ctx) {
-        ctx.channel().pipeline().remove(this);
-    }
-
     public void sendRequest(ChannelHandlerContext ctx) {
         final RakNet.Config config = RakNet.config(ctx);
-        switch(state) {
+        switch (state) {
             case CR1: {
                 final Packet packet = new ConnectionRequest1(config.getMagic(),
                         config.getProtocolVersion(), config.getMTU());
@@ -97,6 +95,10 @@ public class ConnectionInitializer extends AbstractConnectionInitializer {
             default:
                 throw new IllegalStateException("Unknown state " + state);
         }
+    }
+
+    protected void removeHandler(ChannelHandlerContext ctx) {
+        ctx.channel().pipeline().remove(this);
     }
 
 }

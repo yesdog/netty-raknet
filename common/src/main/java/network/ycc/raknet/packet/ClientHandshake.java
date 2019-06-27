@@ -19,7 +19,8 @@ public class ClientHandshake extends SimpleFramedPacket {
         this(pongTimestamp, System.nanoTime(), address, nExtraAddresses);
     }
 
-    public ClientHandshake(long pongTimestamp, long timestamp, InetSocketAddress address, int nExtraAddresses) {
+    public ClientHandshake(long pongTimestamp, long timestamp, InetSocketAddress address,
+            int nExtraAddresses) {
         this();
         this.pongTimestamp = pongTimestamp;
         this.timestamp = timestamp;
@@ -28,23 +29,23 @@ public class ClientHandshake extends SimpleFramedPacket {
     }
 
     @Override
-    public void decode(ByteBuf buf) {
-        address = readAddress(buf);
-        for (nExtraAddresses = 0 ; buf.readableBytes() > 16 ; nExtraAddresses++) {
-            readAddress(buf);
-        }
-        pongTimestamp = buf.readLong();
-        timestamp = buf.readLong();
-    }
-
-    @Override
     public void encode(ByteBuf buf) {
         writeAddress(buf, address);
-        for (int i = 0 ; i < nExtraAddresses ; i++) {
+        for (int i = 0; i < nExtraAddresses; i++) {
             writeAddress(buf);
         }
         buf.writeLong(pongTimestamp);
         buf.writeLong(timestamp);
+    }
+
+    @Override
+    public void decode(ByteBuf buf) {
+        address = readAddress(buf);
+        for (nExtraAddresses = 0; buf.readableBytes() > 16; nExtraAddresses++) {
+            readAddress(buf);
+        }
+        pongTimestamp = buf.readLong();
+        timestamp = buf.readLong();
     }
 
     public long getPongTimestamp() {

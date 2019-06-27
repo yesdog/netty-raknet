@@ -1,9 +1,9 @@
 package network.ycc.raknet.packet;
 
-import io.netty.buffer.ByteBuf;
-
 import network.ycc.raknet.RakNet;
 import network.ycc.raknet.config.DefaultMagic;
+
+import io.netty.buffer.ByteBuf;
 
 public class ConnectionRequest1 extends SimplePacket implements Packet {
 
@@ -11,7 +11,8 @@ public class ConnectionRequest1 extends SimplePacket implements Packet {
     private int protocolVersion;
     private int mtu;
 
-    public ConnectionRequest1() {}
+    public ConnectionRequest1() {
+    }
 
     public ConnectionRequest1(RakNet.Magic magic, int protocolVersion, int mtu) {
         this.magic = magic;
@@ -19,18 +20,18 @@ public class ConnectionRequest1 extends SimplePacket implements Packet {
         this.mtu = mtu;
     }
 
-    public void decode(ByteBuf buf) {
-        magic = DefaultMagic.decode(buf);
-        protocolVersion = buf.readByte();
-        mtu = buf.readableBytes();
-        buf.skipBytes(mtu);
-    }
-
     public void encode(ByteBuf buf) {
         magic.write(buf);
         buf.writeByte(protocolVersion);
         buf.ensureWritable(mtu);
         buf.writerIndex(buf.writerIndex() + mtu);
+    }
+
+    public void decode(ByteBuf buf) {
+        magic = DefaultMagic.decode(buf);
+        protocolVersion = buf.readByte();
+        mtu = buf.readableBytes();
+        buf.skipBytes(mtu);
     }
 
     public RakNet.Magic getMagic() {

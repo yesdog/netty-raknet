@@ -1,11 +1,11 @@
 package network.ycc.raknet.pipeline;
 
+import network.ycc.raknet.RakNet;
+import network.ycc.raknet.packet.Pong;
+
 import io.netty.channel.ChannelHandler;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.SimpleChannelInboundHandler;
-
-import network.ycc.raknet.packet.Pong;
-import network.ycc.raknet.RakNet;
 
 @ChannelHandler.Sharable
 public class PongHandler extends SimpleChannelInboundHandler<Pong> {

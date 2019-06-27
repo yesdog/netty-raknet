@@ -1,25 +1,27 @@
 package network.ycc.raknet.server.pipeline;
 
+import network.ycc.raknet.RakNet;
+import network.ycc.raknet.packet.FramedPacket;
+import network.ycc.raknet.packet.Packet;
+
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.SimpleChannelInboundHandler;
 import io.netty.channel.socket.DatagramPacket;
 import io.netty.util.ReferenceCountUtil;
 
-import network.ycc.raknet.RakNet;
-import network.ycc.raknet.packet.FramedPacket;
-import network.ycc.raknet.packet.Packet;
-
 import java.net.InetSocketAddress;
 
-public abstract class UdpPacketHandler<T extends Packet> extends SimpleChannelInboundHandler<DatagramPacket> {
+public abstract class UdpPacketHandler<T extends Packet> extends
+        SimpleChannelInboundHandler<DatagramPacket> {
 
     private final Class<T> type;
     private int packetId;
 
     public UdpPacketHandler(Class<T> type) {
         if (FramedPacket.class.isAssignableFrom(type)) {
-            throw new IllegalArgumentException("Framed packet types cannot be directly handled by UdpPacketHandler");
+            throw new IllegalArgumentException(
+                    "Framed packet types cannot be directly handled by UdpPacketHandler");
         }
         this.type = type;
     }
@@ -27,7 +29,7 @@ public abstract class UdpPacketHandler<T extends Packet> extends SimpleChannelIn
     protected abstract void handle(ChannelHandlerContext ctx, InetSocketAddress sender, T packet);
 
     @Override
-    public void handlerAdded(ChannelHandlerContext ctx) throws Exception {
+    public void handlerAdded(ChannelHandlerContext ctx) {
         final RakNet.Config config = RakNet.config(ctx);
         packetId = config.getCodec().packetIdFor(type);
         if (packetId == -1) {

@@ -1,9 +1,9 @@
 package network.ycc.raknet.packet;
 
-import io.netty.buffer.ByteBuf;
-
 import network.ycc.raknet.RakNet;
 import network.ycc.raknet.config.DefaultMagic;
+
+import io.netty.buffer.ByteBuf;
 
 import java.net.InetSocketAddress;
 
@@ -14,21 +14,15 @@ public class ConnectionRequest2 extends SimplePacket implements Packet, Packet.C
     private long clientId;
     private InetSocketAddress address;
 
-    public ConnectionRequest2() {}
+    public ConnectionRequest2() {
+    }
 
-    public ConnectionRequest2(RakNet.Magic magic, int mtu, long clientId, InetSocketAddress address) {
+    public ConnectionRequest2(RakNet.Magic magic, int mtu, long clientId,
+            InetSocketAddress address) {
         this.magic = magic;
         this.mtu = mtu;
         this.clientId = clientId;
         this.address = address;
-    }
-
-    @Override
-    public void decode(ByteBuf buf) {
-        magic = DefaultMagic.decode(buf);
-        address = readAddress(buf);
-        mtu = buf.readShort();
-        clientId = buf.readLong();
     }
 
     @Override
@@ -37,6 +31,14 @@ public class ConnectionRequest2 extends SimplePacket implements Packet, Packet.C
         writeAddress(buf, address);
         buf.writeShort(mtu);
         buf.writeLong(clientId);
+    }
+
+    @Override
+    public void decode(ByteBuf buf) {
+        magic = DefaultMagic.decode(buf);
+        address = readAddress(buf);
+        mtu = buf.readShort();
+        clientId = buf.readLong();
     }
 
     public RakNet.Magic getMagic() {

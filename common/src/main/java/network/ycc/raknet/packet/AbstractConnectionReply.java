@@ -10,7 +10,8 @@ public abstract class AbstractConnectionReply extends SimplePacket {
     protected int mtu;
     protected long serverId;
 
-    public AbstractConnectionReply() {}
+    public AbstractConnectionReply() {
+    }
 
     public AbstractConnectionReply(RakNet.Magic magic, int mtu, long serverId) {
         this.magic = magic;

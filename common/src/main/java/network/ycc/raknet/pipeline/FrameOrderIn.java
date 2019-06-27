@@ -1,23 +1,25 @@
 package network.ycc.raknet.pipeline;
 
-import java.util.Arrays;
-import java.util.List;
+import network.ycc.raknet.frame.Frame;
+import network.ycc.raknet.packet.FramedPacket;
+import network.ycc.raknet.utils.Constants;
+import network.ycc.raknet.utils.UINT;
 
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.codec.MessageToMessageDecoder;
 import io.netty.util.ReferenceCountUtil;
+
+import java.util.Arrays;
+import java.util.List;
+
 import it.unimi.dsi.fastutil.ints.Int2ObjectOpenHashMap;
-import network.ycc.raknet.packet.FramedPacket;
-import network.ycc.raknet.utils.Constants;
-import network.ycc.raknet.utils.UINT;
-import network.ycc.raknet.frame.Frame;
 
 public class FrameOrderIn extends MessageToMessageDecoder<Frame> {
 
     public static final String NAME = "rn-order-in";
 
     protected final OrderedChannelPacketQueue[] channels = new OrderedChannelPacketQueue[8];
-    
+
     public FrameOrderIn() {
         for (int i = 0; i < channels.length; i++) {
             channels[i] = new OrderedChannelPacketQueue();

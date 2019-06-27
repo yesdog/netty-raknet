@@ -1,9 +1,9 @@
 package network.ycc.raknet.packet;
 
-import io.netty.buffer.ByteBuf;
-
 import network.ycc.raknet.RakNet;
 import network.ycc.raknet.config.DefaultMagic;
+
+import io.netty.buffer.ByteBuf;
 
 public class ConnectionBanned extends SimplePacket implements Packet {
 
@@ -19,14 +19,14 @@ public class ConnectionBanned extends SimplePacket implements Packet {
         this.serverId = serverId;
     }
 
-    public void decode(ByteBuf buf) {
-        magic = DefaultMagic.decode(buf);
-        serverId = buf.readLong();
-    }
-
     public void encode(ByteBuf buf) {
         magic.write(buf);
         buf.writeLong(serverId);
+    }
+
+    public void decode(ByteBuf buf) {
+        magic = DefaultMagic.decode(buf);
+        serverId = buf.readLong();
     }
 
     public RakNet.Magic getMagic() {
@@ -44,5 +44,5 @@ public class ConnectionBanned extends SimplePacket implements Packet {
     public void setServerId(long serverId) {
         this.serverId = serverId;
     }
-    
+
 }

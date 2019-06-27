@@ -1,17 +1,16 @@
 package network.ycc.raknet.server.pipeline;
 
-import io.netty.buffer.ByteBuf;
-import io.netty.channel.Channel;
-import io.netty.channel.ChannelFutureListener;
-import io.netty.channel.ChannelHandlerContext;
-import io.netty.channel.socket.DatagramPacket;
-import io.netty.util.ReferenceCountUtil;
-
 import network.ycc.raknet.RakNet;
 import network.ycc.raknet.packet.ConnectionReply1;
 import network.ycc.raknet.packet.ConnectionRequest1;
 import network.ycc.raknet.packet.InvalidVersion;
 import network.ycc.raknet.packet.Packet;
+
+import io.netty.buffer.ByteBuf;
+import io.netty.channel.ChannelFutureListener;
+import io.netty.channel.ChannelHandlerContext;
+import io.netty.channel.socket.DatagramPacket;
+import io.netty.util.ReferenceCountUtil;
 
 import java.net.InetSocketAddress;
 
@@ -24,22 +23,24 @@ public class ConnectionListener extends UdpPacketHandler<ConnectionRequest1> {
     }
 
     @SuppressWarnings("unchecked")
-    protected void handle(ChannelHandlerContext ctx, InetSocketAddress sender, ConnectionRequest1 request) {
+    protected void handle(ChannelHandlerContext ctx, InetSocketAddress sender,
+            ConnectionRequest1 request) {
         final RakNet.Config config = RakNet.config(ctx);
         final Packet response;
         if (request.getProtocolVersion() == config.getProtocolVersion()) {
-            response = new ConnectionReply1(config.getMagic(), request.getMtu(), config.getServerId());
+            response = new ConnectionReply1(config.getMagic(), request.getMtu(),
+                    config.getServerId());
             ReferenceCountUtil.retain(request);
             //use connect to create a new child for this remote address
             ctx.connect(sender).addListeners(
-                ChannelFutureListener.FIRE_EXCEPTION_ON_FAILURE,
-                future -> {
-                    if (future.isSuccess()) {
-                        resendRequest(ctx, sender, (ConnectionReply1) response);
-                    } else {
-                        ReferenceCountUtil.safeRelease(request);
+                    ChannelFutureListener.FIRE_EXCEPTION_ON_FAILURE,
+                    future -> {
+                        if (future.isSuccess()) {
+                            resendRequest(ctx, sender, (ConnectionReply1) response);
+                        } else {
+                            ReferenceCountUtil.safeRelease(request);
+                        }
                     }
-                }
             );
         } else {
             response = new InvalidVersion(config.getMagic(), config.getServerId());
@@ -47,7 +48,8 @@ public class ConnectionListener extends UdpPacketHandler<ConnectionRequest1> {
         sendResponse(ctx, sender, response);
     }
 
-    protected void sendResponse(ChannelHandlerContext ctx, InetSocketAddress sender, Packet packet) {
+    protected void sendResponse(ChannelHandlerContext ctx, InetSocketAddress sender,
+            Packet packet) {
         final RakNet.Config config = RakNet.config(ctx);
         final ByteBuf buf = ctx.alloc().ioBuffer(packet.sizeHint());
         try {
@@ -60,7 +62,8 @@ public class ConnectionListener extends UdpPacketHandler<ConnectionRequest1> {
         }
     }
 
-    protected void resendRequest(ChannelHandlerContext ctx, InetSocketAddress sender, ConnectionReply1 request) {
+    protected void resendRequest(ChannelHandlerContext ctx, InetSocketAddress sender,
+            ConnectionReply1 request) {
         final RakNet.Config config = RakNet.config(ctx);
         final ByteBuf buf = ctx.alloc().ioBuffer(request.sizeHint());
         try {

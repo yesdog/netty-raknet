@@ -1,13 +1,18 @@
 package network.ycc.raknet.server.channel;
 
-import io.netty.channel.*;
+import network.ycc.raknet.channel.DatagramChannelProxy;
+import network.ycc.raknet.server.RakNetServer;
+
+import io.netty.channel.Channel;
+import io.netty.channel.ChannelDuplexHandler;
+import io.netty.channel.ChannelHandler;
+import io.netty.channel.ChannelHandlerContext;
+import io.netty.channel.ChannelPromise;
+import io.netty.channel.ServerChannel;
 import io.netty.channel.socket.DatagramChannel;
 import io.netty.channel.socket.DatagramPacket;
 import io.netty.channel.socket.nio.NioDatagramChannel;
 import io.netty.util.ReferenceCountUtil;
-
-import network.ycc.raknet.channel.DatagramChannelProxy;
-import network.ycc.raknet.server.RakNetServer;
 
 import java.net.InetSocketAddress;
 import java.net.SocketAddress;
@@ -35,8 +40,8 @@ public class RakNetServerChannel extends DatagramChannelProxy implements ServerC
 
     protected void addDefaultPipeline() {
         pipeline()
-        .addLast(newServerHandler())
-        .addLast(RakNetServer.DefaultDatagramInitializer.INSTANCE);
+                .addLast(newServerHandler())
+                .addLast(RakNetServer.DefaultDatagramInitializer.INSTANCE);
     }
 
     protected ChannelHandler newServerHandler() {
@@ -50,14 +55,17 @@ public class RakNetServerChannel extends DatagramChannelProxy implements ServerC
     protected class ServerHandler extends ChannelDuplexHandler {
         @Override
         public void connect(ChannelHandlerContext ctx, SocketAddress remoteAddress,
-                            SocketAddress localAddress, ChannelPromise promise) throws Exception {
+                SocketAddress localAddress, ChannelPromise promise) {
             //TODO: session limit check
             try {
-                if (localAddress != null && !RakNetServerChannel.this.localAddress().equals(localAddress)) {
-                    throw new IllegalArgumentException("Bound localAddress does not match provided " + localAddress);
+                if (localAddress != null && !RakNetServerChannel.this.localAddress()
+                        .equals(localAddress)) {
+                    throw new IllegalArgumentException(
+                            "Bound localAddress does not match provided " + localAddress);
                 }
                 if (!(remoteAddress instanceof InetSocketAddress)) {
-                    throw new IllegalArgumentException("Provided remote address is not an InetSocketAddress");
+                    throw new IllegalArgumentException(
+                            "Provided remote address is not an InetSocketAddress");
                 }
                 if (!childMap.containsKey(remoteAddress)) {
                     final RakNetChildChannel child = newChild((InetSocketAddress) remoteAddress);

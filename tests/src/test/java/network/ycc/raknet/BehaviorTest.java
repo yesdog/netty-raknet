@@ -1,5 +1,12 @@
 package network.ycc.raknet;
 
+import network.ycc.raknet.client.RakNetClient;
+import network.ycc.raknet.config.DefaultMagic;
+import network.ycc.raknet.packet.FrameSet;
+import network.ycc.raknet.packet.InvalidVersion;
+import network.ycc.raknet.server.RakNetServer;
+import network.ycc.raknet.utils.EmptyInit;
+
 import io.netty.bootstrap.Bootstrap;
 import io.netty.bootstrap.ServerBootstrap;
 import io.netty.buffer.Unpooled;
@@ -13,18 +20,11 @@ import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.nio.NioDatagramChannel;
 import io.netty.handler.codec.CorruptedFrameException;
 
-import network.ycc.raknet.client.RakNetClient;
-import network.ycc.raknet.config.DefaultMagic;
-import network.ycc.raknet.packet.FrameSet;
-import network.ycc.raknet.packet.InvalidVersion;
-import network.ycc.raknet.server.RakNetServer;
-import network.ycc.raknet.utils.EmptyInit;
+import java.net.InetSocketAddress;
+import java.nio.channels.UnsupportedAddressTypeException;
 
 import org.junit.Assert;
 import org.junit.Test;
-
-import java.net.InetSocketAddress;
-import java.nio.channels.UnsupportedAddressTypeException;
 
 public class BehaviorTest {
     final EventLoopGroup ioGroup = new NioEventLoopGroup();
@@ -64,17 +64,17 @@ public class BehaviorTest {
     @Test(expected = RakNet.Magic.MagicMismatchException.class)
     public void badMagicClient() throws Throwable {
         final Channel serverChannel = new ServerBootstrap()
-        .group(ioGroup, childGroup)
-        .channel(RakNetServer.CHANNEL)
-        .childHandler(new EmptyInit())
-        .bind(localhost).sync().channel();
+                .group(ioGroup, childGroup)
+                .channel(RakNetServer.CHANNEL)
+                .childHandler(new EmptyInit())
+                .bind(localhost).sync().channel();
 
         final ChannelFuture clientConnect = new Bootstrap()
-        .group(ioGroup)
-        .channel(RakNetClient.CHANNEL)
-        .option(RakNet.MAGIC, badMagic)
-        .handler(new EmptyInit())
-        .connect(localhost);
+                .group(ioGroup)
+                .channel(RakNetClient.CHANNEL)
+                .option(RakNet.MAGIC, badMagic)
+                .handler(new EmptyInit())
+                .connect(localhost);
 
         final Channel clientChannel = clientConnect.channel();
 
@@ -89,17 +89,17 @@ public class BehaviorTest {
     @Test(expected = RakNet.Magic.MagicMismatchException.class)
     public void badMagicServer() throws Throwable {
         final Channel serverChannel = new ServerBootstrap()
-        .group(ioGroup, childGroup)
-        .channel(RakNetServer.CHANNEL)
-        .option(RakNet.MAGIC, badMagic)
-        .childHandler(new EmptyInit())
-        .bind(localhost).sync().channel();
+                .group(ioGroup, childGroup)
+                .channel(RakNetServer.CHANNEL)
+                .option(RakNet.MAGIC, badMagic)
+                .childHandler(new EmptyInit())
+                .bind(localhost).sync().channel();
 
         final ChannelFuture clientConnect = new Bootstrap()
-        .group(ioGroup)
-        .channel(RakNetClient.CHANNEL)
-        .handler(new EmptyInit())
-        .connect(localhost);
+                .group(ioGroup)
+                .channel(RakNetClient.CHANNEL)
+                .handler(new EmptyInit())
+                .connect(localhost);
 
         final Channel clientChannel = clientConnect.channel();
 
@@ -114,17 +114,17 @@ public class BehaviorTest {
     @Test(expected = ConnectTimeoutException.class)
     public void badConnect() throws Throwable {
         final Channel serverChannel = new Bootstrap()
-        .group(ioGroup)
-        .channel(NioDatagramChannel.class)
-        .handler(new EmptyInit())
-        .bind(localhost).sync().channel();
+                .group(ioGroup)
+                .channel(NioDatagramChannel.class)
+                .handler(new EmptyInit())
+                .bind(localhost).sync().channel();
 
         final ChannelFuture clientConnect = new Bootstrap()
-        .group(ioGroup)
-        .channel(RakNetClient.CHANNEL)
-        .option(ChannelOption.CONNECT_TIMEOUT_MILLIS, 500)
-        .handler(new EmptyInit())
-        .connect(localhost);
+                .group(ioGroup)
+                .channel(RakNetClient.CHANNEL)
+                .option(ChannelOption.CONNECT_TIMEOUT_MILLIS, 500)
+                .handler(new EmptyInit())
+                .connect(localhost);
 
         final Channel clientChannel = clientConnect.channel();
 
@@ -139,17 +139,17 @@ public class BehaviorTest {
     @Test(expected = InvalidVersion.InvalidVersionException.class)
     public void badVersionClient() throws Throwable {
         final Channel serverChannel = new ServerBootstrap()
-        .group(ioGroup, childGroup)
-        .channel(RakNetServer.CHANNEL)
-        .childHandler(new EmptyInit())
-        .bind(localhost).sync().channel();
+                .group(ioGroup, childGroup)
+                .channel(RakNetServer.CHANNEL)
+                .childHandler(new EmptyInit())
+                .bind(localhost).sync().channel();
 
         final ChannelFuture clientConnect = new Bootstrap()
-        .group(ioGroup)
-        .channel(RakNetClient.CHANNEL)
-        .option(RakNet.PROTOCOL_VERSION, 1)
-        .handler(new EmptyInit())
-        .connect(localhost);
+                .group(ioGroup)
+                .channel(RakNetClient.CHANNEL)
+                .option(RakNet.PROTOCOL_VERSION, 1)
+                .handler(new EmptyInit())
+                .connect(localhost);
 
         final Channel clientChannel = clientConnect.channel();
 
@@ -164,17 +164,17 @@ public class BehaviorTest {
     @Test(expected = InvalidVersion.InvalidVersionException.class)
     public void badVersionServer() throws Throwable {
         final Channel serverChannel = new ServerBootstrap()
-        .group(ioGroup, childGroup)
-        .channel(RakNetServer.CHANNEL)
-        .option(RakNet.PROTOCOL_VERSION, 1)
-        .childHandler(new EmptyInit())
-        .bind(localhost).sync().channel();
+                .group(ioGroup, childGroup)
+                .channel(RakNetServer.CHANNEL)
+                .option(RakNet.PROTOCOL_VERSION, 1)
+                .childHandler(new EmptyInit())
+                .bind(localhost).sync().channel();
 
         final ChannelFuture clientConnect = new Bootstrap()
-        .group(ioGroup)
-        .channel(RakNetClient.CHANNEL)
-        .handler(new EmptyInit())
-        .connect(localhost);
+                .group(ioGroup)
+                .channel(RakNetClient.CHANNEL)
+                .handler(new EmptyInit())
+                .connect(localhost);
 
         final Channel clientChannel = clientConnect.channel();
 
@@ -187,7 +187,7 @@ public class BehaviorTest {
     }
 
     @Test(expected = CorruptedFrameException.class)
-    public void corruptFrameTest() throws Throwable {
-        FrameSet.read(Unpooled.wrappedBuffer(new byte[] {1, 2, 3, 4, 5, 6, 7, 8, 9}));
+    public void corruptFrameTest() {
+        FrameSet.read(Unpooled.wrappedBuffer(new byte[]{1, 2, 3, 4, 5, 6, 7, 8, 9}));
     }
 }

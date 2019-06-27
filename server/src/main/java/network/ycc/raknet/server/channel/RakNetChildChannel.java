@@ -1,14 +1,20 @@
 package network.ycc.raknet.server.channel;
 
-import io.netty.buffer.ByteBuf;
-import io.netty.channel.*;
-import io.netty.channel.socket.DatagramPacket;
-
 import network.ycc.raknet.RakNet;
 import network.ycc.raknet.config.DefaultConfig;
-import network.ycc.raknet.packet.Disconnect;
 import network.ycc.raknet.server.RakNetServer;
 import network.ycc.raknet.server.pipeline.ConnectionInitializer;
+
+import io.netty.buffer.ByteBuf;
+import io.netty.channel.AbstractChannel;
+import io.netty.channel.ChannelHandlerContext;
+import io.netty.channel.ChannelInitializer;
+import io.netty.channel.ChannelMetadata;
+import io.netty.channel.ChannelOutboundBuffer;
+import io.netty.channel.ChannelOutboundHandlerAdapter;
+import io.netty.channel.ChannelPromise;
+import io.netty.channel.EventLoop;
+import io.netty.channel.socket.DatagramPacket;
 
 import java.net.InetSocketAddress;
 import java.net.SocketAddress;
@@ -41,7 +47,7 @@ public class RakNetChildChannel extends AbstractChannel {
             }
         });
         pipeline().addLast(new ChannelInitializer<RakNetChildChannel>() {
-            protected void initChannel(RakNetChildChannel ch) throws Exception {
+            protected void initChannel(RakNetChildChannel ch) {
                 pipeline().replace(ConnectionInitializer.NAME, ConnectionInitializer.NAME,
                         new ConnectionInitializer(connectPromise));
             }
@@ -49,12 +55,24 @@ public class RakNetChildChannel extends AbstractChannel {
     }
 
     @Override
-    public RakNetServerChannel parent() {
-        return (RakNetServerChannel) super.parent();
+    public boolean isWritable() {
+        final Boolean result = attr(RakNet.WRITABLE).get();
+        return (result == null || result) && parent().isWritable();
     }
 
-    protected boolean isCompatible(EventLoop eventloop) {
-        return true;
+    @Override
+    public long bytesBeforeUnwritable() {
+        return parent().bytesBeforeUnwritable();
+    }
+
+    @Override
+    public long bytesBeforeWritable() {
+        return parent().bytesBeforeWritable();
+    }
+
+    @Override
+    public RakNetServerChannel parent() {
+        return (RakNetServerChannel) super.parent();
     }
 
     protected AbstractUnsafe newUnsafe() {
@@ -63,6 +81,10 @@ public class RakNetChildChannel extends AbstractChannel {
                 throw new UnsupportedOperationException();
             }
         };
+    }
+
+    protected boolean isCompatible(EventLoop eventloop) {
+        return true;
     }
 
     protected SocketAddress localAddress0() {
@@ -93,22 +115,6 @@ public class RakNetChildChannel extends AbstractChannel {
         throw new UnsupportedOperationException();
     }
 
-    @Override
-    public boolean isWritable() {
-        final Boolean result = attr(RakNet.WRITABLE).get();
-        return (result == null || result) && parent().isWritable();
-    }
-
-    @Override
-    public long bytesBeforeUnwritable() {
-        return parent().bytesBeforeUnwritable();
-    }
-
-    @Override
-    public long bytesBeforeWritable() {
-        return parent().bytesBeforeWritable();
-    }
-
     public RakNet.Config config() {
         return config;
     }
@@ -127,7 +133,8 @@ public class RakNetChildChannel extends AbstractChannel {
 
     protected class WriteHandler extends ChannelOutboundHandlerAdapter {
         @Override
-        public void write(ChannelHandlerContext ctx, Object msg, ChannelPromise promise) throws Exception {
+        public void write(ChannelHandlerContext ctx, Object msg, ChannelPromise promise)
+                throws Exception {
             if (msg instanceof ByteBuf) {
                 //TODO: want to do real promise resolution here, but is it worth it?
                 promise.trySuccess();

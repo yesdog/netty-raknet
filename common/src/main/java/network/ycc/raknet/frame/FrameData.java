@@ -1,16 +1,16 @@
 package network.ycc.raknet.frame;
 
+import network.ycc.raknet.packet.FramedPacket;
+
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.ByteBufAllocator;
 import io.netty.buffer.CompositeByteBuf;
 import io.netty.util.AbstractReferenceCounted;
-import io.netty.util.ReferenceCounted;
 import io.netty.util.Recycler;
+import io.netty.util.ReferenceCounted;
 import io.netty.util.ResourceLeakDetector;
 import io.netty.util.ResourceLeakDetectorFactory;
 import io.netty.util.ResourceLeakTracker;
-
-import network.ycc.raknet.packet.FramedPacket;
 
 public final class FrameData extends AbstractReferenceCounted implements FramedPacket {
 
@@ -22,6 +22,16 @@ public final class FrameData extends AbstractReferenceCounted implements FramedP
             return new FrameData(handle);
         }
     };
+    private final Recycler.Handle<FrameData> handle;
+    private ResourceLeakTracker<FrameData> tracker;
+    private int orderId;
+    private boolean fragment;
+    private ByteBuf data;
+    private FramedPacket.Reliability reliability;
+    private FrameData(Recycler.Handle<FrameData> handle) {
+        this.handle = handle;
+        setRefCnt(0);
+    }
 
     @SuppressWarnings("unchecked")
     private static FrameData createRaw() {
@@ -61,26 +71,14 @@ public final class FrameData extends AbstractReferenceCounted implements FramedP
         }
     }
 
-    private final Recycler.Handle<FrameData> handle;
-    private ResourceLeakTracker<FrameData> tracker;
-    private int orderId;
-    private boolean fragment;
-    private ByteBuf data;
-    private FramedPacket.Reliability reliability;
-
-    private FrameData(Recycler.Handle<FrameData> handle) {
-        this.handle = handle;
-        setRefCnt(0);
-    }
-
     public void write(ByteBuf out) {
-    	data.markReaderIndex();
-    	try {
-			out.writeBytes(data);
-		} finally {
-			data.resetReaderIndex();
-		}
-	}
+        data.markReaderIndex();
+        try {
+            out.writeBytes(data);
+        } finally {
+            data.resetReaderIndex();
+        }
+    }
 
     public ByteBuf createData() {
         return data.retainedDuplicate();
@@ -89,13 +87,6 @@ public final class FrameData extends AbstractReferenceCounted implements FramedP
     @Override
     public FrameData retain() {
         return (FrameData) super.retain();
-    }
-
-    @Override
-    public String toString() {
-        return String.format("PacketData(%s, length: %s, framed: %s, packetId: %s)",
-                getReliability(), getDataSize(), isFragment(),
-                fragment ? "n/a" : String.format("%02x", getPacketId()));
     }
 
     protected void deallocate() {
@@ -108,6 +99,13 @@ public final class FrameData extends AbstractReferenceCounted implements FramedP
             tracker = null;
         }
         handle.recycle(this);
+    }
+
+    @Override
+    public String toString() {
+        return String.format("PacketData(%s, length: %s, framed: %s, packetId: %s)",
+                getReliability(), getDataSize(), isFragment(),
+                fragment ? "n/a" : String.format("%02x", getPacketId()));
     }
 
     public ReferenceCounted touch(Object hint) {
@@ -123,11 +121,15 @@ public final class FrameData extends AbstractReferenceCounted implements FramedP
         return data.getUnsignedByte(data.readerIndex());
     }
 
-    public FramedPacket.Reliability getReliability() {
+    public int getDataSize() {
+        return data.readableBytes();
+    }    public FramedPacket.Reliability getReliability() {
         return reliability;
     }
 
-    public void setReliability(FramedPacket.Reliability reliability) {
+    public boolean isFragment() {
+        return fragment;
+    }    public void setReliability(FramedPacket.Reliability reliability) {
         this.reliability = reliability;
     }
 
@@ -139,12 +141,8 @@ public final class FrameData extends AbstractReferenceCounted implements FramedP
         this.orderId = orderChannel;
     }
 
-    public int getDataSize() {
-        return data.readableBytes();
-    }
 
-    public boolean isFragment() {
-        return fragment;
-    }
+
+
 
 }

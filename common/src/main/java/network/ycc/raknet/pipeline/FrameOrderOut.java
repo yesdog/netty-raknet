@@ -1,15 +1,15 @@
 package network.ycc.raknet.pipeline;
 
-import java.util.List;
+import network.ycc.raknet.RakNet;
+import network.ycc.raknet.frame.Frame;
+import network.ycc.raknet.frame.FrameData;
+import network.ycc.raknet.packet.FramedPacket;
+import network.ycc.raknet.utils.UINT;
 
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.codec.MessageToMessageEncoder;
 
-import network.ycc.raknet.RakNet;
-import network.ycc.raknet.packet.FramedPacket;
-import network.ycc.raknet.frame.FrameData;
-import network.ycc.raknet.utils.UINT;
-import network.ycc.raknet.frame.Frame;
+import java.util.List;
 
 public class FrameOrderOut extends MessageToMessageEncoder<FramedPacket> {
 
@@ -24,7 +24,8 @@ public class FrameOrderOut extends MessageToMessageEncoder<FramedPacket> {
         try {
             if (data.getReliability().isOrdered) {
                 final int channel = data.getOrderChannel();
-                final int sequenceIndex = data.getReliability().isSequenced ? getNextSequenceIndex(channel) : 0;
+                final int sequenceIndex =
+                        data.getReliability().isSequenced ? getNextSequenceIndex(channel) : 0;
                 list.add(Frame.createOrdered(data, getNextOrderIndex(channel), sequenceIndex));
             } else {
                 list.add(Frame.create(data));

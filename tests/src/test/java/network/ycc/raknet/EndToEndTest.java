@@ -1,5 +1,16 @@
 package network.ycc.raknet;
 
+import network.ycc.raknet.channel.DatagramChannelProxy;
+import network.ycc.raknet.client.channel.RakNetClientChannel;
+import network.ycc.raknet.config.DefaultCodec;
+import network.ycc.raknet.frame.FrameData;
+import network.ycc.raknet.packet.FramedPacket;
+import network.ycc.raknet.packet.Ping;
+import network.ycc.raknet.pipeline.UserDataCodec;
+import network.ycc.raknet.server.channel.RakNetServerChannel;
+import network.ycc.raknet.utils.EmptyInit;
+import network.ycc.raknet.utils.MockDatagram;
+
 import io.netty.bootstrap.Bootstrap;
 import io.netty.bootstrap.ServerBootstrap;
 import io.netty.buffer.ByteBuf;
@@ -19,20 +30,6 @@ import io.netty.channel.socket.nio.NioDatagramChannel;
 import io.netty.util.ReferenceCountUtil;
 import io.netty.util.concurrent.PromiseCombiner;
 
-import network.ycc.raknet.channel.DatagramChannelProxy;
-import network.ycc.raknet.client.channel.RakNetClientChannel;
-import network.ycc.raknet.config.DefaultCodec;
-import network.ycc.raknet.packet.FramedPacket;
-import network.ycc.raknet.frame.FrameData;
-import network.ycc.raknet.packet.Ping;
-import network.ycc.raknet.pipeline.UserDataCodec;
-import network.ycc.raknet.server.channel.RakNetServerChannel;
-import network.ycc.raknet.utils.EmptyInit;
-import network.ycc.raknet.utils.MockDatagram;
-
-import org.junit.Assert;
-import org.junit.Test;
-
 import java.net.InetSocketAddress;
 import java.util.Random;
 import java.util.concurrent.ConcurrentHashMap;
@@ -40,22 +37,38 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.BiConsumer;
 
+import org.junit.Assert;
+import org.junit.Test;
+
 public class EndToEndTest {
     final EventLoopGroup ioGroup = new NioEventLoopGroup();
     final EventLoopGroup childGroup = new DefaultEventLoopGroup();
     final InetSocketAddress localhost = new InetSocketAddress("localhost", 31745);
     final InetSocketAddress localSender = new InetSocketAddress("localhost", 31745);
 
+    public static ChannelInitializer<Channel> simpleHandler(
+            BiConsumer<ChannelHandlerContext, Object> func) {
+        return new ChannelInitializer<Channel>() {
+            protected void initChannel(Channel ch) {
+                ch.pipeline().addLast(new ChannelInboundHandlerAdapter() {
+                    public void channelRead(ChannelHandlerContext ctx, Object msg) {
+                        func.accept(ctx, msg);
+                    }
+                });
+            }
+        };
+    }
+
     @Test
     public void serverCloseTest() throws Throwable {
-        for (int i = 0 ; i < 20 ; i++) {
+        for (int i = 0; i < 20; i++) {
             newServer(null, null, null).close().sync();
         }
     }
 
     @Test
     public void connectAndCloseTest() throws Throwable {
-        for (int i = 0 ; i < 20 ; i++) {
+        for (int i = 0; i < 20; i++) {
             Channel server = newServer(null, null, null);
             Channel client = newClient(null, null);
 
@@ -78,7 +91,7 @@ public class EndToEndTest {
 
         //add some bad frame data, should be ignore safely
         client.pipeline().fireChannelRead(Unpooled.wrappedBuffer(
-                new byte[] {(byte) DefaultCodec.FRAME_DATA_START, 1, 2, 3, 4, 5, 6, 7, 8, 9}));
+                new byte[]{(byte) DefaultCodec.FRAME_DATA_START, 1, 2, 3, 4, 5, 6, 7, 8, 9}));
 
         client.pipeline().write(Unpooled.wrappedBuffer(new byte[bytesSent]));
         client.pipeline().flush();
@@ -136,7 +149,8 @@ public class EndToEndTest {
         System.gc();
     }
 
-    public void dataTest(int nSend, int maxSize, boolean brutalizeWrite, boolean brutalizeRead, boolean mockTransport) throws Throwable {
+    public void dataTest(int nSend, int maxSize, boolean brutalizeWrite, boolean brutalizeRead,
+            boolean mockTransport) throws Throwable {
         Random rnd = new Random(34598);
         AtomicInteger bytesSent = new AtomicInteger(0);
         AtomicInteger bytesRecvd = new AtomicInteger(0);
@@ -164,16 +178,19 @@ public class EndToEndTest {
         Channel client = newClient(null, mockPair);
         ChannelPromise donePromise = client.newPromise();
 
-        client.pipeline().addAfter(DatagramChannelProxy.LISTENER_HANDLER_NAME, "brutalizer", brutalizer);
+        client.pipeline()
+                .addAfter(DatagramChannelProxy.LISTENER_HANDLER_NAME, "brutalizer", brutalizer);
         brutalizer.rnd = rnd;
         brutalizer.brutalizeRead = brutalizeRead;
         brutalizer.brutalizeWrite = brutalizeWrite;
 
         //TODO: server side writes?
 
-        for (int i = 0 ; i < nSend ; i++) {
+        for (int i = 0; i < nSend; i++) {
             int size = rnd.nextInt(maxSize) + 1;
-            if (size == 8) size = 9; //reserve 8 size for the other tests
+            if (size == 8) {
+                size = 9; //reserve 8 size for the other tests
+            }
             while (!client.isWritable() || pending.get() > 3000) {
                 try {
                     Thread.sleep(1);
@@ -189,7 +206,8 @@ public class EndToEndTest {
                     fut = client.pipeline().write(Unpooled.wrappedBuffer(new byte[size]));
                     break;
                 default:
-                    FrameData data = FrameData.create(client.alloc(), 0xFE, Unpooled.wrappedBuffer(new byte[size]));
+                    FrameData data = FrameData
+                            .create(client.alloc(), 0xFE, Unpooled.wrappedBuffer(new byte[size]));
                     if (rnd.nextBoolean()) {
                         data.setReliability(FramedPacket.Reliability.RELIABLE_ORDERED);
                         data.setOrderChannel(rnd.nextInt(4));
@@ -202,7 +220,7 @@ public class EndToEndTest {
             fut.addListener(x -> pending.decrementAndGet());
         }
 
-        for (int i = 0 ; i < 200 ; i++) {
+        for (int i = 0; i < 200; i++) {
             long value = rnd.nextLong();
             reliableSet.put(value, true);
             ByteBuf buf = Unpooled.wrappedBuffer(new byte[8]);
@@ -233,64 +251,59 @@ public class EndToEndTest {
         Assert.assertEquals(bytesSent.get(), bytesRecvd.get());
     }
 
-    public Channel newServer(ChannelInitializer<Channel> ioInit, final ChannelInitializer<Channel> childInit, MockDatagramPair dgPair) throws InterruptedException {
-        if (ioInit == null) ioInit = new EmptyInit();
+    public Channel newServer(ChannelInitializer<Channel> ioInit,
+            final ChannelInitializer<Channel> childInit, MockDatagramPair dgPair)
+            throws InterruptedException {
+        if (ioInit == null) {
+            ioInit = new EmptyInit();
+        }
         final ServerBootstrap bootstrap = new ServerBootstrap()
-        .group(ioGroup, childGroup)
-        .channelFactory(() -> new RakNetServerChannel(() -> {
-            if (dgPair != null) {
-                return dgPair.server;
-            } else {
-                return new NioDatagramChannel();
-            }
-        }))
-        .option(RakNet.SERVER_ID, 12345L)
-        .option(RakNet.RETRY_DELAY_NANOS, TimeUnit.NANOSECONDS.convert(10, TimeUnit.MILLISECONDS))
-        .handler(ioInit)
-        .childHandler(new ChannelInitializer<Channel>() {
-            protected void initChannel(Channel ch) throws Exception {
-                ch.pipeline().addLast(UserDataCodec.NAME, new UserDataCodec(0xFE));
-                if (childInit != null) {
-                    ch.pipeline().addLast(childInit);
-                }
-            }
-        });
+                .group(ioGroup, childGroup)
+                .channelFactory(() -> new RakNetServerChannel(() -> {
+                    if (dgPair != null) {
+                        return dgPair.server;
+                    } else {
+                        return new NioDatagramChannel();
+                    }
+                }))
+                .option(RakNet.SERVER_ID, 12345L)
+                .option(RakNet.RETRY_DELAY_NANOS,
+                        TimeUnit.NANOSECONDS.convert(10, TimeUnit.MILLISECONDS))
+                .handler(ioInit)
+                .childHandler(new ChannelInitializer<Channel>() {
+                    protected void initChannel(Channel ch) {
+                        ch.pipeline().addLast(UserDataCodec.NAME, new UserDataCodec(0xFE));
+                        if (childInit != null) {
+                            ch.pipeline().addLast(childInit);
+                        }
+                    }
+                });
         return bootstrap.bind(localhost).sync().channel();
     }
 
-    public Channel newClient(ChannelInitializer<Channel> init, MockDatagramPair dgPair) throws InterruptedException {
+    public Channel newClient(ChannelInitializer<Channel> init, MockDatagramPair dgPair)
+            throws InterruptedException {
         final Bootstrap bootstrap = new Bootstrap()
-        .group(ioGroup)
-        .channelFactory(() -> new RakNetClientChannel(() -> {
-            if (dgPair != null) {
-                return dgPair.client;
-            } else {
-                return new NioDatagramChannel();
-            }
-        }))
-        .option(RakNet.CLIENT_ID,6789L)
-        .option(RakNet.RETRY_DELAY_NANOS, TimeUnit.NANOSECONDS.convert(10, TimeUnit.MILLISECONDS))
-        .handler(new ChannelInitializer<Channel>() {
-            protected void initChannel(Channel ch) throws Exception {
-                ch.pipeline().addLast(UserDataCodec.NAME, new UserDataCodec(0xFE));
-                if (init != null) {
-                    ch.pipeline().addLast(init);
-                }
-            }
-        });
-        return bootstrap.connect(localhost).sync().channel();
-    }
-
-    public static ChannelInitializer<Channel> simpleHandler(BiConsumer<ChannelHandlerContext, Object> func) {
-        return new ChannelInitializer<Channel>() {
-            protected void initChannel(Channel ch) {
-                ch.pipeline().addLast(new ChannelInboundHandlerAdapter() {
-                    public void channelRead(ChannelHandlerContext ctx, Object msg) {
-                        func.accept(ctx, msg);
+                .group(ioGroup)
+                .channelFactory(() -> new RakNetClientChannel(() -> {
+                    if (dgPair != null) {
+                        return dgPair.client;
+                    } else {
+                        return new NioDatagramChannel();
+                    }
+                }))
+                .option(RakNet.CLIENT_ID, 6789L)
+                .option(RakNet.RETRY_DELAY_NANOS,
+                        TimeUnit.NANOSECONDS.convert(10, TimeUnit.MILLISECONDS))
+                .handler(new ChannelInitializer<Channel>() {
+                    protected void initChannel(Channel ch) {
+                        ch.pipeline().addLast(UserDataCodec.NAME, new UserDataCodec(0xFE));
+                        if (init != null) {
+                            ch.pipeline().addLast(init);
+                        }
                     }
                 });
-            }
-        };
+        return bootstrap.connect(localhost).sync().channel();
     }
 
     public static class Brutalizer extends ChannelDuplexHandler {
@@ -311,7 +324,8 @@ public class EndToEndTest {
         }
 
         @Override
-        public void write(ChannelHandlerContext ctx, Object msg, ChannelPromise promise) throws Exception {
+        public void write(ChannelHandlerContext ctx, Object msg, ChannelPromise promise)
+                throws Exception {
             if (brutalizeWrite) {
                 if (rnd.nextDouble() < orderPercent && writeStash != null) {
                     ctx.write(writeStash);

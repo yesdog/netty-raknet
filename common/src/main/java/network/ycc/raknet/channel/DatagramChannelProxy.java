@@ -1,14 +1,26 @@
 package network.ycc.raknet.channel;
 
+import network.ycc.raknet.RakNet;
+import network.ycc.raknet.config.DefaultConfig;
+
 import io.netty.buffer.ByteBufAllocator;
-import io.netty.channel.*;
+import io.netty.channel.Channel;
+import io.netty.channel.ChannelFuture;
+import io.netty.channel.ChannelHandlerContext;
+import io.netty.channel.ChannelId;
+import io.netty.channel.ChannelInboundHandler;
+import io.netty.channel.ChannelMetadata;
+import io.netty.channel.ChannelOption;
+import io.netty.channel.ChannelOutboundHandler;
+import io.netty.channel.ChannelPipeline;
+import io.netty.channel.ChannelProgressivePromise;
+import io.netty.channel.ChannelPromise;
+import io.netty.channel.DefaultChannelPipeline;
+import io.netty.channel.EventLoop;
 import io.netty.channel.socket.DatagramChannel;
 import io.netty.util.Attribute;
 import io.netty.util.AttributeKey;
 import io.netty.util.ReferenceCountUtil;
-
-import network.ycc.raknet.RakNet;
-import network.ycc.raknet.config.DefaultConfig;
 
 import java.net.SocketAddress;
 import java.nio.channels.ClosedChannelException;
@@ -108,6 +120,16 @@ public class DatagramChannelProxy implements Channel {
         return config().getAllocator();
     }
 
+    public Channel read() {
+        pipeline.read();
+        return this;
+    }
+
+    public Channel flush() {
+        pipeline.flush();
+        return this;
+    }
+
     public ChannelFuture bind(SocketAddress localAddress) {
         return pipeline.bind(localAddress);
     }
@@ -140,7 +162,8 @@ public class DatagramChannelProxy implements Channel {
         return pipeline.connect(remoteAddress, promise);
     }
 
-    public ChannelFuture connect(SocketAddress remoteAddress, SocketAddress localAddress, ChannelPromise promise) {
+    public ChannelFuture connect(SocketAddress remoteAddress, SocketAddress localAddress,
+            ChannelPromise promise) {
         return pipeline.connect(remoteAddress, localAddress, promise);
     }
 
@@ -156,22 +179,12 @@ public class DatagramChannelProxy implements Channel {
         return pipeline.deregister(promise);
     }
 
-    public Channel read() {
-        pipeline.read();
-        return this;
-    }
-
     public ChannelFuture write(Object msg) {
         return pipeline.write(msg);
     }
 
     public ChannelFuture write(Object msg, ChannelPromise promise) {
         return pipeline.write(msg, promise);
-    }
-
-    public Channel flush() {
-        pipeline.flush();
-        return this;
     }
 
     public ChannelFuture writeAndFlush(Object msg, ChannelPromise promise) {
@@ -246,15 +259,7 @@ public class DatagramChannelProxy implements Channel {
         }
 
         @Override
-        @SuppressWarnings("deprecation")
-        public <T> boolean setOption(ChannelOption<T> option, T value) {
-            final boolean thisOption = super.setOption(option, value);
-            final boolean listenOption = listener.config().setOption(option, value);
-            return thisOption || listenOption;
-        }
-
-        @Override
-        @SuppressWarnings({ "unchecked", "deprecation" })
+        @SuppressWarnings({"unchecked", "deprecation"})
         public <T> T getOption(ChannelOption<T> option) {
             final T thisOption = super.getOption(option);
             if (thisOption == null) {
@@ -263,52 +268,62 @@ public class DatagramChannelProxy implements Channel {
             return thisOption;
         }
 
+        @Override
+        @SuppressWarnings("deprecation")
+        public <T> boolean setOption(ChannelOption<T> option, T value) {
+            final boolean thisOption = super.setOption(option, value);
+            final boolean listenOption = listener.config().setOption(option, value);
+            return thisOption || listenOption;
+        }
+
     }
 
     protected class ListnerOutboundProxy implements ChannelOutboundHandler {
 
-        public void handlerAdded(ChannelHandlerContext ctx) throws Exception {
+        public void handlerAdded(ChannelHandlerContext ctx) {
             // NOOP
         }
 
-        public void handlerRemoved(ChannelHandlerContext ctx) throws Exception {
-            // NOOP
-        }
-
-        public void bind(ChannelHandlerContext ctx, SocketAddress localAddress, ChannelPromise promise) throws Exception {
+        public void bind(ChannelHandlerContext ctx, SocketAddress localAddress,
+                ChannelPromise promise) {
             listener.bind(localAddress, wrapPromise(promise));
+        }        public void handlerRemoved(ChannelHandlerContext ctx) {
+            // NOOP
         }
 
-        public void connect(ChannelHandlerContext ctx, SocketAddress remoteAddress, SocketAddress localAddress, ChannelPromise promise) throws Exception {
+        public void connect(ChannelHandlerContext ctx, SocketAddress remoteAddress,
+                SocketAddress localAddress, ChannelPromise promise) {
             listener.connect(remoteAddress, localAddress, wrapPromise(promise));
         }
 
-        public void disconnect(ChannelHandlerContext ctx, ChannelPromise promise) throws Exception {
+        public void disconnect(ChannelHandlerContext ctx, ChannelPromise promise) {
             listener.disconnect(wrapPromise(promise));
         }
 
-        public void close(ChannelHandlerContext ctx, ChannelPromise promise) throws Exception {
+        public void close(ChannelHandlerContext ctx, ChannelPromise promise) {
             listener.close(wrapPromise(promise));
         }
 
-        public void deregister(ChannelHandlerContext ctx, ChannelPromise promise) throws Exception {
+        public void deregister(ChannelHandlerContext ctx, ChannelPromise promise) {
             listener.deregister(wrapPromise(promise));
         }
 
-        public void read(ChannelHandlerContext ctx) throws Exception {
+        public void read(ChannelHandlerContext ctx) {
             listener.read();
         }
 
-        public void write(ChannelHandlerContext ctx, Object msg, ChannelPromise promise) throws Exception {
+        public void write(ChannelHandlerContext ctx, Object msg, ChannelPromise promise) {
             listener.write(msg, wrapPromise(promise));
         }
 
-        public void flush(ChannelHandlerContext ctx) throws Exception {
+        public void flush(ChannelHandlerContext ctx) {
             listener.flush();
         }
 
+
+
         @SuppressWarnings("deprecation")
-        public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) throws Exception {
+        public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) {
             ctx.fireExceptionCaught(cause);
         }
 
@@ -316,53 +331,53 @@ public class DatagramChannelProxy implements Channel {
 
     protected class ListenerInboundProxy implements ChannelInboundHandler {
 
-        public void handlerAdded(ChannelHandlerContext ctx) throws Exception {
-            // NOOP
-        }
-
-        public void handlerRemoved(ChannelHandlerContext ctx) throws Exception {
-            // NOOP
-        }
-
-        public void channelRegistered(ChannelHandlerContext ctx) throws Exception {
+        public void channelRegistered(ChannelHandlerContext ctx) {
             pipeline.fireChannelRegistered();
+        }        public void handlerAdded(ChannelHandlerContext ctx) {
+            // NOOP
         }
 
-        public void channelUnregistered(ChannelHandlerContext ctx) throws Exception {
+        public void channelUnregistered(ChannelHandlerContext ctx) {
             pipeline.fireChannelUnregistered();
+        }        public void handlerRemoved(ChannelHandlerContext ctx) {
+            // NOOP
         }
 
-        public void channelActive(ChannelHandlerContext ctx) throws Exception {
+        public void channelActive(ChannelHandlerContext ctx) {
             // NOOP - active status managed by connection sequence
         }
 
-        public void channelInactive(ChannelHandlerContext ctx) throws Exception {
+        public void channelInactive(ChannelHandlerContext ctx) {
             pipeline.fireChannelInactive();
         }
 
-        public void channelRead(ChannelHandlerContext ctx, Object msg) throws Exception {
+        public void channelRead(ChannelHandlerContext ctx, Object msg) {
             pipeline.fireChannelRead(msg);
         }
 
-        public void channelReadComplete(ChannelHandlerContext ctx) throws Exception {
+        public void channelReadComplete(ChannelHandlerContext ctx) {
             pipeline.fireChannelReadComplete();
         }
 
-        public void userEventTriggered(ChannelHandlerContext ctx, Object evt) throws Exception {
+        public void userEventTriggered(ChannelHandlerContext ctx, Object evt) {
             pipeline.fireUserEventTriggered(evt);
         }
 
-        public void channelWritabilityChanged(ChannelHandlerContext ctx) throws Exception {
+        public void channelWritabilityChanged(ChannelHandlerContext ctx) {
             pipeline.fireChannelWritabilityChanged();
         }
 
         @SuppressWarnings("deprecation")
-        public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) throws Exception {
+        public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) {
             if (cause instanceof ClosedChannelException) {
                 return;
             }
             pipeline.fireExceptionCaught(cause);
         }
+
+
+
+
 
     }
 

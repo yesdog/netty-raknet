@@ -79,6 +79,7 @@ public abstract class SimplePacket implements Packet {
     }
 
     public abstract void encode(ByteBuf buf);
+
     public abstract void decode(ByteBuf buf);
 
     @Override

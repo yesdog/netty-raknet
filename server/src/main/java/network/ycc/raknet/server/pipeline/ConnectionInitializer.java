@@ -1,10 +1,5 @@
 package network.ycc.raknet.server.pipeline;
 
-import io.netty.channel.ChannelFutureListener;
-import io.netty.channel.ChannelHandlerContext;
-import io.netty.channel.ChannelPromise;
-import io.netty.channel.SimpleChannelInboundHandler;
-
 import network.ycc.raknet.RakNet;
 import network.ycc.raknet.packet.ClientHandshake;
 import network.ycc.raknet.packet.ConnectionReply1;
@@ -17,14 +12,20 @@ import network.ycc.raknet.packet.Packet;
 import network.ycc.raknet.packet.ServerHandshake;
 import network.ycc.raknet.pipeline.AbstractConnectionInitializer;
 
+import io.netty.channel.ChannelFutureListener;
+import io.netty.channel.ChannelHandlerContext;
+import io.netty.channel.ChannelPromise;
+import io.netty.channel.SimpleChannelInboundHandler;
+
 import java.net.InetSocketAddress;
 
 public class ConnectionInitializer extends AbstractConnectionInitializer {
+
+    protected boolean clientIdSet = false;
+
     public ConnectionInitializer(ChannelPromise connectPromise) {
         super(connectPromise);
     }
-
-    protected boolean clientIdSet = false;
 
     @SuppressWarnings("unchecked")
     @Override
@@ -40,7 +41,8 @@ public class ConnectionInitializer extends AbstractConnectionInitializer {
                     cr1.getMagic().verify(config.getMagic());
                     config.setMTU(cr1.getMtu());
                     if (cr1.getProtocolVersion() != config.getProtocolVersion()) {
-                        final InvalidVersion packet = new InvalidVersion(config.getMagic(), config.getServerId());
+                        final InvalidVersion packet = new InvalidVersion(config.getMagic(),
+                                config.getServerId());
                         ctx.writeAndFlush(packet).addListener(ChannelFutureListener.CLOSE);
                         return;
                     }
@@ -77,22 +79,13 @@ public class ConnectionInitializer extends AbstractConnectionInitializer {
         sendRequest(ctx);
     }
 
-    protected void removeHandler(ChannelHandlerContext ctx)  {
-        ctx.channel().pipeline().replace(NAME, NAME, new SimpleChannelInboundHandler<Packet.ClientIdConnection>() {
-            protected void channelRead0(ChannelHandlerContext ctx, Packet.ClientIdConnection msg) {
-                if (msg instanceof Packet.ClientIdConnection) {
-                    processClientId(ctx, msg.getClientId());
-                }
-            }
-        });
-    }
-
     @SuppressWarnings("unchecked")
     public void sendRequest(ChannelHandlerContext ctx) {
         final RakNet.Config config = RakNet.config(ctx);
-        switch(state) {
+        switch (state) {
             case CR1: {
-                final Packet packet = new ConnectionReply1(config.getMagic(), config.getMTU(), config.getServerId());
+                final Packet packet = new ConnectionReply1(config.getMagic(), config.getMTU(),
+                        config.getServerId());
                 ctx.writeAndFlush(packet).addListener(RakNet.INTERNAL_WRITE_LISTENER);
                 break;
             }
@@ -107,6 +100,18 @@ public class ConnectionInitializer extends AbstractConnectionInitializer {
             default:
                 throw new IllegalStateException("Unknown state " + state);
         }
+    }
+
+    protected void removeHandler(ChannelHandlerContext ctx) {
+        ctx.channel().pipeline()
+                .replace(NAME, NAME, new SimpleChannelInboundHandler<Packet.ClientIdConnection>() {
+                    protected void channelRead0(ChannelHandlerContext ctx,
+                            Packet.ClientIdConnection msg) {
+                        if (msg instanceof Packet.ClientIdConnection) {
+                            processClientId(ctx, msg.getClientId());
+                        }
+                    }
+                });
     }
 
     protected void processClientId(ChannelHandlerContext ctx, long clientId) {

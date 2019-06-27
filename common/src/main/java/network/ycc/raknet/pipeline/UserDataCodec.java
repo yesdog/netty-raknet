@@ -1,17 +1,16 @@
 package network.ycc.raknet.pipeline;
 
+import network.ycc.raknet.frame.FrameData;
+
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.ChannelHandler;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.codec.MessageToMessageCodec;
 
-import network.ycc.raknet.frame.FrameData;
-
 import java.util.List;
 
 /**
- * Configure a user data packet ID that will be used for ByteBuf messages
- * in the channel.
+ * Configure a user data packet ID that will be used for ByteBuf messages in the channel.
  */
 @ChannelHandler.Sharable
 public class UserDataCodec extends MessageToMessageCodec<FrameData, ByteBuf> {

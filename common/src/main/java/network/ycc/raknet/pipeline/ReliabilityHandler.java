@@ -1,25 +1,27 @@
 package network.ycc.raknet.pipeline;
 
-import io.netty.channel.*;
-import io.netty.handler.codec.CodecException;
-import io.netty.handler.codec.CorruptedFrameException;
-import io.netty.util.ReferenceCountUtil;
-
-import it.unimi.dsi.fastutil.ints.IntRBTreeSet;
-import it.unimi.dsi.fastutil.ints.IntSortedSet;
-import it.unimi.dsi.fastutil.ints.Int2ObjectMap;
-import it.unimi.dsi.fastutil.ints.Int2ObjectOpenHashMap;
-import it.unimi.dsi.fastutil.objects.ObjectIterator;
-import it.unimi.dsi.fastutil.objects.ObjectRBTreeSet;
-import it.unimi.dsi.fastutil.objects.ObjectSortedSet;
-
+import network.ycc.raknet.RakNet;
+import network.ycc.raknet.frame.Frame;
 import network.ycc.raknet.packet.Disconnect;
 import network.ycc.raknet.packet.FrameSet;
 import network.ycc.raknet.packet.Reliability;
 import network.ycc.raknet.utils.Constants;
 import network.ycc.raknet.utils.UINT;
-import network.ycc.raknet.RakNet;
-import network.ycc.raknet.frame.Frame;
+
+import io.netty.channel.ChannelDuplexHandler;
+import io.netty.channel.ChannelHandlerContext;
+import io.netty.channel.ChannelPromise;
+import io.netty.handler.codec.CodecException;
+import io.netty.handler.codec.CorruptedFrameException;
+import io.netty.util.ReferenceCountUtil;
+
+import it.unimi.dsi.fastutil.ints.Int2ObjectMap;
+import it.unimi.dsi.fastutil.ints.Int2ObjectOpenHashMap;
+import it.unimi.dsi.fastutil.ints.IntRBTreeSet;
+import it.unimi.dsi.fastutil.ints.IntSortedSet;
+import it.unimi.dsi.fastutil.objects.ObjectIterator;
+import it.unimi.dsi.fastutil.objects.ObjectRBTreeSet;
+import it.unimi.dsi.fastutil.objects.ObjectSortedSet;
 
 /**
  * This handler handles the bulk of reliable (framed) transport.
@@ -62,23 +64,6 @@ public class ReliabilityHandler extends ChannelDuplexHandler {
     }
 
     @Override
-    public void channelRead(ChannelHandlerContext ctx, Object msg) {
-        try {
-            if (msg instanceof Reliability.ACK) {
-                readAck((Reliability.ACK) msg);
-            } else if (msg instanceof Reliability.NACK) {
-                readNack((Reliability.NACK) msg);
-            } else if (msg instanceof FrameSet) {
-                readFrameSet(ctx, (FrameSet) msg);
-            } else {
-                ctx.fireChannelRead(ReferenceCountUtil.retain(msg));
-            }
-        } finally {
-            ReferenceCountUtil.release(msg);
-        }
-    }
-
-    @Override
     public void write(ChannelHandlerContext ctx, Object msg, ChannelPromise promise) {
         if (msg instanceof Frame) {
             final Frame frame = (Frame) msg;
@@ -110,7 +95,8 @@ public class ReliabilityHandler extends ChannelDuplexHandler {
         final ObjectIterator<FrameSet> packetItr = pendingFrameSets.values().iterator();
         //2 sd from mean RTT is about 97% coverage
         final long deadline = System.nanoTime() -
-                (config.getRTTNanos() + 2 * config.getRTTStdDevNanos() + config.getRetryDelayNanos());
+                (config.getRTTNanos() + 2 * config.getRTTStdDevNanos() + config
+                        .getRetryDelayNanos());
         while (packetItr.hasNext()) {
             final FrameSet frameSet = packetItr.next();
             if (frameSet.getSentTime() < deadline) {
@@ -125,6 +111,23 @@ public class ReliabilityHandler extends ChannelDuplexHandler {
         updateBackPressure(ctx);
         Constants.packetLossCheck(pendingFrameSets.size(), "resend queue");
         ctx.flush();
+    }
+
+    @Override
+    public void channelRead(ChannelHandlerContext ctx, Object msg) {
+        try {
+            if (msg instanceof Reliability.ACK) {
+                readAck((Reliability.ACK) msg);
+            } else if (msg instanceof Reliability.NACK) {
+                readNack((Reliability.NACK) msg);
+            } else if (msg instanceof FrameSet) {
+                readFrameSet(ctx, (FrameSet) msg);
+            } else {
+                ctx.fireChannelRead(ReferenceCountUtil.retain(msg));
+            }
+        } finally {
+            ReferenceCountUtil.release(msg);
+        }
     }
 
     protected void clearQueue(Throwable t) {
@@ -163,7 +166,7 @@ public class ReliabilityHandler extends ChannelDuplexHandler {
         int nIterations = 0;
         for (Reliability.REntry entry : ack.getEntries()) {
             final int max = UINT.B3.plus(entry.idFinish, 1);
-            for (int id = entry.idStart ; id != max ; id = UINT.B3.plus(id, 1)) {
+            for (int id = entry.idStart; id != max; id = UINT.B3.plus(id, 1)) {
                 final FrameSet frameSet = pendingFrameSets.remove(id);
                 if (frameSet != null) {
                     ackdBytes += frameSet.getRoughSize();
@@ -182,7 +185,7 @@ public class ReliabilityHandler extends ChannelDuplexHandler {
         int nIterations = 0;
         for (Reliability.REntry entry : nack.getEntries()) {
             final int max = UINT.B3.plus(entry.idFinish, 1);
-            for (int id = entry.idStart ; id != max ; id = UINT.B3.plus(id, 1)) {
+            for (int id = entry.idStart; id != max; id = UINT.B3.plus(id, 1)) {
                 final FrameSet frameSet = pendingFrameSets.remove(id);
                 if (frameSet != null) {
                     bytesNACKd += frameSet.getRoughSize();
@@ -196,7 +199,9 @@ public class ReliabilityHandler extends ChannelDuplexHandler {
 
     protected void queueFrame(Frame frame) {
         if (frame.getRoughPacketSize() > config.getMTU()) {
-            throw new CorruptedFrameException("Finished frame larger than the MTU by " + (frame.getRoughPacketSize() - config.getMTU()));
+            throw new CorruptedFrameException(
+                    "Finished frame larger than the MTU by " + (frame.getRoughPacketSize() - config
+                            .getMTU()));
         }
         frameQueue.add(frame);
     }
@@ -229,7 +234,9 @@ public class ReliabilityHandler extends ChannelDuplexHandler {
             assert frame.refCnt() > 0 : "Frame has lost reference";
             if (frameSet.getRoughSize() + frame.getRoughPacketSize() > maxSize) {
                 if (frameSet.isEmpty()) {
-                    throw new CorruptedFrameException("Finished frame larger than the MTU by " + (frame.getRoughPacketSize() - maxSize));
+                    throw new CorruptedFrameException(
+                            "Finished frame larger than the MTU by " + (frame.getRoughPacketSize()
+                                    - maxSize));
                 }
                 break;
             }

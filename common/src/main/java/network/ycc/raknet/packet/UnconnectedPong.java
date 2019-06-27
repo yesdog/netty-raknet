@@ -1,9 +1,9 @@
 package network.ycc.raknet.packet;
 
-import io.netty.buffer.ByteBuf;
-
 import network.ycc.raknet.RakNet;
 import network.ycc.raknet.config.DefaultMagic;
+
+import io.netty.buffer.ByteBuf;
 
 public class UnconnectedPong extends SimplePacket implements Packet {
 
@@ -12,7 +12,8 @@ public class UnconnectedPong extends SimplePacket implements Packet {
     private RakNet.Magic magic;
     private String info = "";
 
-    public UnconnectedPong() {}
+    public UnconnectedPong() {
+    }
 
     public UnconnectedPong(long clientTime, long serverId, RakNet.Magic magic, String info) {
         this.clientTime = clientTime;
@@ -21,18 +22,18 @@ public class UnconnectedPong extends SimplePacket implements Packet {
         this.info = info;
     }
 
-    public void decode(ByteBuf buf) {
-        clientTime = buf.readLong();
-        serverId = buf.readLong();
-        magic = DefaultMagic.decode(buf);
-        info = readString(buf);
-    }
-
     public void encode(ByteBuf buf) {
         buf.writeLong(clientTime);
         buf.writeLong(serverId);
         magic.write(buf);
         writeString(buf, info);
+    }
+
+    public void decode(ByteBuf buf) {
+        clientTime = buf.readLong();
+        serverId = buf.readLong();
+        magic = DefaultMagic.decode(buf);
+        info = readString(buf);
     }
 
     public long getClientTime() {

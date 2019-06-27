@@ -1,16 +1,20 @@
 package network.ycc.raknet.client.channel;
 
-import io.netty.channel.*;
+import network.ycc.raknet.RakNet;
+import network.ycc.raknet.channel.DatagramChannelProxy;
+import network.ycc.raknet.client.RakNetClient;
+import network.ycc.raknet.client.pipeline.ConnectionInitializer;
+
+import io.netty.channel.ChannelDuplexHandler;
+import io.netty.channel.ChannelFuture;
+import io.netty.channel.ChannelHandler;
+import io.netty.channel.ChannelHandlerContext;
+import io.netty.channel.ChannelPromise;
 import io.netty.channel.socket.DatagramChannel;
 import io.netty.channel.socket.DatagramPacket;
 import io.netty.channel.socket.nio.NioDatagramChannel;
 import io.netty.util.ReferenceCountUtil;
 import io.netty.util.concurrent.PromiseCombiner;
-
-import network.ycc.raknet.RakNet;
-import network.ycc.raknet.channel.DatagramChannelProxy;
-import network.ycc.raknet.client.RakNetClient;
-import network.ycc.raknet.client.pipeline.ConnectionInitializer;
 
 import java.net.InetSocketAddress;
 import java.net.SocketAddress;
@@ -48,8 +52,8 @@ public class RakNetClientChannel extends DatagramChannelProxy {
 
     protected void addDefaultPipeline() {
         pipeline()
-        .addLast(newClientHandler())
-        .addLast(RakNetClient.DefaultClientInitializer.INSTANCE);
+                .addLast(newClientHandler())
+                .addLast(RakNetClient.DefaultClientInitializer.INSTANCE);
     }
 
     protected ChannelHandler newClientHandler() {
@@ -59,10 +63,11 @@ public class RakNetClientChannel extends DatagramChannelProxy {
     protected class ClientHandler extends ChannelDuplexHandler {
         @Override
         public void connect(ChannelHandlerContext ctx, SocketAddress remoteAddress,
-                            SocketAddress localAddress, ChannelPromise promise) throws Exception {
+                SocketAddress localAddress, ChannelPromise promise) {
             try {
                 if (!(remoteAddress instanceof InetSocketAddress)) {
-                    throw new IllegalArgumentException("Provided remote address is not an InetSocketAddress");
+                    throw new IllegalArgumentException(
+                            "Provided remote address is not an InetSocketAddress");
                 }
                 if (listener.isActive()) {
                     throw new IllegalStateException("Channel connection already started");

@@ -1,6 +1,9 @@
 package network.ycc.raknet.pipeline;
 
-import java.util.List;
+import network.ycc.raknet.RakNet;
+import network.ycc.raknet.frame.Frame;
+import network.ycc.raknet.frame.FrameData;
+import network.ycc.raknet.utils.Constants;
 
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.ByteBufAllocator;
@@ -10,12 +13,9 @@ import io.netty.handler.codec.MessageToMessageDecoder;
 import io.netty.handler.codec.TooLongFrameException;
 import io.netty.util.ReferenceCountUtil;
 
-import it.unimi.dsi.fastutil.ints.Int2ObjectOpenHashMap;
+import java.util.List;
 
-import network.ycc.raknet.RakNet;
-import network.ycc.raknet.utils.Constants;
-import network.ycc.raknet.frame.Frame;
-import network.ycc.raknet.frame.FrameData;
+import it.unimi.dsi.fastutil.ints.Int2ObjectOpenHashMap;
 
 public class FrameJoiner extends MessageToMessageDecoder<Frame> {
 
@@ -65,14 +65,14 @@ public class FrameJoiner extends MessageToMessageDecoder<Frame> {
         protected int orderId;
         protected FrameData.Reliability reliability;
 
+        private Builder(int size) {
+            queue = new Int2ObjectOpenHashMap<>(size);
+        }
+
         private static Builder create(ByteBufAllocator alloc, Frame frame) {
             final Builder out = new Builder(frame.getSplitCount());
             out.init(alloc, frame);
             return out;
-        }
-
-        private Builder(int size) {
-            queue = new Int2ObjectOpenHashMap<>(size);
         }
 
         void init(ByteBufAllocator alloc, Frame packet) {
@@ -98,7 +98,7 @@ public class FrameJoiner extends MessageToMessageDecoder<Frame> {
 
         void update() {
             ByteBuf fragment;
-            while((fragment = queue.remove(splitIdx)) != null) {
+            while ((fragment = queue.remove(splitIdx)) != null) {
                 data.addComponent(true, fragment);
                 splitIdx++;
             }

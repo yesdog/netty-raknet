@@ -1,14 +1,14 @@
 package network.ycc.raknet.pipeline;
 
+import network.ycc.raknet.packet.Packet;
+import network.ycc.raknet.packet.Ping;
+
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelPromise;
 import io.netty.channel.ConnectTimeoutException;
 import io.netty.channel.SimpleChannelInboundHandler;
 import io.netty.util.concurrent.ScheduledFuture;
-
-import network.ycc.raknet.packet.Packet;
-import network.ycc.raknet.packet.Ping;
 
 import java.util.concurrent.TimeUnit;
 
@@ -25,6 +25,7 @@ public abstract class AbstractConnectionInitializer extends SimpleChannelInbound
     }
 
     protected abstract void sendRequest(ChannelHandlerContext ctx);
+
     protected abstract void removeHandler(ChannelHandlerContext ctx);
 
     @Override

@@ -1,19 +1,40 @@
 package network.ycc.raknet.config;
 
-import io.netty.buffer.ByteBuf;
-import io.netty.buffer.ByteBufAllocator;
-
-import it.unimi.dsi.fastutil.ints.Int2ObjectOpenHashMap;
-import it.unimi.dsi.fastutil.ints.IntOpenHashSet;
-import it.unimi.dsi.fastutil.objects.Object2IntOpenHashMap;
-
 import network.ycc.raknet.RakNet;
 import network.ycc.raknet.frame.FrameData;
-import network.ycc.raknet.packet.*;
+import network.ycc.raknet.packet.AlreadyConnected;
+import network.ycc.raknet.packet.ClientHandshake;
+import network.ycc.raknet.packet.ConnectionBanned;
+import network.ycc.raknet.packet.ConnectionFailed;
+import network.ycc.raknet.packet.ConnectionReply1;
+import network.ycc.raknet.packet.ConnectionReply2;
+import network.ycc.raknet.packet.ConnectionRequest;
+import network.ycc.raknet.packet.ConnectionRequest1;
+import network.ycc.raknet.packet.ConnectionRequest2;
+import network.ycc.raknet.packet.Disconnect;
+import network.ycc.raknet.packet.FrameSet;
+import network.ycc.raknet.packet.FramedPacket;
+import network.ycc.raknet.packet.InvalidVersion;
+import network.ycc.raknet.packet.NoFreeConnections;
+import network.ycc.raknet.packet.Packet;
+import network.ycc.raknet.packet.Ping;
+import network.ycc.raknet.packet.Pong;
+import network.ycc.raknet.packet.Reliability;
+import network.ycc.raknet.packet.ServerHandshake;
+import network.ycc.raknet.packet.SimplePacket;
+import network.ycc.raknet.packet.UnconnectedPing;
+import network.ycc.raknet.packet.UnconnectedPong;
+
+import io.netty.buffer.ByteBuf;
+import io.netty.buffer.ByteBufAllocator;
 
 import java.util.function.BiConsumer;
 import java.util.function.Function;
 import java.util.function.Supplier;
+
+import it.unimi.dsi.fastutil.ints.Int2ObjectOpenHashMap;
+import it.unimi.dsi.fastutil.ints.IntOpenHashSet;
+import it.unimi.dsi.fastutil.objects.Object2IntOpenHashMap;
 
 public class DefaultCodec implements RakNet.Codec {
 
@@ -50,40 +71,30 @@ public class DefaultCodec implements RakNet.Codec {
 
     public DefaultCodec() {
         //       ID                         Class                       Decoder                     Encoder
-        register(PING,                      Ping.class,                 Ping::new);
-        register(UNCONNECTED_PING,          UnconnectedPing.class,      UnconnectedPing::new);
-        register(PONG,                      Pong.class,                 Pong::new);
-        register(OPEN_CONNECTION_REQUEST_1, ConnectionRequest1.class,   ConnectionRequest1::new);
-        register(OPEN_CONNECTION_REPLY_1,   ConnectionReply1.class,     ConnectionReply1::new);
-        register(OPEN_CONNECTION_REQUEST_2, ConnectionRequest2.class,   ConnectionRequest2::new);
-        register(OPEN_CONNECTION_REPLY_2,   ConnectionReply2.class,     ConnectionReply2::new);
-        register(CONNECTION_REQUEST,        ConnectionRequest.class,    ConnectionRequest::new);
-        register(SERVER_HANDSHAKE,          ServerHandshake.class,      ServerHandshake::new);
-        register(CONNECTION_FAILED,         ConnectionFailed.class,     ConnectionFailed::new);
-        register(ALREADY_CONNECTED,         AlreadyConnected.class,     AlreadyConnected::new);
-        register(CLIENT_HANDSHAKE,          ClientHandshake.class,      ClientHandshake::new);
-        register(NO_FREE_CONNECTIONS,       NoFreeConnections.class,    NoFreeConnections::new);
-        register(CLIENT_DISCONNECT,         Disconnect.class,           Disconnect::new);
-        register(CONNECTION_BANNED,         ConnectionBanned.class,     ConnectionBanned::new);
-        register(INVALID_VERSION,           InvalidVersion.class,       InvalidVersion::new);
-        register(UNCONNECTED_PONG,          UnconnectedPong.class,      UnconnectedPong::new);
-        for (int i = FRAME_DATA_START ; i <= FRAME_DATA_END ; i++) {
-            register(i,                     FrameSet.class,             FrameSet::read,             FrameSet::write);
+        register(PING, Ping.class, Ping::new);
+        register(UNCONNECTED_PING, UnconnectedPing.class, UnconnectedPing::new);
+        register(PONG, Pong.class, Pong::new);
+        register(OPEN_CONNECTION_REQUEST_1, ConnectionRequest1.class, ConnectionRequest1::new);
+        register(OPEN_CONNECTION_REPLY_1, ConnectionReply1.class, ConnectionReply1::new);
+        register(OPEN_CONNECTION_REQUEST_2, ConnectionRequest2.class, ConnectionRequest2::new);
+        register(OPEN_CONNECTION_REPLY_2, ConnectionReply2.class, ConnectionReply2::new);
+        register(CONNECTION_REQUEST, ConnectionRequest.class, ConnectionRequest::new);
+        register(SERVER_HANDSHAKE, ServerHandshake.class, ServerHandshake::new);
+        register(CONNECTION_FAILED, ConnectionFailed.class, ConnectionFailed::new);
+        register(ALREADY_CONNECTED, AlreadyConnected.class, AlreadyConnected::new);
+        register(CLIENT_HANDSHAKE, ClientHandshake.class, ClientHandshake::new);
+        register(NO_FREE_CONNECTIONS, NoFreeConnections.class, NoFreeConnections::new);
+        register(CLIENT_DISCONNECT, Disconnect.class, Disconnect::new);
+        register(CONNECTION_BANNED, ConnectionBanned.class, ConnectionBanned::new);
+        register(INVALID_VERSION, InvalidVersion.class, InvalidVersion::new);
+        register(UNCONNECTED_PONG, UnconnectedPong.class, UnconnectedPong::new);
+        for (int i = FRAME_DATA_START; i <= FRAME_DATA_END; i++) {
+            register(i, FrameSet.class, FrameSet::read, FrameSet::write);
         }
-        register(NACK,                      Reliability.NACK.class,     Reliability.NACK::new);
-        register(ACK,                       Reliability.ACK.class,      Reliability.ACK::new);
+        register(NACK, Reliability.NACK.class, Reliability.NACK::new);
+        register(ACK, Reliability.ACK.class, Reliability.ACK::new);
 
         idFromClass.defaultReturnValue(-1);
-    }
-
-    @SuppressWarnings("unchecked")
-    public void encode(Packet packet, ByteBuf out) {
-        if (!idFromClass.containsKey(packet.getClass())) {
-            throw new IllegalArgumentException("Unknown encoder for " + packet.getClass());
-        }
-        final int packetId = packetIdFor(packet.getClass());
-        final BiConsumer<Packet, ByteBuf> encoder = (BiConsumer<Packet, ByteBuf>) encoders.get(packetId);
-        encoder.accept(packet, out);
     }
 
     public FrameData encode(FramedPacket packet, ByteBufAllocator alloc) {
@@ -100,6 +111,17 @@ public class DefaultCodec implements RakNet.Codec {
         } finally {
             out.release();
         }
+    }
+
+    @SuppressWarnings("unchecked")
+    public void encode(Packet packet, ByteBuf out) {
+        if (!idFromClass.containsKey(packet.getClass())) {
+            throw new IllegalArgumentException("Unknown encoder for " + packet.getClass());
+        }
+        final int packetId = packetIdFor(packet.getClass());
+        final BiConsumer<Packet, ByteBuf> encoder = (BiConsumer<Packet, ByteBuf>) encoders
+                .get(packetId);
+        encoder.accept(packet, out);
     }
 
     public Packet decode(ByteBuf buf) {
@@ -139,7 +161,7 @@ public class DefaultCodec implements RakNet.Codec {
     }
 
     protected <T extends Packet> void register(int id, Class<? extends Packet> clz,
-                                               Function<ByteBuf, T> decoder, BiConsumer<T, ByteBuf> encoder) {
+            Function<ByteBuf, T> decoder, BiConsumer<T, ByteBuf> encoder) {
         idFromClass.put(clz, id);
         decoders.put(id, decoder);
         encoders.put(id, encoder);

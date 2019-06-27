@@ -23,17 +23,17 @@ public class Pong extends SimpleFramedPacket {
     }
 
     @Override
+    public void encode(ByteBuf buf) {
+        buf.writeLong(pingTimestamp);
+        buf.writeLong(pongTimestamp);
+    }
+
+    @Override
     public void decode(ByteBuf buf) {
         pingTimestamp = buf.readLong();
         if (buf.isReadable()) {
             pongTimestamp = buf.readLong();
         }
-    }
-
-    @Override
-    public void encode(ByteBuf buf) {
-        buf.writeLong(pingTimestamp);
-        buf.writeLong(pongTimestamp);
     }
 
     public long getPingTimestamp() {

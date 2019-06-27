@@ -1,5 +1,8 @@
 package network.ycc.raknet.frame;
 
+import network.ycc.raknet.packet.FramedPacket;
+import network.ycc.raknet.utils.UINT;
+
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.ChannelPromise;
 import io.netty.util.AbstractReferenceCounted;
@@ -9,16 +12,13 @@ import io.netty.util.ResourceLeakDetector;
 import io.netty.util.ResourceLeakDetectorFactory;
 import io.netty.util.ResourceLeakTracker;
 
-import network.ycc.raknet.packet.FramedPacket;
-import network.ycc.raknet.utils.UINT;
-
 import java.util.List;
 
 public final class Frame extends AbstractReferenceCounted {
 
     public static final FrameComparator COMPARATOR = new FrameComparator();
     public static final int HEADER_SIZE = 24;
-
+    protected static final int SPLIT_FLAG = 0x10;
     private static final ResourceLeakDetector<Frame> leakDetector =
             ResourceLeakDetectorFactory.instance().newResourceLeakDetector(Frame.class);
     private static final Recycler<Frame> recycler = new Recycler<Frame>() {
@@ -27,8 +27,22 @@ public final class Frame extends AbstractReferenceCounted {
             return new Frame(handle);
         }
     };
+    private final Recycler.Handle<Frame> handle;
+    private boolean hasSplit;
+    private int reliableIndex;
+    private int sequenceIndex;
+    private int orderIndex;
+    private int splitCount;
+    private int splitID;
+    private int splitIndex;
+    private FrameData packet = null;
+    private ResourceLeakTracker<Frame> tracker = null;
+    private ChannelPromise promise = null;
 
-    protected static final int SPLIT_FLAG = 0x10;
+    private Frame(Recycler.Handle<Frame> handle) {
+        this.handle = handle;
+        setRefCnt(0);
+    }
 
     public static Frame read(ByteBuf buf) {
         final Frame out = createRaw();
@@ -98,41 +112,6 @@ public final class Frame extends AbstractReferenceCounted {
         return out;
     }
 
-    private boolean hasSplit;
-
-    private int reliableIndex;
-    private int sequenceIndex;
-
-    private int orderIndex;
-
-    private int splitCount;
-    private int splitID;
-    private int splitIndex;
-
-    private final Recycler.Handle<Frame> handle;
-    private FrameData packet = null;
-    private ResourceLeakTracker<Frame> tracker = null;
-    private ChannelPromise promise = null;
-
-    private Frame(Recycler.Handle<Frame> handle) {
-        this.handle = handle;
-        setRefCnt(0);
-    }
-
-    @Override
-    protected void deallocate() {
-        if (packet != null) {
-            packet.release();
-            packet = null;
-        }
-        if (tracker != null) {
-            tracker.close(this);
-            tracker = null;
-        }
-        promise = null;
-        handle.recycle(this);
-    }
-
     @Override
     public ReferenceCounted touch(Object hint) {
         if (tracker != null) {
@@ -158,8 +137,10 @@ public final class Frame extends AbstractReferenceCounted {
         final ByteBuf data = packet.createData();
         try {
             final int dataSplitSize = splitSize - HEADER_SIZE;
-            final int splitCountTotal = (data.readableBytes() + dataSplitSize - 1) / dataSplitSize; //round up
-            for (int splitIndexIterator = 0; splitIndexIterator < splitCountTotal; splitIndexIterator++) {
+            final int splitCountTotal =
+                    (data.readableBytes() + dataSplitSize - 1) / dataSplitSize; //round up
+            for (int splitIndexIterator = 0; splitIndexIterator < splitCountTotal;
+                    splitIndexIterator++) {
                 final int length = Math.min(dataSplitSize, data.readableBytes());
                 final Frame out = createRaw();
                 out.reliableIndex = reliableIndex;
@@ -194,6 +175,20 @@ public final class Frame extends AbstractReferenceCounted {
     @Override
     public Frame retain() {
         return (Frame) super.retain();
+    }
+
+    @Override
+    protected void deallocate() {
+        if (packet != null) {
+            packet.release();
+            packet = null;
+        }
+        if (tracker != null) {
+            tracker.close(this);
+            tracker = null;
+        }
+        promise = null;
+        handle.recycle(this);
     }
 
     public FrameData retainedFrameData() {

@@ -1,5 +1,7 @@
 package network.ycc.raknet.utils;
 
+import static org.mockito.Mockito.mock;
+
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.AbstractChannel;
 import io.netty.channel.Channel;
@@ -20,8 +22,6 @@ import java.net.NetworkInterface;
 import java.net.SocketAddress;
 import java.util.function.Consumer;
 
-import static org.mockito.Mockito.mock;
-
 public class MockDatagram extends AbstractChannel implements DatagramChannel {
     final static int fixedMTU = 700;
     static final ChannelMetadata METADATA = new ChannelMetadata(false, 16);
@@ -35,13 +35,14 @@ public class MockDatagram extends AbstractChannel implements DatagramChannel {
     boolean connected = false;
     boolean closed = false;
 
-    public MockDatagram(Channel parent, InetSocketAddress localAddress, InetSocketAddress remoteAddress) {
+    public MockDatagram(Channel parent, InetSocketAddress localAddress,
+            InetSocketAddress remoteAddress) {
         super(parent);
         this.localAddress = localAddress;
         this.remoteAddress = remoteAddress;
         pipeline().addFirst(new ChannelOutboundHandlerAdapter() {
             @Override
-            public void write(ChannelHandlerContext ctx, Object msg, ChannelPromise promise) throws Exception {
+            public void write(ChannelHandlerContext ctx, Object msg, ChannelPromise promise) {
                 final ByteBuf buf;
                 if (msg instanceof ByteBuf) {
                     buf = (ByteBuf) msg;
@@ -49,26 +50,14 @@ public class MockDatagram extends AbstractChannel implements DatagramChannel {
                     buf = ((DatagramPacket) msg).content();
                 }
                 if (buf.readableBytes() > fixedMTU) {
-                    writeOut.accept(new DatagramPacket(buf.readSlice(fixedMTU), remoteAddress, localAddress));
+                    writeOut.accept(new DatagramPacket(buf.readSlice(fixedMTU), remoteAddress,
+                            localAddress));
                 } else {
                     writeOut.accept(new DatagramPacket(buf, remoteAddress, localAddress));
                 }
                 promise.trySuccess();
             }
         });
-    }
-
-    protected AbstractUnsafe newUnsafe() {
-        return new AbstractUnsafe() {
-            public void connect(SocketAddress remoteAddress, SocketAddress localAddress, ChannelPromise promise) {
-                connected = true;
-                promise.trySuccess();
-            }
-        };
-    }
-
-    protected boolean isCompatible(EventLoop loop) {
-        return true;
     }
 
     @Override
@@ -86,6 +75,20 @@ public class MockDatagram extends AbstractChannel implements DatagramChannel {
         return remoteAddress0();
     }
 
+    protected AbstractUnsafe newUnsafe() {
+        return new AbstractUnsafe() {
+            public void connect(SocketAddress remoteAddress, SocketAddress localAddress,
+                    ChannelPromise promise) {
+                connected = true;
+                promise.trySuccess();
+            }
+        };
+    }
+
+    protected boolean isCompatible(EventLoop loop) {
+        return true;
+    }
+
     protected InetSocketAddress localAddress0() {
         return localAddress;
     }
@@ -94,23 +97,23 @@ public class MockDatagram extends AbstractChannel implements DatagramChannel {
         return remoteAddress;
     }
 
-    protected void doBind(SocketAddress localAddress) throws Exception {
+    protected void doBind(SocketAddress localAddress) {
         connected = true;
     }
 
-    protected void doDisconnect() throws Exception {
+    protected void doDisconnect() {
 
     }
 
-    protected void doClose() throws Exception {
+    protected void doClose() {
         closed = true;
     }
 
-    protected void doBeginRead() throws Exception {
+    protected void doBeginRead() {
 
     }
 
-    protected void doWrite(ChannelOutboundBuffer in) throws Exception {
+    protected void doWrite(ChannelOutboundBuffer in) {
 
     }
 
@@ -142,19 +145,23 @@ public class MockDatagram extends AbstractChannel implements DatagramChannel {
         return null;
     }
 
-    public ChannelFuture joinGroup(InetSocketAddress multicastAddress, NetworkInterface networkInterface) {
+    public ChannelFuture joinGroup(InetSocketAddress multicastAddress,
+            NetworkInterface networkInterface) {
         return null;
     }
 
-    public ChannelFuture joinGroup(InetSocketAddress multicastAddress, NetworkInterface networkInterface, ChannelPromise future) {
+    public ChannelFuture joinGroup(InetSocketAddress multicastAddress,
+            NetworkInterface networkInterface, ChannelPromise future) {
         return null;
     }
 
-    public ChannelFuture joinGroup(InetAddress multicastAddress, NetworkInterface networkInterface, InetAddress source) {
+    public ChannelFuture joinGroup(InetAddress multicastAddress, NetworkInterface networkInterface,
+            InetAddress source) {
         return null;
     }
 
-    public ChannelFuture joinGroup(InetAddress multicastAddress, NetworkInterface networkInterface, InetAddress source, ChannelPromise future) {
+    public ChannelFuture joinGroup(InetAddress multicastAddress, NetworkInterface networkInterface,
+            InetAddress source, ChannelPromise future) {
         return null;
     }
 
@@ -166,27 +173,33 @@ public class MockDatagram extends AbstractChannel implements DatagramChannel {
         return null;
     }
 
-    public ChannelFuture leaveGroup(InetSocketAddress multicastAddress, NetworkInterface networkInterface) {
+    public ChannelFuture leaveGroup(InetSocketAddress multicastAddress,
+            NetworkInterface networkInterface) {
         return null;
     }
 
-    public ChannelFuture leaveGroup(InetSocketAddress multicastAddress, NetworkInterface networkInterface, ChannelPromise future) {
+    public ChannelFuture leaveGroup(InetSocketAddress multicastAddress,
+            NetworkInterface networkInterface, ChannelPromise future) {
         return null;
     }
 
-    public ChannelFuture leaveGroup(InetAddress multicastAddress, NetworkInterface networkInterface, InetAddress source) {
+    public ChannelFuture leaveGroup(InetAddress multicastAddress, NetworkInterface networkInterface,
+            InetAddress source) {
         return null;
     }
 
-    public ChannelFuture leaveGroup(InetAddress multicastAddress, NetworkInterface networkInterface, InetAddress source, ChannelPromise future) {
+    public ChannelFuture leaveGroup(InetAddress multicastAddress, NetworkInterface networkInterface,
+            InetAddress source, ChannelPromise future) {
         return null;
     }
 
-    public ChannelFuture block(InetAddress multicastAddress, NetworkInterface networkInterface, InetAddress sourceToBlock) {
+    public ChannelFuture block(InetAddress multicastAddress, NetworkInterface networkInterface,
+            InetAddress sourceToBlock) {
         return null;
     }
 
-    public ChannelFuture block(InetAddress multicastAddress, NetworkInterface networkInterface, InetAddress sourceToBlock, ChannelPromise future) {
+    public ChannelFuture block(InetAddress multicastAddress, NetworkInterface networkInterface,
+            InetAddress sourceToBlock, ChannelPromise future) {
         return null;
     }
 
@@ -194,7 +207,8 @@ public class MockDatagram extends AbstractChannel implements DatagramChannel {
         return null;
     }
 
-    public ChannelFuture block(InetAddress multicastAddress, InetAddress sourceToBlock, ChannelPromise future) {
+    public ChannelFuture block(InetAddress multicastAddress, InetAddress sourceToBlock,
+            ChannelPromise future) {
         return null;
     }
 }

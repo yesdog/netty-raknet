@@ -12,13 +12,13 @@ public class Ping extends SimpleFramedPacket {
     }
 
     @Override
-    public void decode(ByteBuf buf) {
-        timestamp = buf.readLong();
+    public void encode(ByteBuf buf) {
+        buf.writeLong(timestamp);
     }
 
     @Override
-    public void encode(ByteBuf buf) {
-        buf.writeLong(timestamp);
+    public void decode(ByteBuf buf) {
+        timestamp = buf.readLong();
     }
 
     public long getTimestamp() {

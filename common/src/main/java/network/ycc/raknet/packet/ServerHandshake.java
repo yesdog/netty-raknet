@@ -1,8 +1,8 @@
 package network.ycc.raknet.packet;
 
-import java.net.InetSocketAddress;
-
 import io.netty.buffer.ByteBuf;
+
+import java.net.InetSocketAddress;
 
 public class ServerHandshake extends SimpleFramedPacket {
 
@@ -26,25 +26,25 @@ public class ServerHandshake extends SimpleFramedPacket {
     }
 
     @Override
-    public void decode(ByteBuf buf) {
-        clientAddr = readAddress(buf);
-        buf.readShort();
-        for (nExtraAddresses = 0 ; buf.readableBytes() > 16 ; nExtraAddresses++) {
-            readAddress(buf);
-        }
-        timestamp = buf.readLong();
-        timestamp = buf.readLong();
-    }
-
-    @Override
     public void encode(ByteBuf buf) {
         writeAddress(buf, clientAddr);
         buf.writeShort(0);
-        for (int i = 0 ; i < nExtraAddresses ; i++) {
+        for (int i = 0; i < nExtraAddresses; i++) {
             writeAddress(buf);
         }
         buf.writeLong(timestamp);
         buf.writeLong(System.currentTimeMillis());
+    }
+
+    @Override
+    public void decode(ByteBuf buf) {
+        clientAddr = readAddress(buf);
+        buf.readShort();
+        for (nExtraAddresses = 0; buf.readableBytes() > 16; nExtraAddresses++) {
+            readAddress(buf);
+        }
+        timestamp = buf.readLong();
+        timestamp = buf.readLong();
     }
 
     public InetSocketAddress getClientAddr() {

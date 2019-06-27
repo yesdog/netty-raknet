@@ -3,14 +3,16 @@ package network.ycc.raknet.utils;
 import it.unimi.dsi.fastutil.ints.IntComparator;
 
 public class UINT {
-    
-    private UINT() {}
+
+    private UINT() {
+    }
 
     public static class B2 {
 
-        private B2() {}
-
         public static final int MAX_VALUE = ((1 << (Byte.SIZE * 2)) - 1);
+
+        private B2() {
+        }
 
         public static int plus(int value, int add) {
             return (value + add) & MAX_VALUE;
@@ -24,11 +26,11 @@ public class UINT {
 
     public static class B3 {
 
-        private B3() {}
-
         public static final int MAX_VALUE = (1 << (Byte.SIZE * 3)) - 1;
         public static final int HALF_MAX = MAX_VALUE / 2;
         public static final IntComparator COMPARATOR = new Comparator();
+        private B3() {
+        }
 
         public static int plus(int value, int add) {
             return (value + add) & MAX_VALUE;
