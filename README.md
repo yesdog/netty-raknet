@@ -23,7 +23,8 @@ room for extension with any plugins or custom behavior.
   * Uses Bootstrap and ServerBootstrap pattern.
   * Signals backpressure using Channel writability. 
   * Uses Netty ChannelOptions for channel config.
-  * Follows the normal bind() and connect() patterns.
+  * Follows the normal *bind* and *connect* patterns.
+  * Accurate promise responses for *write*, *connect* and others. 
 * 0-copy buffer interactions:
   * Retained buffer references throughout.
   * Composite buffers used for encapsulation and defragmentation. 
