@@ -55,9 +55,10 @@ public class ReliabilityHandler extends ChannelDuplexHandler {
 
     @Override
     public void close(ChannelHandlerContext ctx, ChannelPromise promise) {
-        if (wasOpen) {
+        if (wasOpen && ctx.channel().isActive()) {
             wasOpen = false;
             clearQueue(null);
+            //TODO: joined disconnect - send disconnect, wait, combine promise with that returned from ctx.close()
             ctx.channel().writeAndFlush(new Disconnect());
         }
         ctx.close(promise);

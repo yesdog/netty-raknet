@@ -11,6 +11,12 @@ public class Ping extends SimpleFramedPacket {
         reliability = Reliability.UNRELIABLE;
     }
 
+    public static Ping newReliablePing() {
+        final Ping out = new Ping();
+        out.reliability = Reliability.RELIABLE;
+        return out;
+    }
+
     @Override
     public void encode(ByteBuf buf) {
         buf.writeLong(timestamp);

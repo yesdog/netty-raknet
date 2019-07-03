@@ -3,7 +3,6 @@ package network.ycc.raknet.pipeline;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelDuplexHandler;
 import io.netty.channel.ChannelHandlerContext;
-import io.netty.util.concurrent.ScheduledFuture;
 
 import java.util.concurrent.TimeUnit;
 
@@ -25,16 +24,6 @@ public class FlushTickHandler extends ChannelDuplexHandler {
 
     public static void checkFlushTick(Channel channel) {
         channel.pipeline().fireUserEventTriggered(FLUSH_CHECK_SIGNAL);
-    }
-
-    @Override
-    public void handlerAdded(ChannelHandlerContext ctx) {
-        final Channel channel = ctx.channel();
-        final ScheduledFuture<?> pingTask = ctx.channel().eventLoop().scheduleAtFixedRate(
-                () -> channel.flush(),
-                0, 100, TimeUnit.MILLISECONDS
-        );
-        channel.closeFuture().addListener(x -> pingTask.cancel(false));
     }
 
     @Override
