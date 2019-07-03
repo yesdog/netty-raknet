@@ -2,7 +2,6 @@ package network.ycc.raknet.pipeline;
 
 import network.ycc.raknet.RakNet;
 import network.ycc.raknet.frame.Frame;
-import network.ycc.raknet.packet.Disconnect;
 import network.ycc.raknet.packet.FrameSet;
 import network.ycc.raknet.packet.Reliability;
 import network.ycc.raknet.utils.Constants;
@@ -35,7 +34,6 @@ public class ReliabilityHandler extends ChannelDuplexHandler {
     protected final ObjectSortedSet<Frame> frameQueue = new ObjectRBTreeSet<>(Frame.COMPARATOR);
     protected final Int2ObjectMap<FrameSet> pendingFrameSets = new Int2ObjectOpenHashMap<>();
 
-    protected boolean wasOpen = true;
     protected int lastReceivedSeqId = 0;
     protected int nextSendSeqId = 0;
     protected int resendGauge = 0;
@@ -51,17 +49,6 @@ public class ReliabilityHandler extends ChannelDuplexHandler {
     @Override
     public void handlerRemoved(ChannelHandlerContext ctx) {
         clearQueue(null);
-    }
-
-    @Override
-    public void close(ChannelHandlerContext ctx, ChannelPromise promise) {
-        if (wasOpen && ctx.channel().isActive()) {
-            wasOpen = false;
-            clearQueue(null);
-            //TODO: joined disconnect - send disconnect, wait, combine promise with that returned from ctx.close()
-            ctx.channel().writeAndFlush(new Disconnect());
-        }
-        ctx.close(promise);
     }
 
     @Override

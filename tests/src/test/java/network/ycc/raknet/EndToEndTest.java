@@ -67,13 +67,24 @@ public class EndToEndTest {
     }
 
     @Test
-    public void connectAndCloseTest() throws Throwable {
+    public void connectAndCloseTestServerFirst() throws Throwable {
         for (int i = 0; i < 20; i++) {
             Channel server = newServer(null, null, null);
             Channel client = newClient(null, null);
 
             server.close().sync();
             client.close().sync();
+        }
+    }
+
+    @Test
+    public void connectAndCloseTestClientFirst() throws Throwable {
+        for (int i = 0; i < 20; i++) {
+            Channel server = newServer(null, null, null);
+            Channel client = newClient(null, null);
+
+            client.close().sync();
+            server.close().sync();
         }
     }
 
@@ -192,12 +203,7 @@ public class EndToEndTest {
                 size = 9; //reserve 8 size for the other tests
             }
             while (!client.isWritable() || pending.get() > 3000) {
-                try {
-                    Thread.sleep(1);
-                } catch (InterruptedException e) {
-                    e.printStackTrace();
-                    break;
-                }
+                Thread.yield();
                 //TODO: deadline check
             }
             ChannelFuture fut;

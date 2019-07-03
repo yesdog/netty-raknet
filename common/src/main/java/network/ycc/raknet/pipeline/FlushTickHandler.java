@@ -45,6 +45,8 @@ public class FlushTickHandler extends ChannelDuplexHandler {
     public void flush(ChannelHandlerContext ctx) throws Exception {
         if (tickAccum >= TICK_RESOLUTION) {
             tickAccum -= TICK_RESOLUTION;
+            ctx.channel().eventLoop().execute(() ->
+                    ctx.channel().pipeline().fireUserEventTriggered(FLUSH_CHECK_SIGNAL));
         } else {
             tickAccum = 0;
         }

@@ -227,6 +227,10 @@ public class DatagramChannelProxy implements Channel {
         return listener.compareTo(o);
     }
 
+    protected void gracefulClose(ChannelPromise promise) {
+        listener.close(wrapPromise(promise));
+    }
+
     protected DefaultChannelPipeline newChannelPipeline() {
         return new DefaultChannelPipeline(this) {
             @Override
@@ -287,8 +291,6 @@ public class DatagramChannelProxy implements Channel {
         public void bind(ChannelHandlerContext ctx, SocketAddress localAddress,
                 ChannelPromise promise) {
             listener.bind(localAddress, wrapPromise(promise));
-        }        public void handlerRemoved(ChannelHandlerContext ctx) {
-            // NOOP
         }
 
         public void connect(ChannelHandlerContext ctx, SocketAddress remoteAddress,
@@ -296,12 +298,16 @@ public class DatagramChannelProxy implements Channel {
             listener.connect(remoteAddress, localAddress, wrapPromise(promise));
         }
 
+        public void handlerRemoved(ChannelHandlerContext ctx) {
+            // NOOP
+        }
+
         public void disconnect(ChannelHandlerContext ctx, ChannelPromise promise) {
             listener.disconnect(wrapPromise(promise));
         }
 
         public void close(ChannelHandlerContext ctx, ChannelPromise promise) {
-            listener.close(wrapPromise(promise));
+            gracefulClose(promise);
         }
 
         public void deregister(ChannelHandlerContext ctx, ChannelPromise promise) {
@@ -320,8 +326,6 @@ public class DatagramChannelProxy implements Channel {
             listener.flush();
         }
 
-
-
         @SuppressWarnings("deprecation")
         public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) {
             ctx.fireExceptionCaught(cause);
@@ -333,13 +337,13 @@ public class DatagramChannelProxy implements Channel {
 
         public void channelRegistered(ChannelHandlerContext ctx) {
             pipeline.fireChannelRegistered();
-        }        public void handlerAdded(ChannelHandlerContext ctx) {
-            // NOOP
         }
 
         public void channelUnregistered(ChannelHandlerContext ctx) {
             pipeline.fireChannelUnregistered();
-        }        public void handlerRemoved(ChannelHandlerContext ctx) {
+        }
+
+        public void handlerAdded(ChannelHandlerContext ctx) {
             // NOOP
         }
 
@@ -349,6 +353,10 @@ public class DatagramChannelProxy implements Channel {
 
         public void channelInactive(ChannelHandlerContext ctx) {
             pipeline.fireChannelInactive();
+        }
+
+        public void handlerRemoved(ChannelHandlerContext ctx) {
+            // NOOP
         }
 
         public void channelRead(ChannelHandlerContext ctx, Object msg) {
@@ -374,10 +382,6 @@ public class DatagramChannelProxy implements Channel {
             }
             pipeline.fireExceptionCaught(cause);
         }
-
-
-
-
 
     }
 

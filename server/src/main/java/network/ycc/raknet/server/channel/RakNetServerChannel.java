@@ -13,6 +13,7 @@ import io.netty.channel.socket.DatagramChannel;
 import io.netty.channel.socket.DatagramPacket;
 import io.netty.channel.socket.nio.NioDatagramChannel;
 import io.netty.util.ReferenceCountUtil;
+import io.netty.util.concurrent.PromiseCombiner;
 
 import java.net.InetSocketAddress;
 import java.net.SocketAddress;
@@ -36,6 +37,15 @@ public class RakNetServerChannel extends DatagramChannelProxy implements ServerC
     public RakNetServerChannel(Class<? extends DatagramChannel> ioChannelType) {
         super(ioChannelType);
         addDefaultPipeline();
+    }
+
+    @Override
+    protected void gracefulClose(ChannelPromise promise) {
+        final PromiseCombiner combined = new PromiseCombiner(eventLoop());
+        final ChannelPromise childrenClosed = newPromise();
+        childMap.values().forEach(child -> combined.add(child.close()));
+        combined.finish(childrenClosed);
+        childrenClosed.addListener(f -> listener.close(wrapPromise(promise)));
     }
 
     protected void addDefaultPipeline() {
