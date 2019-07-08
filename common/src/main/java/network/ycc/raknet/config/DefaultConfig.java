@@ -36,6 +36,7 @@ public class DefaultConfig extends DefaultChannelConfig implements RakNet.Config
     private volatile RakNet.Magic magic = DEFAULT_MAGIC;
     private volatile RakNet.Codec codec = DefaultCodec.INSTANCE;
     private volatile int protocolVersion = 9;
+    private volatile int maxConnections = 2048;
 
     public DefaultConfig(Channel channel) {
         super(channel);
@@ -70,6 +71,8 @@ public class DefaultConfig extends DefaultChannelConfig implements RakNet.Config
             return (T) magic;
         } else if (option == RakNet.RETRY_DELAY_NANOS) {
             return (T) (Long) retryDelayNanos;
+        } else if (option == RakNet.MAX_CONNECTIONS) {
+            return (T) (Integer) maxConnections;
         }
         return super.getOption(option);
     }
@@ -93,6 +96,8 @@ public class DefaultConfig extends DefaultChannelConfig implements RakNet.Config
             magic = (RakNet.Magic) value;
         } else if (option == RakNet.RETRY_DELAY_NANOS) {
             retryDelayNanos = (Long) value;
+        } else if (option == RakNet.MAX_CONNECTIONS) {
+            maxConnections = (Integer) value;
         } else {
             return super.setOption(option, value);
         }
@@ -205,6 +210,14 @@ public class DefaultConfig extends DefaultChannelConfig implements RakNet.Config
 
     public void setProtocolVersion(int protocolVersion) {
         this.protocolVersion = protocolVersion;
+    }
+
+    public int getMaxConnections() {
+        return maxConnections;
+    }
+
+    public void setMaxConnections(int maxConnections) {
+        this.maxConnections = maxConnections;
     }
 
 }

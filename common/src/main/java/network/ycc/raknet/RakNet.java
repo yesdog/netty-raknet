@@ -40,6 +40,8 @@ public class RakNet {
     public static final ChannelOption<Magic> MAGIC = ChannelOption.valueOf("RN_MAGIC");
     public static final ChannelOption<Long> RETRY_DELAY_NANOS = ChannelOption
             .valueOf("RN_RETRY_DELAY_NANOS");
+    public static final ChannelOption<Integer> MAX_CONNECTIONS =
+            ChannelOption.valueOf("RN_MAX_CONNECTIONS");
 
     public static final ChannelFutureListener INTERNAL_WRITE_LISTENER = future -> {
         if (!future.isSuccess() && !(future.cause() instanceof ClosedChannelException)) {
@@ -115,61 +117,51 @@ public class RakNet {
          * @return Server ID used during handshake.
          */
         long getServerId();
-
         void setServerId(long serverId);
 
         /**
          * @return Client ID used during handshake.
          */
         long getClientId();
-
         void setClientId(long clientId);
 
         /**
          * @return MTU in bytes, negotiated during handshake.
          */
         int getMTU();
-
         void setMTU(int mtu);
 
         /**
          * @return Offset used while calculating retry period.
          */
         long getRetryDelayNanos();
-
         void setRetryDelayNanos(long retryDelayNanos);
 
         long getRTTNanos();
-
         void setRTTNanos(long rtt);
-
         long getRTTStdDevNanos();
-
         void updateRTTNanos(long rttSample);
 
         int getMaxPendingFrameSets();
-
         void setMaxPendingFrameSets(int maxPendingFrameSets);
 
         int getDefaultPendingFrameSets();
-
         void setDefaultPendingFrameSets(int defaultPendingFrameSets);
 
         int getMaxQueuedBytes();
-
         void setMaxQueuedBytes(int maxQueuedBytes);
 
         Magic getMagic();
-
         void setMagic(Magic magic);
 
         Codec getCodec();
-
         void setCodec(Codec codec);
 
         int getProtocolVersion();
-
         void setProtocolVersion(int protocolVersion);
+
+        int getMaxConnections();
+        void setMaxConnections(int maxConnections);
     }
 
     public interface Codec {

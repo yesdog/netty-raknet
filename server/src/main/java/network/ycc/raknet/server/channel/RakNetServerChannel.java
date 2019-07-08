@@ -1,8 +1,11 @@
 package network.ycc.raknet.server.channel;
 
 import network.ycc.raknet.channel.DatagramChannelProxy;
+import network.ycc.raknet.packet.NoFreeConnections;
+import network.ycc.raknet.packet.Packet;
 import network.ycc.raknet.server.RakNetServer;
 
+import io.netty.buffer.ByteBuf;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelDuplexHandler;
 import io.netty.channel.ChannelHandler;
@@ -66,7 +69,6 @@ public class RakNetServerChannel extends DatagramChannelProxy implements ServerC
         @Override
         public void connect(ChannelHandlerContext ctx, SocketAddress remoteAddress,
                 SocketAddress localAddress, ChannelPromise promise) {
-            //TODO: session limit check
             try {
                 if (localAddress != null && !RakNetServerChannel.this.localAddress()
                         .equals(localAddress)) {
@@ -77,7 +79,21 @@ public class RakNetServerChannel extends DatagramChannelProxy implements ServerC
                     throw new IllegalArgumentException(
                             "Provided remote address is not an InetSocketAddress");
                 }
-                if (!childMap.containsKey(remoteAddress)) {
+                if (childMap.size() > config.getMaxConnections()
+                        && !childMap.containsKey(remoteAddress)) {
+                    final Packet packet = new NoFreeConnections(
+                            config.getMagic(), config.getServerId());
+                    final ByteBuf buf = ctx.alloc().ioBuffer(packet.sizeHint());
+                    try {
+                        config.getCodec().encode(packet, buf);
+                        ctx.writeAndFlush(new DatagramPacket(buf.retain(),
+                                (InetSocketAddress) remoteAddress));
+                    } finally {
+                        ReferenceCountUtil.safeRelease(packet);
+                        buf.release();
+                    }
+                    promise.tryFailure(new IllegalStateException("Too many connections"));
+                } else if (!childMap.containsKey(remoteAddress)) {
                     final RakNetChildChannel child = newChild((InetSocketAddress) remoteAddress);
                     child.closeFuture().addListener(v ->
                             eventLoop().execute(() -> childMap.remove(remoteAddress, child))
@@ -86,7 +102,7 @@ public class RakNetServerChannel extends DatagramChannelProxy implements ServerC
                     pipeline().fireChannelRead(child).fireChannelReadComplete(); //register
                     childMap.put(remoteAddress, child);
                 }
-                //TODO: tie promise to connection sequence
+                //TODO: tie promise to connection sequence?
                 promise.trySuccess();
             } catch (Exception e) {
                 promise.tryFailure(e);

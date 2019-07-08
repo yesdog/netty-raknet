@@ -119,7 +119,6 @@ public class ConnectionInitializer extends AbstractConnectionInitializer {
         if (!clientIdSet) {
             config.setClientId(clientId);
             clientIdSet = true;
-            return;
         } else if (config.getClientId() != clientId) {
             ctx.close();
             throw new IllegalStateException("Connection sequence restarted");
