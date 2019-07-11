@@ -71,28 +71,27 @@ public class DefaultCodec implements RakNet.Codec {
 
     public DefaultCodec() {
         //       ID                         Class                       Decoder                     Encoder
-        register(PING, Ping.class, Ping::new);
-        register(UNCONNECTED_PING, UnconnectedPing.class, UnconnectedPing::new);
-        register(PONG, Pong.class, Pong::new);
-        register(OPEN_CONNECTION_REQUEST_1, ConnectionRequest1.class, ConnectionRequest1::new);
-        register(OPEN_CONNECTION_REPLY_1, ConnectionReply1.class, ConnectionReply1::new);
-        register(OPEN_CONNECTION_REQUEST_2, ConnectionRequest2.class, ConnectionRequest2::new);
-        register(OPEN_CONNECTION_REPLY_2, ConnectionReply2.class, ConnectionReply2::new);
-        register(CONNECTION_REQUEST, ConnectionRequest.class, ConnectionRequest::new);
-        register(SERVER_HANDSHAKE, ServerHandshake.class, ServerHandshake::new);
-        register(CONNECTION_FAILED, ConnectionFailed.class, ConnectionFailed::new);
-        register(ALREADY_CONNECTED, AlreadyConnected.class, AlreadyConnected::new);
-        register(CLIENT_HANDSHAKE, ClientHandshake.class, ClientHandshake::new);
-        register(NO_FREE_CONNECTIONS, NoFreeConnections.class, NoFreeConnections::new);
-        register(CLIENT_DISCONNECT, Disconnect.class, Disconnect::new);
-        register(CONNECTION_BANNED, ConnectionBanned.class, ConnectionBanned::new);
-        register(INVALID_VERSION, InvalidVersion.class, InvalidVersion::new);
-        register(UNCONNECTED_PONG, UnconnectedPong.class, UnconnectedPong::new);
-        for (int i = FRAME_DATA_START; i <= FRAME_DATA_END; i++) {
-            register(i, FrameSet.class, FrameSet::read, FrameSet::write);
-        }
-        register(NACK, Reliability.NACK.class, Reliability.NACK::new);
-        register(ACK, Reliability.ACK.class, Reliability.ACK::new);
+        register(PING,                      Ping.class,                 Ping::new);
+        register(UNCONNECTED_PING,          UnconnectedPing.class,      UnconnectedPing::new);
+        register(PONG,                      Pong.class,                 Pong::new);
+        register(OPEN_CONNECTION_REQUEST_1, ConnectionRequest1.class,   ConnectionRequest1::new);
+        register(OPEN_CONNECTION_REPLY_1,   ConnectionReply1.class,     ConnectionReply1::new);
+        register(OPEN_CONNECTION_REQUEST_2, ConnectionRequest2.class,   ConnectionRequest2::new);
+        register(OPEN_CONNECTION_REPLY_2,   ConnectionReply2.class,     ConnectionReply2::new);
+        register(CONNECTION_REQUEST,        ConnectionRequest.class,    ConnectionRequest::new);
+        register(SERVER_HANDSHAKE,          ServerHandshake.class,      ServerHandshake::new);
+        register(CONNECTION_FAILED,         ConnectionFailed.class,     ConnectionFailed::new);
+        register(ALREADY_CONNECTED,         AlreadyConnected.class,     AlreadyConnected::new);
+        register(CLIENT_HANDSHAKE,          ClientHandshake.class,      ClientHandshake::new);
+        register(NO_FREE_CONNECTIONS,       NoFreeConnections.class,    NoFreeConnections::new);
+        register(CLIENT_DISCONNECT,         Disconnect.class,           Disconnect::new);
+        register(CONNECTION_BANNED,         ConnectionBanned.class,     ConnectionBanned::new);
+        register(INVALID_VERSION,           InvalidVersion.class,       InvalidVersion::new);
+        register(UNCONNECTED_PONG,          UnconnectedPong.class,      UnconnectedPong::new);
+        for (int i = FRAME_DATA_START; i <= FRAME_DATA_END; i++) register(
+                 i,                         FrameSet.class,             FrameSet::read,             FrameSet::write);
+        register(NACK,                      Reliability.NACK.class,     Reliability.NACK::new);
+        register(ACK,                       Reliability.ACK.class,      Reliability.ACK::new);
 
         idFromClass.defaultReturnValue(-1);
     }

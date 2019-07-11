@@ -35,13 +35,10 @@ public class RakNet {
     public static final ChannelOption<MetricsLogger> METRICS = ChannelOption.valueOf("RN_METRICS");
     public static final ChannelOption<Integer> MTU = ChannelOption.valueOf("RN_MTU");
     public static final ChannelOption<Long> RTT = ChannelOption.valueOf("RN_RTT");
-    public static final ChannelOption<Integer> PROTOCOL_VERSION = ChannelOption
-            .valueOf("RN_PROTOCOL_VERSION");
+    public static final ChannelOption<Integer> PROTOCOL_VERSION = ChannelOption.valueOf("RN_PROTOCOL_VERSION");
     public static final ChannelOption<Magic> MAGIC = ChannelOption.valueOf("RN_MAGIC");
-    public static final ChannelOption<Long> RETRY_DELAY_NANOS = ChannelOption
-            .valueOf("RN_RETRY_DELAY_NANOS");
-    public static final ChannelOption<Integer> MAX_CONNECTIONS =
-            ChannelOption.valueOf("RN_MAX_CONNECTIONS");
+    public static final ChannelOption<Long> RETRY_DELAY_NANOS = ChannelOption.valueOf("RN_RETRY_DELAY_NANOS");
+    public static final ChannelOption<Integer> MAX_CONNECTIONS = ChannelOption.valueOf("RN_MAX_CONNECTIONS");
 
     public static final ChannelFutureListener INTERNAL_WRITE_LISTENER = future -> {
         if (!future.isSuccess() && !(future.cause() instanceof ClosedChannelException)) {
@@ -62,50 +59,21 @@ public class RakNet {
      * Channel specific metrics logging interface.
      */
     public interface MetricsLogger {
-        default void packetsIn(int delta) {
-        }
-
-        default void framesIn(int delta) {
-        }
-
-        default void frameError(int delta) {
-        }
-
-        default void bytesIn(int delta) {
-        }
-
-        default void packetsOut(int delta) {
-        }
-
-        default void framesOut(int delta) {
-        }
-
-        default void bytesOut(int delta) {
-        }
-
-        default void bytesRecalled(int delta) {
-        }
-
-        default void bytesACKd(int delta) {
-        }
-
-        default void bytesNACKd(int delta) {
-        }
-
-        default void acksSent(int delta) {
-        }
-
-        default void nacksSent(int delta) {
-        }
-
-        default void measureRTTns(long n) {
-        }
-
-        default void measureRTTnsStdDev(long n) {
-        }
-
-        default void measureBurstTokens(int n) {
-        }
+        default void packetsIn(int delta) {}
+        default void framesIn(int delta) {}
+        default void frameError(int delta) {}
+        default void bytesIn(int delta) {}
+        default void packetsOut(int delta) {}
+        default void framesOut(int delta) {}
+        default void bytesOut(int delta) {}
+        default void bytesRecalled(int delta) {}
+        default void bytesACKd(int delta) {}
+        default void bytesNACKd(int delta) {}
+        default void acksSent(int delta) {}
+        default void nacksSent(int delta) {}
+        default void measureRTTns(long n) {}
+        default void measureRTTnsStdDev(long n) {}
+        default void measureBurstTokens(int n) {}
     }
 
     public interface Config extends ChannelConfig {
@@ -166,21 +134,15 @@ public class RakNet {
 
     public interface Codec {
         FrameData encode(FramedPacket packet, ByteBufAllocator alloc);
-
         void encode(Packet packet, ByteBuf out);
-
         Packet decode(ByteBuf in);
-
         FramedPacket decode(FrameData data);
-
         int packetIdFor(Class<? extends Packet> type);
     }
 
     public interface Magic {
         void write(ByteBuf buf);
-
         void read(ByteBuf buf);
-
         void verify(Magic other);
 
         class MagicMismatchException extends CorruptedFrameException {
@@ -197,12 +159,12 @@ public class RakNet {
 
         protected void initChannel(Channel channel) {
             channel.pipeline()
-                    .addLast(ReliabilityHandler.NAME, new ReliabilityHandler())
-                    .addLast(FrameJoiner.NAME, new FrameJoiner())
-                    .addLast(FrameSplitter.NAME, new FrameSplitter())
-                    .addLast(FrameOrderIn.NAME, new FrameOrderIn())
-                    .addLast(FrameOrderOut.NAME, new FrameOrderOut())
-                    .addLast(FramedPacketCodec.NAME, new FramedPacketCodec());
+                    .addLast(ReliabilityHandler.NAME,   new ReliabilityHandler())
+                    .addLast(FrameJoiner.NAME,          new FrameJoiner())
+                    .addLast(FrameSplitter.NAME,        new FrameSplitter())
+                    .addLast(FrameOrderIn.NAME,         new FrameOrderIn())
+                    .addLast(FrameOrderOut.NAME,        new FrameOrderOut())
+                    .addLast(FramedPacketCodec.NAME,    new FramedPacketCodec());
         }
     }
 
@@ -211,9 +173,9 @@ public class RakNet {
 
         protected void initChannel(Channel channel) {
             channel.pipeline()
-                    .addLast(DisconnectHandler.NAME, DisconnectHandler.INSTANCE)
-                    .addLast(PingHandler.NAME, PingHandler.INSTANCE)
-                    .addLast(PongHandler.NAME, PongHandler.INSTANCE);
+                    .addLast(DisconnectHandler.NAME,    DisconnectHandler.INSTANCE)
+                    .addLast(PingHandler.NAME,          PingHandler.INSTANCE)
+                    .addLast(PongHandler.NAME,          PongHandler.INSTANCE);
         }
     }
 

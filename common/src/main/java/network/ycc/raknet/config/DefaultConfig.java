@@ -22,7 +22,7 @@ public class DefaultConfig extends DefaultChannelConfig implements RakNet.Config
     private static final RakNet.MetricsLogger DEFAULT_METRICS = new RakNet.MetricsLogger() {
     };
     private static final Random rnd = new Random();
-    protected final DescriptiveStatistics rttStats = new DescriptiveStatistics(32);
+    protected final DescriptiveStatistics rttStats = new DescriptiveStatistics(16);
     //TODO: add rest of ChannelOptions
     private volatile long serverId = rnd.nextLong();
     private volatile long clientId = rnd.nextLong();

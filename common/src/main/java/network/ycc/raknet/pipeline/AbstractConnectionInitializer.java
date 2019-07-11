@@ -49,19 +49,7 @@ public abstract class AbstractConnectionInitializer extends SimpleChannelInbound
     }
 
     protected void startPing(ChannelHandlerContext ctx) {
-        final Channel channel = ctx.channel();
-        final ScheduledFuture<?> pingTask = ctx.channel().eventLoop().scheduleAtFixedRate(
-                () -> channel.writeAndFlush(new Ping()),
-                0, 100, TimeUnit.MILLISECONDS
-        );
-        final ScheduledFuture<?> pingTaskReliable = ctx.channel().eventLoop().scheduleAtFixedRate(
-                () -> channel.write(Ping.newReliablePing()),
-                0, 1, TimeUnit.SECONDS
-        );
-        channel.closeFuture().addListener(x -> {
-            pingTask.cancel(false);
-            pingTaskReliable.cancel(false);
-        });
+        ctx.channel().pipeline().addAfter(NAME, PingProducer.NAME, new PingProducer());
     }
 
     protected void finish(ChannelHandlerContext ctx) {

@@ -70,8 +70,7 @@ public class RakNetServerChannel extends DatagramChannelProxy implements ServerC
         public void connect(ChannelHandlerContext ctx, SocketAddress remoteAddress,
                 SocketAddress localAddress, ChannelPromise promise) {
             try {
-                if (localAddress != null && !RakNetServerChannel.this.localAddress()
-                        .equals(localAddress)) {
+                if (localAddress != null && !RakNetServerChannel.this.localAddress().equals(localAddress)) {
                     throw new IllegalArgumentException(
                             "Bound localAddress does not match provided " + localAddress);
                 }
@@ -101,9 +100,11 @@ public class RakNetServerChannel extends DatagramChannelProxy implements ServerC
                     child.config.setServerId(config.getServerId());
                     pipeline().fireChannelRead(child).fireChannelReadComplete(); //register
                     childMap.put(remoteAddress, child);
+                    //TODO: tie promise to connection sequence?
+                    promise.trySuccess();
+                } else {
+                    promise.trySuccess(); //already connected
                 }
-                //TODO: tie promise to connection sequence?
-                promise.trySuccess();
             } catch (Exception e) {
                 promise.tryFailure(e);
                 throw e;
@@ -113,18 +114,18 @@ public class RakNetServerChannel extends DatagramChannelProxy implements ServerC
         @Override
         public void channelRead(ChannelHandlerContext ctx, Object msg) {
             if (msg instanceof DatagramPacket) {
+                final DatagramPacket datagram = (DatagramPacket) msg;
                 try {
-                    final DatagramPacket datagram = (DatagramPacket) msg;
                     final Channel child = childMap.get(datagram.sender());
-                    if (child != null && child.isOpen() && child.config().isAutoRead()) {
+                    if (child == null) {
+                        ctx.fireChannelRead(datagram.retain());
+                    } else if (child.isOpen() && child.config().isAutoRead()) {
                         child.pipeline()
                                 .fireChannelRead(datagram.content().retain())
                                 .fireChannelReadComplete();
-                    } else if (child == null) {
-                        ctx.fireChannelRead(datagram.retain());
                     }
                 } finally {
-                    ReferenceCountUtil.release(msg);
+                    datagram.release();
                 }
             } else {
                 ctx.fireChannelRead(msg);
