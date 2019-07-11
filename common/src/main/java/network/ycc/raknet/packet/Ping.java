@@ -11,6 +11,11 @@ public class Ping extends SimpleFramedPacket {
         reliability = Reliability.UNRELIABLE;
     }
 
+    public Ping(long timestamp) {
+        super();
+        this.timestamp = timestamp;
+    }
+
     public static Ping newReliablePing() {
         final Ping out = new Ping();
         out.reliability = Reliability.RELIABLE;
