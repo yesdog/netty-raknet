@@ -32,7 +32,7 @@ public class FlushTickHandler extends ChannelDuplexHandler {
     public void handlerAdded(ChannelHandlerContext ctx) {
         assert flushTask == null;
         flushTask = ctx.channel().eventLoop().scheduleAtFixedRate(
-                () -> ctx.flush(),
+                () -> ctx.channel().flush(),
                 0, 100, TimeUnit.MILLISECONDS
         );
     }
