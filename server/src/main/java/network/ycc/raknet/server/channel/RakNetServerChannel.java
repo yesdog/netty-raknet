@@ -42,6 +42,14 @@ public class RakNetServerChannel extends DatagramChannelProxy implements ServerC
         addDefaultPipeline();
     }
 
+    public RakNetChildChannel getChildChannel(SocketAddress addr) {
+        if (!eventLoop().inEventLoop()) {
+            throw new IllegalStateException("Method must be called from the server eventLoop!");
+        }
+
+        return childMap.get(addr);
+    }
+
     @Override
     protected void gracefulClose(ChannelPromise promise) {
         final PromiseCombiner combined = new PromiseCombiner(eventLoop());
@@ -78,8 +86,8 @@ public class RakNetServerChannel extends DatagramChannelProxy implements ServerC
                     throw new IllegalArgumentException(
                             "Provided remote address is not an InetSocketAddress");
                 }
-                if (childMap.size() > config.getMaxConnections()
-                        && !childMap.containsKey(remoteAddress)) {
+                final Channel existingChild = getChildChannel(remoteAddress);
+                if (childMap.size() > config.getMaxConnections() && existingChild == null) {
                     final Packet packet = new NoFreeConnections(
                             config.getMagic(), config.getServerId());
                     final ByteBuf buf = ctx.alloc().ioBuffer(packet.sizeHint());
@@ -92,7 +100,7 @@ public class RakNetServerChannel extends DatagramChannelProxy implements ServerC
                         buf.release();
                     }
                     promise.tryFailure(new IllegalStateException("Too many connections"));
-                } else if (!childMap.containsKey(remoteAddress)) {
+                } else if (existingChild == null) {
                     final RakNetChildChannel child = newChild((InetSocketAddress) remoteAddress);
                     child.closeFuture().addListener(v ->
                             eventLoop().execute(() -> childMap.remove(remoteAddress, child))

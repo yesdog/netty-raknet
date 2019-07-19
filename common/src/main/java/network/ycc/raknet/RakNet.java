@@ -48,7 +48,11 @@ public class RakNet {
     };
 
     public static Config config(ChannelHandlerContext ctx) {
-        return (Config) ctx.channel().config();
+        return config(ctx.channel());
+    }
+
+    public static Config config(Channel channel) {
+        return (Config) channel.config();
     }
 
     public static MetricsLogger metrics(ChannelHandlerContext ctx) {
@@ -150,6 +154,11 @@ public class RakNet {
 
             public MagicMismatchException() {
                 super("Incorrect RakNet magic value");
+            }
+
+            @Override
+            public synchronized Throwable fillInStackTrace() {
+                return this;
             }
         }
     }

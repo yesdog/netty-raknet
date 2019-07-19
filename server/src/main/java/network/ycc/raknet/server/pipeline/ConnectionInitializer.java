@@ -12,6 +12,7 @@ import network.ycc.raknet.packet.Packet;
 import network.ycc.raknet.packet.ServerHandshake;
 import network.ycc.raknet.pipeline.AbstractConnectionInitializer;
 
+import io.netty.channel.Channel;
 import io.netty.channel.ChannelFutureListener;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelPromise;
@@ -22,9 +23,17 @@ import java.net.InetSocketAddress;
 public class ConnectionInitializer extends AbstractConnectionInitializer {
 
     protected boolean clientIdSet = false;
+    protected boolean mtuFixed = false;
 
     public ConnectionInitializer(ChannelPromise connectPromise) {
         super(connectPromise);
+    }
+
+    public static void setFixedMTU(Channel channel, int mtu) {
+        channel.eventLoop().execute(() -> {
+            channel.pipeline().get(ConnectionInitializer.class).mtuFixed = true;
+            RakNet.config(channel).setMTU(mtu);
+        });
     }
 
     @SuppressWarnings("unchecked")
@@ -39,7 +48,9 @@ public class ConnectionInitializer extends AbstractConnectionInitializer {
                 if (msg instanceof ConnectionRequest1) {
                     final ConnectionRequest1 cr1 = (ConnectionRequest1) msg;
                     cr1.getMagic().verify(config.getMagic());
-                    config.setMTU(cr1.getMtu());
+                    if (!mtuFixed) {
+                        config.setMTU(cr1.getMtu());
+                    }
                     if (cr1.getProtocolVersion() != config.getProtocolVersion()) {
                         final InvalidVersion packet = new InvalidVersion(config.getMagic(),
                                 config.getServerId());
@@ -49,7 +60,9 @@ public class ConnectionInitializer extends AbstractConnectionInitializer {
                 } else if (msg instanceof ConnectionRequest2) {
                     final ConnectionRequest2 cr2 = (ConnectionRequest2) msg;
                     cr2.getMagic().verify(config.getMagic());
-                    config.setMTU(cr2.getMtu());
+                    if (!mtuFixed) {
+                        config.setMTU(cr2.getMtu());
+                    }
                     state = State.CR2;
                 }
                 break;
@@ -81,6 +94,8 @@ public class ConnectionInitializer extends AbstractConnectionInitializer {
 
     @SuppressWarnings("unchecked")
     public void sendRequest(ChannelHandlerContext ctx) {
+        assert ctx.channel().eventLoop().inEventLoop();
+
         final RakNet.Config config = RakNet.config(ctx);
         switch (state) {
             case CR1: {

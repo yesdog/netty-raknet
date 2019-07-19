@@ -16,7 +16,6 @@ public class PingProducer implements ChannelHandler {
 
     public void handlerAdded(ChannelHandlerContext ctx) {
         pingTask = ctx.channel().eventLoop().scheduleAtFixedRate(
-                //this serves as the flush driver
                 () -> ctx.channel().write(new Ping()),
                 0, 250, TimeUnit.MILLISECONDS
         );

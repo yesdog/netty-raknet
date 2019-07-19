@@ -19,7 +19,6 @@ public class FlushTickHandler extends ChannelDuplexHandler {
     public static final long TICK_RESOLUTION = TimeUnit.NANOSECONDS
             .convert(5, TimeUnit.MILLISECONDS);
     protected static final Object FLUSH_CHECK_SIGNAL = new Object();
-    //TODO: keep a channel attr that stores a long # of ticks?
     protected long tickAccum = 0;
     protected long lastTickAccum = System.nanoTime();
     protected ScheduledFuture<?> flushTask = null;

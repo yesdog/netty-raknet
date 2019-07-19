@@ -24,7 +24,7 @@ public class ConnectionRequest1 extends SimplePacket implements Packet {
         magic.write(buf);
         buf.writeByte(protocolVersion);
         buf.ensureWritable(mtu);
-        buf.writerIndex(buf.writerIndex() + mtu);
+        buf.writeZero(mtu);
     }
 
     public void decode(ByteBuf buf) {
@@ -32,6 +32,10 @@ public class ConnectionRequest1 extends SimplePacket implements Packet {
         protocolVersion = buf.readByte();
         mtu = buf.readableBytes();
         buf.skipBytes(mtu);
+
+        if (mtu < 128) {
+            throw new IllegalArgumentException("ConnectionRequest1 MTU is too small");
+        }
     }
 
     public RakNet.Magic getMagic() {

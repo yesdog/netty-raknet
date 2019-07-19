@@ -25,7 +25,7 @@ public class ConnectionReply1 extends AbstractConnectionReply implements Packet 
         magic = DefaultMagic.decode(buf);
         serverId = buf.readLong();
         if (buf.readBoolean()) {
-            throw new IllegalArgumentException("No security support yet"); //TODO: security i guess?
+            throw new IllegalArgumentException("No security support yet");
         }
         mtu = buf.readShort();
     }

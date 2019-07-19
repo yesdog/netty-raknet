@@ -37,7 +37,7 @@ public class ConnectionRequest2 extends SimplePacket implements Packet, Packet.C
     public void decode(ByteBuf buf) {
         magic = DefaultMagic.decode(buf);
         address = readAddress(buf);
-        mtu = buf.readShort();
+        mtu = buf.readUnsignedShort();
         clientId = buf.readLong();
     }
 
