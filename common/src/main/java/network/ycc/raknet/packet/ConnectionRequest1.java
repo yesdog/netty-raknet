@@ -28,10 +28,11 @@ public class ConnectionRequest1 extends SimplePacket implements Packet {
     }
 
     public void decode(ByteBuf buf) {
+        final int readerStart = buf.readerIndex();
         magic = DefaultMagic.decode(buf);
         protocolVersion = buf.readByte();
-        mtu = buf.readableBytes();
-        buf.skipBytes(mtu);
+        buf.skipBytes(buf.readableBytes());
+        mtu = buf.readerIndex() - readerStart;
 
         if (mtu < 128) {
             throw new IllegalArgumentException("ConnectionRequest1 MTU is too small");

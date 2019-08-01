@@ -75,7 +75,7 @@ public class ReliabilityHandler extends ChannelDuplexHandler {
             config.getMetrics().acksSent(ackSet.size());
             ackSet.clear();
         }
-        if (!nackSet.isEmpty()) {
+        if (!nackSet.isEmpty() && config.isAutoRead()) { //only nack if we can read
             ctx.write(new Reliability.NACK(nackSet)).addListener(RakNet.INTERNAL_WRITE_LISTENER);
             config.getMetrics().nacksSent(nackSet.size());
             nackSet.clear();
@@ -223,8 +223,7 @@ public class ReliabilityHandler extends ChannelDuplexHandler {
             if (frameSet.getRoughSize() + frame.getRoughPacketSize() > maxSize) {
                 if (frameSet.isEmpty()) {
                     throw new CorruptedFrameException(
-                            "Finished frame larger than the MTU by " + (frame.getRoughPacketSize()
-                                    - maxSize));
+                            "Finished frame larger than the MTU by " + (frame.getRoughPacketSize() - maxSize));
                 }
                 break;
             }

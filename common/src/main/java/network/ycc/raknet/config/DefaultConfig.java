@@ -19,15 +19,17 @@ public class DefaultConfig extends DefaultChannelConfig implements RakNet.Config
             (byte) 0xfe, (byte) 0xfe, (byte) 0xfd, (byte) 0xfd, (byte) 0xfd, (byte) 0xfd,
             (byte) 0x12, (byte) 0x34, (byte) 0x56, (byte) 0x78});
 
-    private static final RakNet.MetricsLogger DEFAULT_METRICS = new RakNet.MetricsLogger() {
-    };
+    public static final int DEFAULT_MTU = 4 * 1024;
+
+    private static final RakNet.MetricsLogger DEFAULT_METRICS = new RakNet.MetricsLogger() {};
     private static final Random rnd = new Random();
+
     protected final DescriptiveStatistics rttStats = new DescriptiveStatistics(16);
     //TODO: add rest of ChannelOptions
     private volatile long serverId = rnd.nextLong();
     private volatile long clientId = rnd.nextLong();
     private volatile RakNet.MetricsLogger metrics = DEFAULT_METRICS;
-    private volatile int mtu = 4096;
+    private volatile int mtu = DEFAULT_MTU;
     private volatile long retryDelayNanos = TimeUnit.NANOSECONDS
             .convert(100, TimeUnit.MILLISECONDS);
     private volatile int maxPendingFrameSets = 1024;
