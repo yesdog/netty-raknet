@@ -28,15 +28,14 @@ public class ConnectionListener extends UdpPacketHandler<ConnectionRequest1> {
         final RakNet.Config config = RakNet.config(ctx);
         final Packet response;
         if (request.getProtocolVersion() == config.getProtocolVersion()) {
-            response = new ConnectionReply1(config.getMagic(), request.getMtu(),
-                    config.getServerId());
+            response = new ConnectionReply1(config.getMagic(), request.getMtu(), config.getServerId());
             ReferenceCountUtil.retain(request);
             //use connect to create a new child for this remote address
             ctx.connect(sender).addListeners(
                     ChannelFutureListener.FIRE_EXCEPTION_ON_FAILURE,
                     future -> {
                         if (future.isSuccess()) {
-                            resendRequest(ctx, sender, (ConnectionReply1) response);
+                            resendRequest(ctx, sender, request);
                         } else {
                             ReferenceCountUtil.safeRelease(request);
                         }
@@ -48,8 +47,7 @@ public class ConnectionListener extends UdpPacketHandler<ConnectionRequest1> {
         sendResponse(ctx, sender, response);
     }
 
-    protected void sendResponse(ChannelHandlerContext ctx, InetSocketAddress sender,
-            Packet packet) {
+    protected void sendResponse(ChannelHandlerContext ctx, InetSocketAddress sender, Packet packet) {
         final RakNet.Config config = RakNet.config(ctx);
         final ByteBuf buf = ctx.alloc().ioBuffer(packet.sizeHint());
         try {
@@ -62,8 +60,7 @@ public class ConnectionListener extends UdpPacketHandler<ConnectionRequest1> {
         }
     }
 
-    protected void resendRequest(ChannelHandlerContext ctx, InetSocketAddress sender,
-            ConnectionReply1 request) {
+    protected void resendRequest(ChannelHandlerContext ctx, InetSocketAddress sender, ConnectionRequest1 request) {
         final RakNet.Config config = RakNet.config(ctx);
         final ByteBuf buf = ctx.alloc().ioBuffer(request.sizeHint());
         try {

@@ -97,6 +97,7 @@ public class EndToEndTest {
             if (msg instanceof ByteBuf) {
                 bytesRecvd.addAndGet(((ByteBuf) msg).readableBytes());
             }
+            ReferenceCountUtil.safeRelease(msg);
         }), null);
         Channel client = newClient(null, null);
 
@@ -111,6 +112,8 @@ public class EndToEndTest {
 
         server.close().sync();
         client.close().sync();
+        System.gc();
+        System.gc();
 
         Assert.assertEquals(bytesSent, bytesRecvd.get());
     }
@@ -185,6 +188,7 @@ public class EndToEndTest {
                     bytesRecvd.addAndGet(buf.readableBytes());
                 }
             }
+            ReferenceCountUtil.safeRelease(msg);
         }), mockPair);
         Channel client = newClient(null, mockPair);
         ChannelPromise donePromise = client.newPromise();
@@ -250,6 +254,8 @@ public class EndToEndTest {
             server.close().sync();
             client.close().sync();
         }
+        System.gc();
+        System.gc();
         System.gc();
         Assert.assertTrue(reliableSet.isEmpty());
         Assert.assertEquals(0, pending.get());
@@ -339,6 +345,7 @@ public class EndToEndTest {
                 }
                 if (rnd.nextDouble() < lossPercent) {
                     if (rnd.nextDouble() < orderPercent) {
+                        ReferenceCountUtil.safeRelease(writeStash);
                         writeStash = msg;
                     } else {
                         ReferenceCountUtil.release(msg);
@@ -362,6 +369,7 @@ public class EndToEndTest {
                 }
                 if (rnd.nextDouble() < lossPercent) {
                     if (rnd.nextDouble() < orderPercent) {
+                        ReferenceCountUtil.safeRelease(readStash);
                         readStash = msg;
                     } else {
                         ReferenceCountUtil.release(msg);

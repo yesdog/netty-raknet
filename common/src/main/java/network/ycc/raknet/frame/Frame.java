@@ -4,6 +4,8 @@ import network.ycc.raknet.packet.FramedPacket;
 import network.ycc.raknet.utils.UINT;
 
 import io.netty.buffer.ByteBuf;
+import io.netty.buffer.ByteBufAllocator;
+import io.netty.buffer.CompositeByteBuf;
 import io.netty.channel.ChannelPromise;
 import io.netty.util.AbstractReferenceCounted;
 import io.netty.util.Recycler;
@@ -18,7 +20,9 @@ public final class Frame extends AbstractReferenceCounted {
 
     public static final FrameComparator COMPARATOR = new FrameComparator();
     public static final int HEADER_SIZE = 24;
+
     protected static final int SPLIT_FLAG = 0x10;
+
     private static final ResourceLeakDetector<Frame> leakDetector =
             ResourceLeakDetectorFactory.instance().newResourceLeakDetector(Frame.class);
     private static final Recycler<Frame> recycler = new Recycler<Frame>() {
@@ -27,6 +31,7 @@ public final class Frame extends AbstractReferenceCounted {
             return new Frame(handle);
         }
     };
+
     private final Recycler.Handle<Frame> handle;
     private boolean hasSplit;
     private int reliableIndex;
@@ -35,7 +40,7 @@ public final class Frame extends AbstractReferenceCounted {
     private int splitCount;
     private int splitID;
     private int splitIndex;
-    private FrameData packet = null;
+    private FrameData frameData = null;
     private ResourceLeakTracker<Frame> tracker = null;
     private ChannelPromise promise = null;
 
@@ -46,35 +51,39 @@ public final class Frame extends AbstractReferenceCounted {
 
     public static Frame read(ByteBuf buf) {
         final Frame out = createRaw();
-        final int flags = buf.readUnsignedByte();
-        final int bitLength = buf.readUnsignedShort();
-        final int length = (bitLength + Byte.SIZE - 1) / Byte.SIZE; //round up
-        final boolean hasSplit = (flags & SPLIT_FLAG) != 0;
-        final FramedPacket.Reliability reliability = FramedPacket.Reliability.get(flags >> 5);
-        int orderChannel = 0;
+        try {
+            final int flags = buf.readUnsignedByte();
+            final int bitLength = buf.readUnsignedShort();
+            final int length = (bitLength + Byte.SIZE - 1) / Byte.SIZE; //round up
+            final boolean hasSplit = (flags & SPLIT_FLAG) != 0;
+            final FramedPacket.Reliability reliability = FramedPacket.Reliability.get(flags >> 5);
+            int orderChannel = 0;
 
-        if (reliability.isReliable) {
-            out.reliableIndex = buf.readUnsignedMediumLE();
-        }
-        if (reliability.isSequenced) {
-            out.sequenceIndex = buf.readUnsignedMediumLE();
-        }
-        if (reliability.isOrdered) {
-            out.orderIndex = buf.readUnsignedMediumLE();
-            orderChannel = buf.readUnsignedByte();
-        }
-        if (hasSplit) {
-            out.splitCount = buf.readInt();
-            out.splitID = buf.readUnsignedShort();
-            out.splitIndex = buf.readInt();
-            out.hasSplit = true;
-        }
+            if (reliability.isReliable) {
+                out.reliableIndex = buf.readUnsignedMediumLE();
+            }
+            if (reliability.isSequenced) {
+                out.sequenceIndex = buf.readUnsignedMediumLE();
+            }
+            if (reliability.isOrdered) {
+                out.orderIndex = buf.readUnsignedMediumLE();
+                orderChannel = buf.readUnsignedByte();
+            }
+            if (hasSplit) {
+                out.splitCount = buf.readInt();
+                out.splitID = buf.readUnsignedShort();
+                out.splitIndex = buf.readInt();
+                out.hasSplit = true;
+            }
 
-        out.packet = FrameData.read(buf, length, hasSplit);
-        out.packet.setReliability(reliability);
-        out.packet.setOrderChannel(orderChannel);
+            out.frameData = FrameData.read(buf, length, hasSplit);
+            out.frameData.setReliability(reliability);
+            out.frameData.setOrderChannel(orderChannel);
 
-        return out;
+            return out.retain();
+        } finally {
+            out.release();
+        }
     }
 
     public static Frame create(FrameData packet) {
@@ -82,7 +91,7 @@ public final class Frame extends AbstractReferenceCounted {
             throw new IllegalArgumentException("Must provided indices for ordered data.");
         }
         final Frame out = createRaw();
-        out.packet = packet.retain();
+        out.frameData = packet.retain();
         return out;
     }
 
@@ -91,7 +100,7 @@ public final class Frame extends AbstractReferenceCounted {
             throw new IllegalArgumentException("No indices needed for non-ordered data.");
         }
         final Frame out = createRaw();
-        out.packet = packet.retain();
+        out.frameData = packet.retain();
         out.orderIndex = orderIndex;
         out.sequenceIndex = sequenceIndex;
         return out;
@@ -102,7 +111,7 @@ public final class Frame extends AbstractReferenceCounted {
         final Frame out = recycler.get();
         assert out.refCnt() == 0;
         assert out.tracker == null;
-        assert out.packet == null;
+        assert out.frameData == null;
         assert out.promise == null;
         out.hasSplit = false;
         out.reliableIndex = out.sequenceIndex = out.orderIndex =
@@ -117,24 +126,24 @@ public final class Frame extends AbstractReferenceCounted {
         if (tracker != null) {
             tracker.record(hint);
         }
-        packet.touch(hint);
+        frameData.touch(hint);
         return this;
     }
 
     public Frame completeFragment(ByteBuf fullData) {
-        assert packet.isFragment();
+        assert frameData.isFragment();
         final Frame out = createRaw();
         out.reliableIndex = reliableIndex;
         out.sequenceIndex = sequenceIndex;
         out.orderIndex = orderIndex;
-        out.packet = FrameData.read(fullData, fullData.readableBytes(), false);
-        out.packet.setOrderChannel(getOrderChannel());
-        out.packet.setReliability(getReliability());
+        out.frameData = FrameData.read(fullData, fullData.readableBytes(), false);
+        out.frameData.setOrderChannel(getOrderChannel());
+        out.frameData.setReliability(getReliability());
         return out;
     }
 
     public int fragment(int splitID, int splitSize, int reliableIndex, List<Object> outList) {
-        final ByteBuf data = packet.createData();
+        final ByteBuf data = frameData.createData();
         try {
             final int dataSplitSize = splitSize - HEADER_SIZE;
             final int splitCountTotal =
@@ -150,10 +159,10 @@ public final class Frame extends AbstractReferenceCounted {
                 out.splitID = splitID;
                 out.splitIndex = splitIndexIterator;
                 out.hasSplit = true;
-                out.packet = FrameData.read(data, length, true);
-                out.packet.setOrderChannel(getOrderChannel());
-                out.packet.setReliability(getReliability().makeReliable()); //reliable form only
-                assert out.packet.isFragment();
+                out.frameData = FrameData.read(data, length, true);
+                out.frameData.setOrderChannel(getOrderChannel());
+                out.frameData.setReliability(getReliability().makeReliable()); //reliable form only
+                assert out.frameData.isFragment();
                 if (out.getRoughPacketSize() > splitSize) {
                     throw new IllegalStateException("mtu fragment mismatch");
                 }
@@ -168,8 +177,8 @@ public final class Frame extends AbstractReferenceCounted {
     }
 
     public ByteBuf retainedFragmentData() {
-        assert packet.isFragment();
-        return packet.createData();
+        assert frameData.isFragment();
+        return frameData.createData();
     }
 
     @Override
@@ -179,9 +188,9 @@ public final class Frame extends AbstractReferenceCounted {
 
     @Override
     protected void deallocate() {
-        if (packet != null) {
-            packet.release();
-            packet = null;
+        if (frameData != null) {
+            frameData.release();
+            frameData = null;
         }
         if (tracker != null) {
             tracker.close(this);
@@ -192,17 +201,28 @@ public final class Frame extends AbstractReferenceCounted {
     }
 
     public FrameData retainedFrameData() {
-        return packet.retain();
+        return frameData.retain();
+    }
+
+    public void produce(ByteBufAllocator alloc, CompositeByteBuf out) {
+        final ByteBuf header = alloc.ioBuffer(HEADER_SIZE, HEADER_SIZE);
+        try {
+            writeHeader(header);
+            out.addComponent(true, header.retain());
+            out.addComponent(true, frameData.createData());
+        } finally {
+            header.release();
+        }
     }
 
     public void write(ByteBuf out) {
         writeHeader(out);
-        packet.write(out);
+        frameData.write(out);
     }
 
     protected void writeHeader(ByteBuf out) {
         out.writeByte((getReliability().code() << 5) | (hasSplit ? SPLIT_FLAG : 0));
-        out.writeShort(packet.getDataSize() * Byte.SIZE);
+        out.writeShort(frameData.getDataSize() * Byte.SIZE);
 
         assert !(hasSplit && !getReliability().isReliable);
 
@@ -224,7 +244,7 @@ public final class Frame extends AbstractReferenceCounted {
     }
 
     public FramedPacket.Reliability getReliability() {
-        return packet.getReliability();
+        return frameData.getReliability();
     }
 
     public int getSequenceIndex() {
@@ -232,7 +252,7 @@ public final class Frame extends AbstractReferenceCounted {
     }
 
     public int getOrderChannel() {
-        return packet.getOrderChannel();
+        return frameData.getOrderChannel();
     }
 
     public int getOrderIndex() {
@@ -256,7 +276,7 @@ public final class Frame extends AbstractReferenceCounted {
     }
 
     public int getDataSize() {
-        return packet.getDataSize();
+        return frameData.getDataSize();
     }
 
     public int getRoughPacketSize() {

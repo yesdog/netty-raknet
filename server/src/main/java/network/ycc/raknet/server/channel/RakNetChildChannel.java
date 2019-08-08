@@ -132,9 +132,12 @@ public class RakNetChildChannel extends AbstractChannel {
     }
 
     protected class WriteHandler extends ChannelOutboundHandlerAdapter {
+        protected boolean needsFlush = false;
+
         @Override
         public void write(ChannelHandlerContext ctx, Object msg, ChannelPromise promise)
                 throws Exception {
+            needsFlush = true;
             if (msg instanceof ByteBuf) {
                 //TODO: want to do real promise resolution here, but is it worth it?
                 promise.trySuccess();
@@ -147,7 +150,10 @@ public class RakNetChildChannel extends AbstractChannel {
 
         @Override
         public void flush(ChannelHandlerContext ctx) {
-            parent().flush();
+            if (needsFlush) {
+                needsFlush = false;
+                parent().flush();
+            }
         }
     }
 

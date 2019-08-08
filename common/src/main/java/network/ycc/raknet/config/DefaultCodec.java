@@ -123,6 +123,19 @@ public class DefaultCodec implements RakNet.Codec {
         encoder.accept(packet, out);
     }
 
+    public ByteBuf produceEncoded(Packet packet, ByteBufAllocator alloc) {
+        if (packet instanceof FrameSet && ((FrameSet) packet).getRoughSize() > 512) {
+            return ((FrameSet) packet).produce(alloc);
+        }
+        final ByteBuf buf = alloc.ioBuffer(packet.sizeHint());
+        try {
+            encode(packet, buf);
+            return buf.retain();
+        } finally {
+            buf.release();
+        }
+    }
+
     public Packet decode(ByteBuf buf) {
         final int packetId = buf.getUnsignedByte(buf.readerIndex());
         final Function<ByteBuf, ? extends Packet> decoder = decoders.get(packetId);

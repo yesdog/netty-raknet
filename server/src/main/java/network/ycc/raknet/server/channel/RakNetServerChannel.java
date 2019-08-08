@@ -128,9 +128,10 @@ public class RakNetServerChannel extends DatagramChannelProxy implements ServerC
                     if (child == null) {
                         ctx.fireChannelRead(datagram.retain());
                     } else if (child.isOpen() && child.config().isAutoRead()) {
-                        child.pipeline()
-                                .fireChannelRead(datagram.content().retain())
-                                .fireChannelReadComplete();
+                        final ByteBuf retained = datagram.content().retain();
+                        child.eventLoop().execute(() -> {
+                            child.pipeline().fireChannelRead(retained).fireChannelReadComplete();
+                        });
                     }
                 } finally {
                     datagram.release();

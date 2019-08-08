@@ -49,7 +49,7 @@ public final class FrameData extends AbstractReferenceCounted implements FramedP
     public static FrameData create(ByteBufAllocator alloc, int packetId, ByteBuf buf) {
         final CompositeByteBuf out = alloc.compositeDirectBuffer(2);
         try {
-            out.addComponent(true, alloc.ioBuffer(1).writeByte(packetId));
+            out.addComponent(true, alloc.ioBuffer(1, 1).writeByte(packetId));
             out.addComponent(true, buf.retain());
             return FrameData.read(out, out.readableBytes(), false);
         } finally {
@@ -64,20 +64,14 @@ public final class FrameData extends AbstractReferenceCounted implements FramedP
             packet.data = buf.readRetainedSlice(length);
             packet.fragment = fragment;
             assert packet.getDataSize() == length;
-            return packet;
-        } catch (Exception t) {
+            return packet.retain();
+        } finally {
             packet.release();
-            throw t;
         }
     }
 
     public void write(ByteBuf out) {
-        data.markReaderIndex();
-        try {
-            out.writeBytes(data);
-        } finally {
-            data.resetReaderIndex();
-        }
+        out.writeBytes(data, data.readerIndex(), data.readableBytes());
     }
 
     public ByteBuf createData() {

@@ -139,6 +139,7 @@ public class RakNet {
     public interface Codec {
         FrameData encode(FramedPacket packet, ByteBufAllocator alloc);
         void encode(Packet packet, ByteBuf out);
+        ByteBuf produceEncoded(Packet packet, ByteBufAllocator alloc);
         Packet decode(ByteBuf in);
         FramedPacket decode(FrameData data);
         int packetIdFor(Class<? extends Packet> type);

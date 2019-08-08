@@ -49,7 +49,7 @@ public abstract class AbstractConnectionInitializer extends SimpleChannelInbound
     }
 
     protected void startPing(ChannelHandlerContext ctx) {
-        ctx.channel().pipeline().addAfter(NAME, PingProducer.NAME, new PingProducer());
+        ctx.channel().pipeline().addAfter(NAME, PingProducer.NAME, PingProducer.INSTANCE);
     }
 
     protected void finish(ChannelHandlerContext ctx) {

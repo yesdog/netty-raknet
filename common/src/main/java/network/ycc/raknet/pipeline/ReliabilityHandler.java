@@ -70,35 +70,23 @@ public class ReliabilityHandler extends ChannelDuplexHandler {
             return;
         }
         //all data sent in order of priority
-        if (!ackSet.isEmpty()) {
-            ctx.write(new Reliability.ACK(ackSet)).addListener(RakNet.INTERNAL_WRITE_LISTENER);
-            config.getMetrics().acksSent(ackSet.size());
-            ackSet.clear();
-        }
-        if (!nackSet.isEmpty() && config.isAutoRead()) { //only nack if we can read
-            ctx.write(new Reliability.NACK(nackSet)).addListener(RakNet.INTERNAL_WRITE_LISTENER);
-            config.getMetrics().nacksSent(nackSet.size());
-            nackSet.clear();
-        }
-        final ObjectIterator<FrameSet> packetItr = pendingFrameSets.values().iterator();
-        //2 sd from mean RTT is about 97% coverage
-        final long deadline = System.nanoTime() -
-                (config.getRTTNanos() + 2 * config.getRTTStdDevNanos() + config
-                        .getRetryDelayNanos());
-        while (packetItr.hasNext()) {
-            final FrameSet frameSet = packetItr.next();
-            if (frameSet.getSentTime() < deadline) {
-                packetItr.remove();
-                recallFrameSet(frameSet);
-            } else {
-                //break; //TODO: FrameSets should be ordered by send time ultimately
-            }
-        }
+        sendResponses(ctx);
+        recallExpiredFrameSets();
         updateBurstTokens();
         produceFrameSets(ctx);
         updateBackPressure(ctx);
         Constants.packetLossCheck(pendingFrameSets.size(), "resend queue");
         ctx.flush();
+    }
+
+    @Override
+    public void userEventTriggered(ChannelHandlerContext ctx, Object evt) {
+        //missed some flush ticks, lets catch up on a few things
+        if (evt == FlushTickHandler.FLUSH_CATCHUP_SIGNAL) {
+            sendResponses(ctx);
+            updateBurstTokens();
+        }
+        ctx.fireUserEventTriggered(evt);
     }
 
     @Override
@@ -147,6 +135,7 @@ public class ReliabilityHandler extends ChannelDuplexHandler {
         config.getMetrics().packetsIn(1);
         config.getMetrics().framesIn(frameSet.getNumPackets());
         frameSet.createFrames(ctx::fireChannelRead);
+        ctx.fireChannelReadComplete();
     }
 
     protected void readAck(Reliability.ACK ack) {
@@ -214,6 +203,35 @@ public class ReliabilityHandler extends ChannelDuplexHandler {
         config.getMetrics().measureBurstTokens(burstTokens);
     }
 
+    protected void sendResponses(ChannelHandlerContext ctx) {
+        if (!ackSet.isEmpty()) {
+            ctx.write(new Reliability.ACK(ackSet)).addListener(RakNet.INTERNAL_WRITE_LISTENER);
+            config.getMetrics().acksSent(ackSet.size());
+            ackSet.clear();
+        }
+        if (!nackSet.isEmpty() && config.isAutoRead()) { //only nack if we can read
+            ctx.write(new Reliability.NACK(nackSet)).addListener(RakNet.INTERNAL_WRITE_LISTENER);
+            config.getMetrics().nacksSent(nackSet.size());
+            nackSet.clear();
+        }
+    }
+
+    protected void recallExpiredFrameSets() {
+        final ObjectIterator<FrameSet> packetItr = pendingFrameSets.values().iterator();
+        //2 sd from mean RTT is about 97% coverage
+        final long deadline = System.nanoTime() -
+                (config.getRTTNanos() + 2 * config.getRTTStdDevNanos() + config.getRetryDelayNanos());
+        while (packetItr.hasNext()) {
+            final FrameSet frameSet = packetItr.next();
+            if (frameSet.getSentTime() < deadline) {
+                packetItr.remove();
+                recallFrameSet(frameSet);
+            } else {
+                //break; //TODO: FrameSets should be ordered by send time ultimately
+            }
+        }
+    }
+
     protected void produceFrameSet(ChannelHandlerContext ctx, int maxSize) {
         final ObjectIterator<Frame> itr = frameQueue.iterator();
         final FrameSet frameSet = FrameSet.create();
@@ -239,6 +257,8 @@ public class ReliabilityHandler extends ChannelDuplexHandler {
             config.getMetrics().packetsOut(1);
             config.getMetrics().framesOut(frameSet.getNumPackets());
             assert frameSet.refCnt() > 0;
+        } else {
+            frameSet.release();
         }
     }
 

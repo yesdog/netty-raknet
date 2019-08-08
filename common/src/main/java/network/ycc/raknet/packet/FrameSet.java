@@ -4,6 +4,8 @@ import network.ycc.raknet.config.DefaultCodec;
 import network.ycc.raknet.frame.Frame;
 
 import io.netty.buffer.ByteBuf;
+import io.netty.buffer.ByteBufAllocator;
+import io.netty.buffer.CompositeByteBuf;
 import io.netty.channel.ChannelPromise;
 import io.netty.handler.codec.CorruptedFrameException;
 import io.netty.util.AbstractReferenceCounted;
@@ -28,6 +30,7 @@ public final class FrameSet extends AbstractReferenceCounted implements Packet {
             return new FrameSet(handle);
         }
     };
+
     protected final ArrayList<Frame> frames = new ArrayList<>(8);
     protected final Recycler.Handle<FrameSet> handle;
     protected int seqId;
@@ -85,6 +88,20 @@ public final class FrameSet extends AbstractReferenceCounted implements Packet {
             tracker = null;
         }
         handle.recycle(this);
+    }
+
+    public ByteBuf produce(ByteBufAllocator alloc) {
+        final ByteBuf header = alloc.ioBuffer(HEADER_SIZE, HEADER_SIZE);
+        final CompositeByteBuf out = alloc.compositeDirectBuffer(1 + frames.size() * 2);
+        try {
+            writeHeader(header);
+            out.addComponent(true, header.retain());
+            frames.forEach(frame -> frame.produce(alloc, out));
+            return out.retain();
+        } finally {
+            header.release();
+            out.release();
+        }
     }
 
     public void write(ByteBuf out) {

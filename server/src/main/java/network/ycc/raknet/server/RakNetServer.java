@@ -4,6 +4,7 @@ import network.ycc.raknet.RakNet;
 import network.ycc.raknet.pipeline.FlushTickHandler;
 import network.ycc.raknet.pipeline.RawPacketCodec;
 import network.ycc.raknet.server.channel.RakNetServerChannel;
+import network.ycc.raknet.server.pipeline.DatagramConsumer;
 import network.ycc.raknet.server.pipeline.ConnectionInitializer;
 import network.ycc.raknet.server.pipeline.ConnectionListener;
 
@@ -19,9 +20,10 @@ public final class RakNetServer extends RakNet {
         public static final ChannelInitializer<Channel> INSTANCE = new DefaultDatagramInitializer();
 
         protected void initChannel(Channel channel) {
-            //TODO: blackhole unhandled Datagram messages. respond with disconnect?
-            channel.pipeline()
-                    .addLast(ConnectionListener.NAME, new ConnectionListener());
+            channel.pipeline().addLast(ConnectionListener.NAME, new ConnectionListener());
+            //must defer so we can add it before the ServerBootstrap acceptor
+            channel.eventLoop().execute(() ->
+                    channel.pipeline().addLast(DatagramConsumer.NAME, DatagramConsumer.INSTANCE));
         }
     }
 

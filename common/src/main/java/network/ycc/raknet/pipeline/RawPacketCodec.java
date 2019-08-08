@@ -19,14 +19,9 @@ public class RawPacketCodec extends MessageToMessageCodec<ByteBuf, Packet> {
 
     @Override
     protected void encode(ChannelHandlerContext ctx, Packet in, List<Object> out) {
-        final ByteBuf buf = ctx.alloc().ioBuffer(in.sizeHint());
-        try {
-            RakNet.config(ctx).getCodec().encode(in, buf);
-            RakNet.metrics(ctx).bytesOut(buf.readableBytes());
-            out.add(buf.retain());
-        } finally {
-            buf.release();
-        }
+        final ByteBuf encoded = RakNet.config(ctx).getCodec().produceEncoded(in, ctx.alloc());
+        RakNet.metrics(ctx).bytesOut(encoded.readableBytes());
+        out.add(encoded);
     }
 
     @Override

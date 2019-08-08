@@ -18,6 +18,7 @@ import io.netty.channel.ChannelPromise;
 import io.netty.channel.DefaultChannelPipeline;
 import io.netty.channel.EventLoop;
 import io.netty.channel.socket.DatagramChannel;
+import io.netty.handler.flush.FlushConsolidationHandler;
 import io.netty.util.Attribute;
 import io.netty.util.AttributeKey;
 import io.netty.util.ReferenceCountUtil;
@@ -37,7 +38,10 @@ public class DatagramChannelProxy implements Channel {
     public DatagramChannelProxy(Supplier<? extends DatagramChannel> ioChannelSupplier) {
         listener = ioChannelSupplier.get();
         pipeline = newChannelPipeline();
-        listener.pipeline().addLast(new ListenerInboundProxy());
+        listener.pipeline()
+                .addLast(new FlushConsolidationHandler(
+                        FlushConsolidationHandler.DEFAULT_EXPLICIT_FLUSH_AFTER_FLUSHES, true))
+                .addLast(LISTENER_HANDLER_NAME, new ListenerInboundProxy());
         pipeline().addLast(LISTENER_HANDLER_NAME, new ListnerOutboundProxy());
         config = new Config();
     }
@@ -285,6 +289,7 @@ public class DatagramChannelProxy implements Channel {
     protected class ListnerOutboundProxy implements ChannelOutboundHandler {
 
         public void handlerAdded(ChannelHandlerContext ctx) {
+            assert listener.eventLoop().inEventLoop();
             // NOOP
         }
 
@@ -344,6 +349,7 @@ public class DatagramChannelProxy implements Channel {
         }
 
         public void handlerAdded(ChannelHandlerContext ctx) {
+            assert listener.eventLoop().inEventLoop();
             // NOOP
         }
 
