@@ -135,16 +135,14 @@ public class RakNetChildChannel extends AbstractChannel {
         protected boolean needsFlush = false;
 
         @Override
-        public void write(ChannelHandlerContext ctx, Object msg, ChannelPromise promise)
-                throws Exception {
-            needsFlush = true;
+        public void write(ChannelHandlerContext ctx, Object msg, ChannelPromise promise) {
             if (msg instanceof ByteBuf) {
-                //TODO: want to do real promise resolution here, but is it worth it?
+                needsFlush = true;
                 promise.trySuccess();
                 parent().write(new DatagramPacket((ByteBuf) msg, remoteAddress))
                         .addListener(RakNet.INTERNAL_WRITE_LISTENER);
             } else {
-                super.write(ctx, msg, promise);
+                ctx.write(msg, promise);
             }
         }
 

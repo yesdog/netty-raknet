@@ -22,8 +22,7 @@ public class RakNetClient extends RakNet {
                     .addLast(RawPacketCodec.NAME, RawPacketCodec.INSTANCE)
                     .addLast(ReliableFrameHandling.INSTANCE)
                     .addLast(PacketHandling.INSTANCE)
-                    .addLast(ConnectionInitializer.NAME,
-                            new ChannelInboundHandlerAdapter()); //will be removed
+                    .addLast(ConnectionInitializer.NAME, new ChannelInboundHandlerAdapter()); //will be removed
         }
     }
 

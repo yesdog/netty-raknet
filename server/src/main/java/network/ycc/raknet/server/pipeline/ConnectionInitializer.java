@@ -2,6 +2,7 @@ package network.ycc.raknet.server.pipeline;
 
 import network.ycc.raknet.RakNet;
 import network.ycc.raknet.packet.ClientHandshake;
+import network.ycc.raknet.packet.ConnectionFailed;
 import network.ycc.raknet.packet.ConnectionReply1;
 import network.ycc.raknet.packet.ConnectionReply2;
 import network.ycc.raknet.packet.ConnectionRequest;
@@ -9,14 +10,18 @@ import network.ycc.raknet.packet.ConnectionRequest1;
 import network.ycc.raknet.packet.ConnectionRequest2;
 import network.ycc.raknet.packet.InvalidVersion;
 import network.ycc.raknet.packet.Packet;
+import network.ycc.raknet.packet.Packet.ClientIdConnection;
 import network.ycc.raknet.packet.ServerHandshake;
 import network.ycc.raknet.pipeline.AbstractConnectionInitializer;
 
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelFutureListener;
+import io.netty.channel.ChannelHandler;
 import io.netty.channel.ChannelHandlerContext;
+import io.netty.channel.ChannelInboundHandlerAdapter;
 import io.netty.channel.ChannelPromise;
 import io.netty.channel.SimpleChannelInboundHandler;
+import io.netty.util.ReferenceCountUtil;
 
 import java.net.InetSocketAddress;
 
@@ -118,15 +123,7 @@ public class ConnectionInitializer extends AbstractConnectionInitializer {
     }
 
     protected void removeHandler(ChannelHandlerContext ctx) {
-        ctx.channel().pipeline()
-                .replace(NAME, NAME, new SimpleChannelInboundHandler<Packet.ClientIdConnection>() {
-                    protected void channelRead0(ChannelHandlerContext ctx,
-                            Packet.ClientIdConnection msg) {
-                        if (msg instanceof Packet.ClientIdConnection) {
-                            processClientId(ctx, msg.getClientId());
-                        }
-                    }
-                });
+        ctx.channel().pipeline().replace(NAME, NAME, new RestartConnectionHandler());
     }
 
     protected void processClientId(ChannelHandlerContext ctx, long clientId) {
@@ -135,8 +132,24 @@ public class ConnectionInitializer extends AbstractConnectionInitializer {
             config.setClientId(clientId);
             clientIdSet = true;
         } else if (config.getClientId() != clientId) {
+            ctx.writeAndFlush(new ConnectionFailed(config.getMagic()));
             ctx.close();
             throw new IllegalStateException("Connection sequence restarted");
         }
     }
+
+    protected class RestartConnectionHandler extends ChannelInboundHandlerAdapter {
+        @Override
+        public void channelRead(ChannelHandlerContext ctx, Object msg) {
+            if (msg instanceof Packet.ClientIdConnection || msg instanceof ConnectionRequest1) {
+                final RakNet.Config config = RakNet.config(ctx);
+                ctx.writeAndFlush(new ConnectionFailed(config.getMagic()));
+                ctx.close();
+                ReferenceCountUtil.safeRelease(msg);
+            } else {
+                ctx.fireChannelRead(msg);
+            }
+        }
+    }
+
 }

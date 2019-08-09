@@ -67,6 +67,7 @@ public class ReliabilityHandler extends ChannelDuplexHandler {
     @Override
     public void flush(ChannelHandlerContext ctx) {
         if (!ctx.channel().isOpen()) {
+            ctx.flush();
             return;
         }
         //all data sent in order of priority

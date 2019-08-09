@@ -124,7 +124,7 @@ public class DefaultCodec implements RakNet.Codec {
     }
 
     public ByteBuf produceEncoded(Packet packet, ByteBufAllocator alloc) {
-        if (packet instanceof FrameSet && ((FrameSet) packet).getRoughSize() > 512) {
+        if (packet instanceof FrameSet && ((FrameSet) packet).getRoughSize() >= 128) {
             return ((FrameSet) packet).produce(alloc);
         }
         final ByteBuf buf = alloc.ioBuffer(packet.sizeHint());

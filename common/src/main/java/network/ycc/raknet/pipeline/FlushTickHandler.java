@@ -36,8 +36,8 @@ public class FlushTickHandler extends ChannelDuplexHandler {
     public void handlerAdded(ChannelHandlerContext ctx) {
         assert flushTask == null;
         flushTask = ctx.channel().eventLoop().scheduleAtFixedRate(
-                () -> ctx.channel().flush(),
-                0, 100, TimeUnit.MILLISECONDS
+                () -> checkFlushTick(ctx.channel()),
+                0, 50, TimeUnit.MILLISECONDS
         );
     }
 
@@ -48,8 +48,8 @@ public class FlushTickHandler extends ChannelDuplexHandler {
     }
 
     @Override
-    public void channelRead(ChannelHandlerContext ctx, Object msg) {
-        ctx.fireChannelRead(msg);
+    public void channelReadComplete(ChannelHandlerContext ctx) {
+        ctx.fireChannelReadComplete();
         maybeFlush(ctx.channel());
     }
 
@@ -84,7 +84,6 @@ public class FlushTickHandler extends ChannelDuplexHandler {
         lastTickAccum = curTime;
 
         if (tickAccum >= TICK_RESOLUTION) {
-            tickAccum -= TICK_RESOLUTION;
             channel.flush();
         }
 
