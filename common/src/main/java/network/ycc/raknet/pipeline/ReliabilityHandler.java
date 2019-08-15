@@ -4,6 +4,7 @@ import network.ycc.raknet.RakNet;
 import network.ycc.raknet.frame.Frame;
 import network.ycc.raknet.packet.FrameSet;
 import network.ycc.raknet.packet.Reliability;
+import network.ycc.raknet.pipeline.FlushTickHandler.MissedFlushes;
 import network.ycc.raknet.utils.Constants;
 import network.ycc.raknet.utils.UINT;
 
@@ -73,7 +74,7 @@ public class ReliabilityHandler extends ChannelDuplexHandler {
         //all data sent in order of priority
         sendResponses(ctx);
         recallExpiredFrameSets();
-        updateBurstTokens();
+        updateBurstTokens(1);
         produceFrameSets(ctx);
         updateBackPressure(ctx);
         Constants.packetLossCheck(pendingFrameSets.size(), "resend queue");
@@ -83,9 +84,8 @@ public class ReliabilityHandler extends ChannelDuplexHandler {
     @Override
     public void userEventTriggered(ChannelHandlerContext ctx, Object evt) {
         //missed some flush ticks, lets catch up on a few things
-        if (evt == FlushTickHandler.FLUSH_CATCHUP_SIGNAL) {
-            sendResponses(ctx);
-            updateBurstTokens();
+        if (evt instanceof MissedFlushes) {
+            updateBurstTokens(((MissedFlushes) evt).nFlushes);
         }
         ctx.fireUserEventTriggered(evt);
     }
@@ -192,13 +192,13 @@ public class ReliabilityHandler extends ChannelDuplexHandler {
         );
     }
 
-    protected void updateBurstTokens() {
+    protected void updateBurstTokens(int nTicks) {
         //gradual increment or decrement for burst tokens, unless unused
         final boolean burstUnused = pendingFrameSets.size() < burstTokens / 2;
         if (resendGauge > 1 && !burstUnused) {
-            burstTokens += 1;
+            burstTokens += 1 * nTicks;
         } else if (resendGauge < -1 || burstUnused) {
-            burstTokens -= 3;
+            burstTokens -= 3 * nTicks;
         }
         burstTokens = Math.max(Math.min(burstTokens, config.getMaxPendingFrameSets()), 0);
         config.getMetrics().measureBurstTokens(burstTokens);

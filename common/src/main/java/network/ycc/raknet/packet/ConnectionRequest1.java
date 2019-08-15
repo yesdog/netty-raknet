@@ -23,19 +23,19 @@ public class ConnectionRequest1 extends SimplePacket implements Packet {
     public void encode(ByteBuf buf) {
         magic.write(buf);
         buf.writeByte(protocolVersion);
-        buf.ensureWritable(mtu);
-        buf.writeZero(mtu);
+        buf.writeZero(mtu - buf.readableBytes());
     }
 
     public void decode(ByteBuf buf) {
-        final int readerStart = buf.readerIndex();
+        mtu = buf.readableBytes();
         magic = DefaultMagic.decode(buf);
         protocolVersion = buf.readByte();
         buf.skipBytes(buf.readableBytes());
-        mtu = buf.readerIndex() - readerStart;
 
         if (mtu < 128) {
             throw new IllegalArgumentException("ConnectionRequest1 MTU is too small");
+        } else if (mtu > 8192) {
+            mtu = 8192; //near hard limit set by 13 bit size in Frame
         }
     }
 

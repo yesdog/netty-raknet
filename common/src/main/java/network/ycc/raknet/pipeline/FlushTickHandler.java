@@ -20,8 +20,6 @@ public class FlushTickHandler extends ChannelDuplexHandler {
 
     /** Fired near the end of a pipeline to trigger a flush check. */
     protected static final Object FLUSH_CHECK_SIGNAL = new Object();
-    /** Fired from this handler to alert handlers of a missed flush tick. */
-    protected static final Object FLUSH_CATCHUP_SIGNAL = new Object();
 
     protected long tickAccum = 0;
     protected long lastTickAccum = System.nanoTime();
@@ -85,12 +83,21 @@ public class FlushTickHandler extends ChannelDuplexHandler {
 
         if (tickAccum >= TICK_RESOLUTION) {
             channel.flush();
-        }
 
-        int maxIters = 32;
-        while (tickAccum >= TICK_RESOLUTION && maxIters-- >= 0) {
-            tickAccum -= TICK_RESOLUTION;
-            channel.pipeline().fireUserEventTriggered(FLUSH_CATCHUP_SIGNAL);
+            final int nFlushes = (int) (tickAccum / TICK_RESOLUTION);
+            if (nFlushes > 0) {
+                tickAccum -= nFlushes * TICK_RESOLUTION;
+                channel.pipeline().fireUserEventTriggered(new MissedFlushes(nFlushes));
+            }
+        }
+    }
+
+    /** Fired from this handler to alert handlers of a missed flush tick. */
+    public class MissedFlushes {
+        public final int nFlushes;
+
+        public MissedFlushes(int nFlushes) {
+            this.nFlushes = nFlushes;
         }
     }
 

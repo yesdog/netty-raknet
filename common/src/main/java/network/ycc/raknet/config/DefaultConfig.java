@@ -19,7 +19,7 @@ public class DefaultConfig extends DefaultChannelConfig implements RakNet.Config
             (byte) 0xfe, (byte) 0xfe, (byte) 0xfd, (byte) 0xfd, (byte) 0xfd, (byte) 0xfd,
             (byte) 0x12, (byte) 0x34, (byte) 0x56, (byte) 0x78});
 
-    public static final int DEFAULT_MTU = 4 * 1024;
+    public static final int DEFAULT_MTU = 8192;
 
     private static final RakNet.MetricsLogger DEFAULT_METRICS = new RakNet.MetricsLogger() {};
     private static final Random rnd = new Random();

@@ -38,11 +38,11 @@ public class DatagramChannelProxy implements Channel {
     public DatagramChannelProxy(Supplier<? extends DatagramChannel> ioChannelSupplier) {
         listener = ioChannelSupplier.get();
         pipeline = newChannelPipeline();
-        listener.pipeline()
+        listener.pipeline().addLast(LISTENER_HANDLER_NAME, new ListenerInboundProxy());
+        pipeline()
+                .addLast(LISTENER_HANDLER_NAME, new ListnerOutboundProxy())
                 .addLast(new FlushConsolidationHandler(
-                        FlushConsolidationHandler.DEFAULT_EXPLICIT_FLUSH_AFTER_FLUSHES, true))
-                .addLast(LISTENER_HANDLER_NAME, new ListenerInboundProxy());
-        pipeline().addLast(LISTENER_HANDLER_NAME, new ListnerOutboundProxy());
+                        FlushConsolidationHandler.DEFAULT_EXPLICIT_FLUSH_AFTER_FLUSHES, true));
         config = new Config();
     }
 
