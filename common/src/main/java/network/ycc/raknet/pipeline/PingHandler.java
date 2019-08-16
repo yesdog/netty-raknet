@@ -14,7 +14,7 @@ public class PingHandler extends SimpleChannelInboundHandler<Ping> {
     public static final PingHandler INSTANCE = new PingHandler();
 
     protected void channelRead0(ChannelHandlerContext ctx, Ping ping) {
-        ctx.writeAndFlush(new Pong(ping.getTimestamp(), ping.getReliability()));
+        ctx.write(new Pong(ping.getTimestamp(), ping.getReliability()));
     }
 
 }

@@ -30,8 +30,7 @@ public class DefaultConfig extends DefaultChannelConfig implements RakNet.Config
     private volatile long clientId = rnd.nextLong();
     private volatile RakNet.MetricsLogger metrics = DEFAULT_METRICS;
     private volatile int mtu = DEFAULT_MTU;
-    private volatile long retryDelayNanos = TimeUnit.NANOSECONDS
-            .convert(50, TimeUnit.MILLISECONDS);
+    private volatile long retryDelayNanos = TimeUnit.NANOSECONDS.convert(15, TimeUnit.MILLISECONDS);
     private volatile int maxPendingFrameSets = 1024;
     private volatile int defaultPendingFrameSets = 32;
     private volatile int maxQueuedBytes = 3 * 1024 * 1024;
@@ -42,7 +41,7 @@ public class DefaultConfig extends DefaultChannelConfig implements RakNet.Config
 
     public DefaultConfig(Channel channel) {
         super(channel);
-        setRTTNanos(TimeUnit.NANOSECONDS.convert(400, TimeUnit.MILLISECONDS));
+        setRTTNanos(TimeUnit.NANOSECONDS.convert(100, TimeUnit.MILLISECONDS));
     }
 
     @Override

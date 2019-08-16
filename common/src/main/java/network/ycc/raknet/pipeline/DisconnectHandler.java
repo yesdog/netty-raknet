@@ -22,8 +22,7 @@ public class DisconnectHandler extends ChannelDuplexHandler {
         if (msg instanceof Disconnect) {
             ReferenceCountUtil.release(msg);
             ctx.pipeline().remove(this);
-            ctx.channel().flush(); //send ACKs
-            ctx.channel().close();
+            ctx.channel().flush().close(); //send ACKs
         } else {
             ctx.fireChannelRead(msg);
         }
@@ -31,15 +30,19 @@ public class DisconnectHandler extends ChannelDuplexHandler {
 
     @Override
     public void close(ChannelHandlerContext ctx, ChannelPromise promise) {
-        final ChannelPromise disconnectPromise = ctx.newPromise();
-        final ScheduledFuture<?> timeout = ctx.channel().eventLoop().schedule(
-                () -> disconnectPromise.trySuccess(), 1, TimeUnit.SECONDS); //TODO: config
-        ctx.channel().writeAndFlush(new Disconnect())
-                .addListener(f -> disconnectPromise.trySuccess());
-        disconnectPromise.addListener(f -> {
-            timeout.cancel(false);
+        if (ctx.channel().isActive()) {
+            final ChannelPromise disconnectPromise = ctx.newPromise();
+            final ScheduledFuture<?> timeout = ctx.channel().eventLoop().schedule(
+                    () -> disconnectPromise.trySuccess(), 1, TimeUnit.SECONDS); //TODO: config
+            ctx.channel().writeAndFlush(new Disconnect())
+                    .addListener(f -> disconnectPromise.trySuccess());
+            disconnectPromise.addListener(f -> {
+                timeout.cancel(false);
+                ctx.close(promise);
+            });
+        } else {
             ctx.close(promise);
-        });
+        }
     }
 
 }

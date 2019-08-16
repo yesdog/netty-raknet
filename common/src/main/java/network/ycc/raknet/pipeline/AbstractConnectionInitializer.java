@@ -1,9 +1,12 @@
 package network.ycc.raknet.pipeline;
 
+import network.ycc.raknet.RakNet;
+import network.ycc.raknet.packet.ConnectionFailed;
 import network.ycc.raknet.packet.Packet;
 import network.ycc.raknet.packet.Ping;
 
 import io.netty.channel.Channel;
+import io.netty.channel.ChannelFutureListener;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelPromise;
 import io.netty.channel.ConnectTimeoutException;
@@ -45,7 +48,8 @@ public abstract class AbstractConnectionInitializer extends SimpleChannelInbound
 
     @Override
     public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) {
-        fail(cause);
+        final RakNet.Config config = RakNet.config(ctx);
+        ctx.writeAndFlush(new ConnectionFailed(config.getMagic())).addListener(v -> fail(cause));
     }
 
     protected void startPing(ChannelHandlerContext ctx) {

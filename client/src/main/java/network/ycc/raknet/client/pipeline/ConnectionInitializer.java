@@ -28,6 +28,9 @@ public class ConnectionInitializer extends AbstractConnectionInitializer {
     @Override
     public void channelRead0(ChannelHandlerContext ctx, Packet msg) {
         final RakNet.Config config = RakNet.config(ctx);
+        if (msg instanceof ConnectionFailed) {
+            throw new IllegalStateException("Connection failed");
+        }
         switch (state) {
             case CR1: {
                 if (msg instanceof ConnectionReply1) {

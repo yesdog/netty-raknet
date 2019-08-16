@@ -23,15 +23,12 @@ public class ConnectionListener extends UdpPacketHandler<ConnectionRequest1> {
     }
 
     @SuppressWarnings("unchecked")
-    protected void handle(ChannelHandlerContext ctx, InetSocketAddress sender,
-            ConnectionRequest1 request) {
+    protected void handle(ChannelHandlerContext ctx, InetSocketAddress sender, ConnectionRequest1 request) {
         final RakNet.Config config = RakNet.config(ctx);
-        final Packet response;
         if (request.getProtocolVersion() == config.getProtocolVersion()) {
-            response = new ConnectionReply1(config.getMagic(), request.getMtu(), config.getServerId());
             ReferenceCountUtil.retain(request);
             //use connect to create a new child for this remote address
-            ctx.connect(sender).addListeners(
+            ctx.channel().connect(sender).addListeners(
                     ChannelFutureListener.FIRE_EXCEPTION_ON_FAILURE,
                     future -> {
                         if (future.isSuccess()) {
@@ -42,9 +39,8 @@ public class ConnectionListener extends UdpPacketHandler<ConnectionRequest1> {
                     }
             );
         } else {
-            response = new InvalidVersion(config.getMagic(), config.getServerId());
+            sendResponse(ctx, sender, new InvalidVersion(config.getMagic(), config.getServerId()));
         }
-        sendResponse(ctx, sender, response);
     }
 
     protected void sendResponse(ChannelHandlerContext ctx, InetSocketAddress sender, Packet packet) {
@@ -65,7 +61,8 @@ public class ConnectionListener extends UdpPacketHandler<ConnectionRequest1> {
         final ByteBuf buf = ctx.alloc().ioBuffer(request.sizeHint());
         try {
             config.getCodec().encode(request, buf);
-            ctx.fireChannelRead(new DatagramPacket(buf.retain(), sender));
+            ctx.pipeline().fireChannelRead(new DatagramPacket(buf.retain(),
+                    null, sender)).fireChannelReadComplete();
         } finally {
             ReferenceCountUtil.safeRelease(request);
             buf.release();

@@ -23,6 +23,7 @@ import io.netty.util.Attribute;
 import io.netty.util.AttributeKey;
 import io.netty.util.ReferenceCountUtil;
 
+import java.net.PortUnreachableException;
 import java.net.SocketAddress;
 import java.nio.channels.ClosedChannelException;
 import java.util.function.Supplier;
@@ -125,7 +126,7 @@ public class DatagramChannelProxy implements Channel {
     }
 
     public Channel read() {
-        pipeline.read();
+        // NOOP
         return this;
     }
 
@@ -290,7 +291,6 @@ public class DatagramChannelProxy implements Channel {
 
         public void handlerAdded(ChannelHandlerContext ctx) {
             assert listener.eventLoop().inEventLoop();
-            // NOOP
         }
 
         public void bind(ChannelHandlerContext ctx, SocketAddress localAddress,
@@ -320,7 +320,7 @@ public class DatagramChannelProxy implements Channel {
         }
 
         public void read(ChannelHandlerContext ctx) {
-            listener.read();
+            // NOOP
         }
 
         public void write(ChannelHandlerContext ctx, Object msg, ChannelPromise promise) {
@@ -333,6 +333,9 @@ public class DatagramChannelProxy implements Channel {
 
         @SuppressWarnings("deprecation")
         public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) {
+            if (cause instanceof PortUnreachableException) {
+                return;
+            }
             ctx.fireExceptionCaught(cause);
         }
 
@@ -350,7 +353,6 @@ public class DatagramChannelProxy implements Channel {
 
         public void handlerAdded(ChannelHandlerContext ctx) {
             assert listener.eventLoop().inEventLoop();
-            // NOOP
         }
 
         public void channelActive(ChannelHandlerContext ctx) {
@@ -374,7 +376,7 @@ public class DatagramChannelProxy implements Channel {
         }
 
         public void userEventTriggered(ChannelHandlerContext ctx, Object evt) {
-            pipeline.fireUserEventTriggered(evt);
+            // NOOP
         }
 
         public void channelWritabilityChanged(ChannelHandlerContext ctx) {

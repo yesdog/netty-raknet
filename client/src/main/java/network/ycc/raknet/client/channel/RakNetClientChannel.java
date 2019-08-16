@@ -54,6 +54,11 @@ public class RakNetClientChannel extends DatagramChannelProxy {
         pipeline()
                 .addLast(newClientHandler())
                 .addLast(RakNetClient.DefaultClientInitializer.INSTANCE);
+        connectPromise.addListener(res -> {
+            if (!res.isSuccess()) {
+                RakNetClientChannel.this.close();
+            }
+        });
     }
 
     protected ChannelHandler newClientHandler() {
@@ -78,12 +83,6 @@ public class RakNetClientChannel extends DatagramChannelProxy {
                         //start connection process
                         pipeline().replace(ConnectionInitializer.NAME, ConnectionInitializer.NAME,
                                 new ConnectionInitializer(connectPromise));
-                        connectPromise.addListener(rnConnectResult -> {
-                            if (!rnConnectResult.isSuccess()) {
-                                pipeline.fireExceptionCaught(rnConnectResult.cause());
-                                RakNetClientChannel.this.close();
-                            }
-                        });
                     }
                 });
                 final PromiseCombiner combiner = new PromiseCombiner(eventLoop());
@@ -114,6 +113,11 @@ public class RakNetClientChannel extends DatagramChannelProxy {
             } else {
                 ctx.fireChannelRead(msg);
             }
+        }
+
+        @Override
+        public void read(ChannelHandlerContext ctx) {
+            // NOOP
         }
     }
 }

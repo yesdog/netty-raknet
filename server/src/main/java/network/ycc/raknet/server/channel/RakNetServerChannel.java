@@ -108,7 +108,6 @@ public class RakNetServerChannel extends DatagramChannelProxy implements ServerC
                     child.config.setServerId(config.getServerId());
                     pipeline().fireChannelRead(child).fireChannelReadComplete(); //register
                     childMap.put(remoteAddress, child);
-                    //TODO: tie promise to connection sequence?
                     promise.trySuccess();
                 } else {
                     promise.trySuccess(); //already connected
@@ -125,13 +124,13 @@ public class RakNetServerChannel extends DatagramChannelProxy implements ServerC
                 final DatagramPacket datagram = (DatagramPacket) msg;
                 try {
                     final Channel child = childMap.get(datagram.sender());
-                    if (child == null) {
+                    //a null recipient means this was locally forwarded, dont process again
+                    if (child == null && datagram.recipient() != null) {
                         ctx.fireChannelRead(datagram.retain());
-                    } else if (child.isOpen() && child.config().isAutoRead()) {
+                    } else if (child != null && child.isOpen() && child.config().isAutoRead()) {
                         final ByteBuf retained = datagram.content().retain();
-                        child.eventLoop().execute(() -> {
-                            child.pipeline().fireChannelRead(retained).fireChannelReadComplete();
-                        });
+                        child.eventLoop().execute(() ->
+                            child.pipeline().fireChannelRead(retained).fireChannelReadComplete());
                     }
                 } finally {
                     datagram.release();

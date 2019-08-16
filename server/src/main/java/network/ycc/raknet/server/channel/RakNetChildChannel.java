@@ -153,6 +153,11 @@ public class RakNetChildChannel extends AbstractChannel {
                 parent().flush();
             }
         }
+
+        @Override
+        public void read(ChannelHandlerContext ctx) {
+            // NOOP
+        }
     }
 
 }

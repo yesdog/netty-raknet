@@ -24,11 +24,14 @@ import io.netty.channel.SimpleChannelInboundHandler;
 import io.netty.util.ReferenceCountUtil;
 
 import java.net.InetSocketAddress;
+import java.nio.channels.ClosedChannelException;
+import java.nio.channels.ConnectionPendingException;
 
 public class ConnectionInitializer extends AbstractConnectionInitializer {
 
     protected boolean clientIdSet = false;
     protected boolean mtuFixed = false;
+    protected boolean seenFirst = false;
 
     public ConnectionInitializer(ChannelPromise connectPromise) {
         super(connectPromise);
@@ -47,6 +50,8 @@ public class ConnectionInitializer extends AbstractConnectionInitializer {
         final RakNet.Config config = RakNet.config(ctx);
         if (msg instanceof Packet.ClientIdConnection) {
             processClientId(ctx, ((Packet.ClientIdConnection) msg).getClientId());
+        } else if (msg instanceof ConnectionFailed) {
+            throw new IllegalStateException("Connection failed");
         }
         switch (state) {
             case CR1:
@@ -56,9 +61,9 @@ public class ConnectionInitializer extends AbstractConnectionInitializer {
                     if (!mtuFixed) {
                         config.setMTU(cr1.getMtu());
                     }
+                    seenFirst = true;
                     if (cr1.getProtocolVersion() != config.getProtocolVersion()) {
-                        final InvalidVersion packet = new InvalidVersion(config.getMagic(),
-                                config.getServerId());
+                        final InvalidVersion packet = new InvalidVersion(config.getMagic(), config.getServerId());
                         ctx.writeAndFlush(packet).addListener(ChannelFutureListener.CLOSE);
                         return;
                     }
@@ -104,9 +109,11 @@ public class ConnectionInitializer extends AbstractConnectionInitializer {
         final RakNet.Config config = RakNet.config(ctx);
         switch (state) {
             case CR1: {
-                final Packet packet = new ConnectionReply1(config.getMagic(), config.getMTU(),
-                        config.getServerId());
-                ctx.writeAndFlush(packet).addListener(RakNet.INTERNAL_WRITE_LISTENER);
+                if (seenFirst) {
+                    final Packet packet = new ConnectionReply1(config.getMagic(),
+                            config.getMTU(), config.getServerId());
+                    ctx.writeAndFlush(packet).addListener(RakNet.INTERNAL_WRITE_LISTENER);
+                }
                 break;
             }
             case CR2: {
@@ -132,8 +139,6 @@ public class ConnectionInitializer extends AbstractConnectionInitializer {
             config.setClientId(clientId);
             clientIdSet = true;
         } else if (config.getClientId() != clientId) {
-            ctx.writeAndFlush(new ConnectionFailed(config.getMagic()));
-            ctx.close();
             throw new IllegalStateException("Connection sequence restarted");
         }
     }
@@ -143,9 +148,11 @@ public class ConnectionInitializer extends AbstractConnectionInitializer {
         public void channelRead(ChannelHandlerContext ctx, Object msg) {
             if (msg instanceof Packet.ClientIdConnection || msg instanceof ConnectionRequest1) {
                 final RakNet.Config config = RakNet.config(ctx);
-                ctx.writeAndFlush(new ConnectionFailed(config.getMagic()));
-                ctx.close();
+                ctx.writeAndFlush(new ConnectionFailed(config.getMagic())).addListener(ChannelFutureListener.CLOSE);
                 ReferenceCountUtil.safeRelease(msg);
+            } else if (msg instanceof ConnectionFailed) {
+                ReferenceCountUtil.safeRelease(msg);
+                ctx.close();
             } else {
                 ctx.fireChannelRead(msg);
             }

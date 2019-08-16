@@ -68,7 +68,7 @@ public class EndToEndTest {
 
     @Test
     public void connectAndCloseTestServerFirst() throws Throwable {
-        for (int i = 0; i < 20; i++) {
+        for (int i = 0; i < 5; i++) {
             Channel server = newServer(null, null, null);
             Channel client = newClient(null, null);
 
