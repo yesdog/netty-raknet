@@ -25,7 +25,7 @@ public class ConnectionListener extends UdpPacketHandler<ConnectionRequest1> {
     @SuppressWarnings("unchecked")
     protected void handle(ChannelHandlerContext ctx, InetSocketAddress sender, ConnectionRequest1 request) {
         final RakNet.Config config = RakNet.config(ctx);
-        if (request.getProtocolVersion() == config.getProtocolVersion()) {
+        if (config.containsProtocolVersion(request.getProtocolVersion())) {
             ReferenceCountUtil.retain(request);
             //use connect to create a new child for this remote address
             ctx.channel().connect(sender).addListeners(
