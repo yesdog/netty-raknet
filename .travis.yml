@@ -9,7 +9,7 @@ dist: trusty
 jdk:
 - oraclejdk8
 
-script: "mvn clean verify"
+script: "mvn clean verify -DskipTests"
 
 notifications:
   email: false
