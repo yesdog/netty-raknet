@@ -14,7 +14,7 @@
 
     <groupId>network.ycc</groupId>
     <artifactId>netty-raknet-server</artifactId>
-    <version>0.7-SNAPSHOT</version>
+    <version>0.8-SNAPSHOT</version>
     <name>Netty RakNet - Server</name>
 
     <dependencies>
