@@ -10,22 +10,17 @@ import network.ycc.raknet.packet.ConnectionRequest1;
 import network.ycc.raknet.packet.ConnectionRequest2;
 import network.ycc.raknet.packet.InvalidVersion;
 import network.ycc.raknet.packet.Packet;
-import network.ycc.raknet.packet.Packet.ClientIdConnection;
 import network.ycc.raknet.packet.ServerHandshake;
 import network.ycc.raknet.pipeline.AbstractConnectionInitializer;
 
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelFutureListener;
-import io.netty.channel.ChannelHandler;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInboundHandlerAdapter;
 import io.netty.channel.ChannelPromise;
-import io.netty.channel.SimpleChannelInboundHandler;
 import io.netty.util.ReferenceCountUtil;
 
 import java.net.InetSocketAddress;
-import java.nio.channels.ClosedChannelException;
-import java.nio.channels.ConnectionPendingException;
 
 public class ConnectionInitializer extends AbstractConnectionInitializer {
 

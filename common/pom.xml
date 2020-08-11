@@ -8,13 +8,13 @@
     <parent>
         <groupId>network.ycc</groupId>
         <artifactId>netty-raknet</artifactId>
-        <version>0.7-SNAPSHOT</version>
+        <version>0.8-SNAPSHOT</version>
         <relativePath>../pom.xml</relativePath>
     </parent>
 
     <groupId>network.ycc</groupId>
     <artifactId>netty-raknet-common</artifactId>
-    <version>0.7-SNAPSHOT</version>
+    <version>0.8-SNAPSHOT</version>
     <name>Netty RakNet - Common</name>
 
     <dependencies>
