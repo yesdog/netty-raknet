@@ -1,16 +1,14 @@
 package network.ycc.raknet.config;
 
-import network.ycc.raknet.RakNet;
-
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelOption;
 import io.netty.channel.DefaultChannelConfig;
+import network.ycc.raknet.RakNet;
+import org.apache.commons.math3.stat.descriptive.DescriptiveStatistics;
 
 import java.util.Map;
 import java.util.Random;
 import java.util.concurrent.TimeUnit;
-
-import org.apache.commons.math3.stat.descriptive.DescriptiveStatistics;
 
 public class DefaultConfig extends DefaultChannelConfig implements RakNet.Config {
 
@@ -36,8 +34,9 @@ public class DefaultConfig extends DefaultChannelConfig implements RakNet.Config
     private volatile int maxQueuedBytes = 3 * 1024 * 1024;
     private volatile RakNet.Magic magic = DEFAULT_MAGIC;
     private volatile RakNet.Codec codec = DefaultCodec.INSTANCE;
-    private volatile int protocolVersion = 9;
+    private volatile int[] protocolVersions = new int[]{9, 10};
     private volatile int maxConnections = 2048;
+    private volatile int protocolVersion;
 
     public DefaultConfig(Channel channel) {
         super(channel);
@@ -105,6 +104,14 @@ public class DefaultConfig extends DefaultChannelConfig implements RakNet.Config
         return true;
     }
 
+    @Override
+    public boolean containsProtocolVersion(int protocolVersion) {
+        for (int version : this.protocolVersions) {
+            if (version == protocolVersion) return true;
+        }
+
+        return false;
+    }
     public RakNet.MetricsLogger getMetrics() {
         return metrics;
     }
@@ -205,12 +212,12 @@ public class DefaultConfig extends DefaultChannelConfig implements RakNet.Config
         this.codec = codec;
     }
 
-    public int getProtocolVersion() {
-        return protocolVersion;
+    public int[] getProtocolVersions() {
+        return protocolVersions;
     }
 
-    public void setProtocolVersion(int protocolVersion) {
-        this.protocolVersion = protocolVersion;
+    public void setprotocolVersions(int[] protocolVersions) {
+        this.protocolVersions = protocolVersions;
     }
 
     public int getMaxConnections() {
@@ -221,4 +228,11 @@ public class DefaultConfig extends DefaultChannelConfig implements RakNet.Config
         this.maxConnections = maxConnections;
     }
 
+    public int getProtocolVersion() {
+        return protocolVersion;
+    }
+
+    public void setProtocolVersion(int protocolVersion) {
+        this.protocolVersion = protocolVersion;
+    }
 }

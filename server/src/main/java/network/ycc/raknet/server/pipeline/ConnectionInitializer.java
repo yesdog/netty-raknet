@@ -57,11 +57,15 @@ public class ConnectionInitializer extends AbstractConnectionInitializer {
                         config.setMTU(cr1.getMtu());
                     }
                     seenFirst = true;
-                    if (cr1.getProtocolVersion() != config.getProtocolVersion()) {
+
+                    if (!config.containsProtocolVersion(cr1.getProtocolVersion())) {
+                        System.out.println("Unmatching protocol versions");
                         final InvalidVersion packet = new InvalidVersion(config.getMagic(), config.getServerId());
                         ctx.writeAndFlush(packet).addListener(ChannelFutureListener.CLOSE);
                         return;
                     }
+
+                    config.setProtocolVersion(cr1.getProtocolVersion());
                 } else if (msg instanceof ConnectionRequest2) {
                     final ConnectionRequest2 cr2 = (ConnectionRequest2) msg;
                     cr2.getMagic().verify(config.getMagic());

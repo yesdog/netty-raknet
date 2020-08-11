@@ -129,6 +129,9 @@ public class RakNet {
         Codec getCodec();
         void setCodec(Codec codec);
 
+        int[] getProtocolVersions();
+        void setprotocolVersions(int[] protocolVersions);
+        boolean containsProtocolVersion(int protocolVersion);
         int getProtocolVersion();
         void setProtocolVersion(int protocolVersion);
 
