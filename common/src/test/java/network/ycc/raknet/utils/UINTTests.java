@@ -1,14 +1,13 @@
 package network.ycc.raknet.utils;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Test;
 
 import java.util.Random;
 
 import it.unimi.dsi.fastutil.ints.IntBidirectionalIterator;
 import it.unimi.dsi.fastutil.ints.IntRBTreeSet;
 import it.unimi.dsi.fastutil.ints.IntSortedSet;
-import org.junit.Test;
 
 public class UINTTests {
     @Test
@@ -19,7 +18,7 @@ public class UINTTests {
             int d = (int) (random.nextDouble() * UINT.B3.MAX_VALUE) - UINT.B3.HALF_MAX;
             int b = UINT.B3.plus(a, d);
 
-            assertEquals(UINT.B3.minusWrap(b, a), d);
+            Assertions.assertEquals(UINT.B3.minusWrap(b, a), d);
         }
     }
 
@@ -37,7 +36,7 @@ public class UINTTests {
             }
         }
 
-        assertTrue(hasFailed);
+        Assertions.assertTrue(hasFailed);
     }
 
     @Test
@@ -54,7 +53,7 @@ public class UINTTests {
         while (itr.hasNext()) {
             int next = itr.nextInt();
             int d = UINT.B3.minusWrap(x, next);
-            assertTrue(d <= 0);
+            Assertions.assertTrue(d <= 0);
             x = next;
         }
     }

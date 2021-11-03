@@ -1,5 +1,6 @@
 package network.ycc.raknet.server.channel;
 
+import network.ycc.raknet.RakNet;
 import network.ycc.raknet.channel.DatagramChannelProxy;
 import network.ycc.raknet.packet.NoFreeConnections;
 import network.ycc.raknet.packet.Packet;
@@ -26,7 +27,7 @@ import java.util.function.Supplier;
 
 public class RakNetServerChannel extends DatagramChannelProxy implements ServerChannel {
 
-    protected final Map<SocketAddress, RakNetChildChannel> childMap = new HashMap<>();
+    protected final Map<SocketAddress, Channel> childMap = new HashMap<>();
 
     public RakNetServerChannel() {
         this(NioDatagramChannel.class);
@@ -42,7 +43,7 @@ public class RakNetServerChannel extends DatagramChannelProxy implements ServerC
         addDefaultPipeline();
     }
 
-    public RakNetChildChannel getChildChannel(SocketAddress addr) {
+    public Channel getChildChannel(SocketAddress addr) {
         if (!eventLoop().inEventLoop()) {
             throw new IllegalStateException("Method must be called from the server eventLoop!");
         }
@@ -69,7 +70,7 @@ public class RakNetServerChannel extends DatagramChannelProxy implements ServerC
         return new ServerHandler();
     }
 
-    protected RakNetChildChannel newChild(InetSocketAddress remoteAddress) {
+    protected Channel newChild(InetSocketAddress remoteAddress) {
         return new RakNetChildChannel(this, remoteAddress);
     }
 
@@ -101,11 +102,11 @@ public class RakNetServerChannel extends DatagramChannelProxy implements ServerC
                     }
                     promise.tryFailure(new IllegalStateException("Too many connections"));
                 } else if (existingChild == null) {
-                    final RakNetChildChannel child = newChild((InetSocketAddress) remoteAddress);
+                    final Channel child = newChild((InetSocketAddress) remoteAddress);
                     child.closeFuture().addListener(v ->
                             eventLoop().execute(() -> childMap.remove(remoteAddress, child))
                     );
-                    child.config.setServerId(config.getServerId());
+                    child.config().setOption(RakNet.SERVER_ID, config.getServerId());
                     pipeline().fireChannelRead(child).fireChannelReadComplete(); //register
                     childMap.put(remoteAddress, child);
                     promise.trySuccess();

@@ -1,5 +1,8 @@
 package network.ycc.raknet;
 
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Test;
+
 import network.ycc.raknet.client.RakNetClient;
 import network.ycc.raknet.pipeline.UserDataCodec;
 import network.ycc.raknet.server.RakNetServer;
@@ -19,9 +22,6 @@ import io.netty.channel.nio.NioEventLoopGroup;
 
 import java.net.InetSocketAddress;
 import java.nio.charset.StandardCharsets;
-
-import org.junit.Assert;
-import org.junit.Test;
 
 public class HelloWorld {
 
@@ -72,7 +72,7 @@ public class HelloWorld {
         serverChannel.close().sync();
         clientChannel.close().sync();
 
-        Assert.assertEquals(resultStr, helloWorld);
+        Assertions.assertEquals(resultStr, helloWorld);
     }
 
 }
