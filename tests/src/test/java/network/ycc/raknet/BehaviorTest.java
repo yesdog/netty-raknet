@@ -47,7 +47,6 @@ public class BehaviorTest {
             final Channel clientChannel = new Bootstrap()
                     .group(ioGroup)
                     .channel(RakNetClient.CHANNEL)
-                    .option(RakNet.PROTOCOL_VERSION, 9)
                     .handler(new EmptyInit())
                     .connect(localhostIPv6).sync().channel();
 
@@ -74,7 +73,6 @@ public class BehaviorTest {
                 .group(ioGroup)
                 .channel(RakNetClient.CHANNEL)
                 .option(RakNet.MAGIC, badMagic)
-                .option(RakNet.PROTOCOL_VERSION, 9)
                 .handler(new EmptyInit())
                 .connect(localhost);
 

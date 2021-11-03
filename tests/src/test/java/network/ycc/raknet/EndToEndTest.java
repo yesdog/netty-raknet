@@ -305,7 +305,6 @@ public class EndToEndTest {
                     }
                 }))
                 .option(RakNet.CLIENT_ID, 6789L)
-                .option(RakNet.PROTOCOL_VERSION, 9)
                 .option(RakNet.RETRY_DELAY_NANOS,
                         TimeUnit.NANOSECONDS.convert(10, TimeUnit.MILLISECONDS))
                 .handler(new ChannelInitializer<Channel>() {
