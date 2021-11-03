@@ -50,7 +50,7 @@ public class DatagramChannelProxy implements Channel {
 
     public DatagramChannelProxy(Class<? extends DatagramChannel> ioChannelType) {
         this(() -> {
-            try {	
+            try {
                 return ioChannelType.getDeclaredConstructor().newInstance();
             } catch (InstantiationException | IllegalAccessException | NoSuchMethodException | InvocationTargetException e) {
                 throw new IllegalArgumentException("Failed to create instance", e);
