@@ -23,6 +23,7 @@ import io.netty.util.Attribute;
 import io.netty.util.AttributeKey;
 import io.netty.util.ReferenceCountUtil;
 
+import java.lang.reflect.InvocationTargetException;
 import java.net.PortUnreachableException;
 import java.net.SocketAddress;
 import java.nio.channels.ClosedChannelException;
@@ -49,9 +50,9 @@ public class DatagramChannelProxy implements Channel {
 
     public DatagramChannelProxy(Class<? extends DatagramChannel> ioChannelType) {
         this(() -> {
-            try {
-                return ioChannelType.newInstance();
-            } catch (InstantiationException | IllegalAccessException e) {
+            try {	
+                return ioChannelType.getDeclaredConstructor().newInstance();
+            } catch (InstantiationException | IllegalAccessException | NoSuchMethodException | InvocationTargetException e) {
                 throw new IllegalArgumentException("Failed to create instance", e);
             }
         });
