@@ -1,5 +1,8 @@
 package network.ycc.raknet;
 
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Test;
+
 import network.ycc.raknet.client.RakNetClient;
 import network.ycc.raknet.config.DefaultMagic;
 import network.ycc.raknet.packet.FrameSet;
@@ -22,9 +25,6 @@ import io.netty.handler.codec.CorruptedFrameException;
 
 import java.net.InetSocketAddress;
 import java.nio.channels.UnsupportedAddressTypeException;
-
-import org.junit.Assert;
-import org.junit.Test;
 
 public class BehaviorTest {
     final EventLoopGroup ioGroup = new NioEventLoopGroup();
@@ -52,7 +52,7 @@ public class BehaviorTest {
                     .connect(localhostIPv6).sync().channel();
 
             try {
-                Assert.assertTrue(clientChannel.isActive());
+                Assertions.assertTrue(clientChannel.isActive());
             } finally {
                 serverChannel.close().sync();
                 clientChannel.close().sync();
@@ -62,7 +62,7 @@ public class BehaviorTest {
         }
     }
 
-    @Test(expected = IllegalStateException.class)
+    @Test()
     public void badMagicClient() throws Throwable {
         final Channel serverChannel = new ServerBootstrap()
                 .group(ioGroup, childGroup)
@@ -80,12 +80,14 @@ public class BehaviorTest {
 
         final Channel clientChannel = clientConnect.channel();
 
-        try {
-            clientConnect.sync();
-        } finally {
-            serverChannel.close().sync();
-            clientChannel.close().sync();
-        }
+        Assertions.assertThrows(IllegalStateException.class, () -> {
+            try {
+                clientConnect.sync();
+            } finally {
+                serverChannel.close().sync();
+                clientChannel.close().sync();
+            }
+        });
     }
 
     /*@Test(expected = IllegalStateException.class)
@@ -113,7 +115,7 @@ public class BehaviorTest {
         }
     }*/
 
-    @Test(expected = ConnectTimeoutException.class)
+    @Test()
     public void badConnect() throws Throwable {
         final Channel serverChannel = new Bootstrap()
                 .group(ioGroup)
@@ -130,15 +132,16 @@ public class BehaviorTest {
 
         final Channel clientChannel = clientConnect.channel();
 
-        try {
-            clientConnect.sync();
-        } finally {
-            serverChannel.close().sync();
-            clientChannel.close().sync();
-        }
+        Assertions.assertThrows(ConnectTimeoutException.class, () -> {
+            try {
+                clientConnect.sync();
+            } finally {
+                serverChannel.close().sync();
+                clientChannel.close().sync();
+            }
+        });
     }
 
-    @Test(expected = InvalidVersion.InvalidVersionException.class)
     public void badVersionClient() throws Throwable {
         final Channel serverChannel = new ServerBootstrap()
                 .group(ioGroup, childGroup)
@@ -155,15 +158,16 @@ public class BehaviorTest {
 
         final Channel clientChannel = clientConnect.channel();
 
-        try {
-            clientConnect.sync();
-        } finally {
-            serverChannel.close().sync();
-            clientChannel.close().sync();
-        }
+        Assertions.assertThrows(InvalidVersion.InvalidVersionException.class, () -> {
+            try {
+                clientConnect.sync();
+            } finally {
+                serverChannel.close().sync();
+                clientChannel.close().sync();
+            }
+        });
     }
 
-    @Test(expected = InvalidVersion.InvalidVersionException.class)
     public void badVersionServer() throws Throwable {
         final Channel serverChannel = new ServerBootstrap()
                 .group(ioGroup, childGroup)
@@ -180,16 +184,20 @@ public class BehaviorTest {
 
         final Channel clientChannel = clientConnect.channel();
 
-        try {
-            clientConnect.sync();
-        } finally {
-            serverChannel.close().sync();
-            clientChannel.close().sync();
-        }
+        Assertions.assertThrows(InvalidVersion.InvalidVersionException.class, () -> {
+            try {
+                clientConnect.sync();
+            } finally {
+                serverChannel.close().sync();
+                clientChannel.close().sync();
+            }
+        });
     }
 
-    @Test(expected = CorruptedFrameException.class)
+    @Test()
     public void corruptFrameTest() {
-        FrameSet.read(Unpooled.wrappedBuffer(new byte[]{1, 2, 3, 4, 5, 6, 7, 8, 9}));
+        Assertions.assertThrows(CorruptedFrameException.class, () -> {
+            FrameSet.read(Unpooled.wrappedBuffer(new byte[]{1, 2, 3, 4, 5, 6, 7, 8, 9}));
+        });
     }
 }

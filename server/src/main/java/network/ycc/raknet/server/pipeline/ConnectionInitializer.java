@@ -59,7 +59,6 @@ public class ConnectionInitializer extends AbstractConnectionInitializer {
                     seenFirst = true;
 
                     if (!config.containsProtocolVersion(cr1.getProtocolVersion())) {
-                        System.out.println("Unmatching protocol versions");
                         final InvalidVersion packet = new InvalidVersion(config.getMagic(), config.getServerId());
                         ctx.writeAndFlush(packet).addListener(ChannelFutureListener.CLOSE);
                         return;

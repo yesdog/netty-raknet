@@ -37,8 +37,8 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.BiConsumer;
 
-import org.junit.Assert;
-import org.junit.Test;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Test;
 
 public class EndToEndTest {
     final EventLoopGroup ioGroup = new NioEventLoopGroup();
@@ -115,7 +115,7 @@ public class EndToEndTest {
         System.gc();
         System.gc();
 
-        Assert.assertEquals(bytesSent, bytesRecvd.get());
+        Assertions.assertEquals(bytesSent, bytesRecvd.get());
     }
 
     @Test
@@ -257,10 +257,10 @@ public class EndToEndTest {
         System.gc();
         System.gc();
         System.gc();
-        Assert.assertTrue(reliableSet.isEmpty());
-        Assert.assertEquals(0, pending.get());
-        Assert.assertEquals(nSend, numRecvd.get());
-        Assert.assertEquals(bytesSent.get(), bytesRecvd.get());
+        Assertions.assertTrue(reliableSet.isEmpty());
+        Assertions.assertEquals(0, pending.get());
+        Assertions.assertEquals(nSend, numRecvd.get());
+        Assertions.assertEquals(bytesSent.get(), bytesRecvd.get());
     }
 
     public Channel newServer(ChannelInitializer<Channel> ioInit,

@@ -36,7 +36,7 @@ public class DefaultConfig extends DefaultChannelConfig implements RakNet.Config
     private volatile RakNet.Codec codec = DefaultCodec.INSTANCE;
     private volatile int[] protocolVersions = new int[]{9, 10};
     private volatile int maxConnections = 2048;
-    private volatile int protocolVersion;
+    private volatile int protocolVersion = 9;
 
     public DefaultConfig(Channel channel) {
         super(channel);
