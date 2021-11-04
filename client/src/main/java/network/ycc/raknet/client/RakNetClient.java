@@ -1,5 +1,6 @@
 package network.ycc.raknet.client;
 
+import io.netty.channel.Channel;
 import network.ycc.raknet.RakNet;
 import network.ycc.raknet.client.channel.RakNetClientChannel;
 import network.ycc.raknet.client.pipeline.ConnectionInitializer;
@@ -13,10 +14,10 @@ public class RakNetClient extends RakNet {
 
     public static final Class<RakNetClientChannel> CHANNEL = RakNetClientChannel.class;
 
-    public static class DefaultClientInitializer extends ChannelInitializer<RakNetClientChannel> {
+    public static class DefaultClientInitializer extends ChannelInitializer<Channel> {
         public static final DefaultClientInitializer INSTANCE = new DefaultClientInitializer();
 
-        protected void initChannel(RakNetClientChannel channel) {
+        protected void initChannel(Channel channel) {
             channel.pipeline()
                     .addLast(FlushTickHandler.NAME, new FlushTickHandler())
                     .addLast(RawPacketCodec.NAME, RawPacketCodec.INSTANCE)

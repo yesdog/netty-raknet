@@ -1,5 +1,6 @@
 package network.ycc.raknet.server.channel;
 
+import io.netty.channel.Channel;
 import network.ycc.raknet.RakNet;
 import network.ycc.raknet.config.DefaultConfig;
 import network.ycc.raknet.server.RakNetServer;
@@ -28,13 +29,13 @@ public class RakNetChildChannel extends AbstractChannel {
 
     protected volatile boolean open = true;
 
-    protected RakNetChildChannel(RakNetServerChannel parent, InetSocketAddress remoteAddress) {
+    public RakNetChildChannel(Channel parent, InetSocketAddress remoteAddress) {
         super(parent);
         this.remoteAddress = remoteAddress;
         config = new DefaultConfig(this);
         connectPromise = newPromise();
-        config.setMetrics(parent.config().getMetrics());
-        config.setServerId(parent.config().getServerId());
+        config.setMetrics(parent.config().getOption(RakNet.METRICS));
+        config.setServerId(parent.config().getOption(RakNet.SERVER_ID));
         pipeline().addLast(new WriteHandler());
         addDefaultPipeline();
     }

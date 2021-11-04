@@ -74,6 +74,10 @@ public class RakNetServerChannel extends DatagramChannelProxy implements ServerC
         return new RakNetChildChannel(this, remoteAddress);
     }
 
+    protected void removeChild(SocketAddress remoteAddress, Channel child) {
+        childMap.remove(remoteAddress, child);
+    }
+
     protected class ServerHandler extends ChannelDuplexHandler {
         @Override
         public void connect(ChannelHandlerContext ctx, SocketAddress remoteAddress,
@@ -104,7 +108,7 @@ public class RakNetServerChannel extends DatagramChannelProxy implements ServerC
                 } else if (existingChild == null) {
                     final Channel child = newChild((InetSocketAddress) remoteAddress);
                     child.closeFuture().addListener(v ->
-                            eventLoop().execute(() -> childMap.remove(remoteAddress, child))
+                            eventLoop().execute(() -> removeChild(remoteAddress, child))
                     );
                     child.config().setOption(RakNet.SERVER_ID, config.getServerId());
                     pipeline().fireChannelRead(child).fireChannelReadComplete(); //register
