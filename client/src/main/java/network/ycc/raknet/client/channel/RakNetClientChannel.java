@@ -39,6 +39,10 @@ public class RakNetClientChannel extends DatagramChannelProxy {
         addDefaultPipeline();
     }
 
+    public ChannelFuture connectFuture() {
+        return connectPromise;
+    }
+
     @Override
     public boolean isActive() {
         return super.isActive() && connectPromise.isSuccess();

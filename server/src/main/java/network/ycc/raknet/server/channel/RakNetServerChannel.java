@@ -78,6 +78,10 @@ public class RakNetServerChannel extends DatagramChannelProxy implements ServerC
         childMap.remove(remoteAddress, child);
     }
 
+    protected void addChild(SocketAddress remoteAddress, Channel child) {
+        childMap.put(remoteAddress, child);
+    }
+
     protected class ServerHandler extends ChannelDuplexHandler {
         @Override
         public void connect(ChannelHandlerContext ctx, SocketAddress remoteAddress,
@@ -112,7 +116,7 @@ public class RakNetServerChannel extends DatagramChannelProxy implements ServerC
                     );
                     child.config().setOption(RakNet.SERVER_ID, config.getServerId());
                     pipeline().fireChannelRead(child).fireChannelReadComplete(); //register
-                    childMap.put(remoteAddress, child);
+                    addChild(remoteAddress, child);
                     promise.trySuccess();
                 } else {
                     promise.trySuccess(); //already connected

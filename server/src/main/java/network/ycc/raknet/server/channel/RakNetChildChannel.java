@@ -1,6 +1,7 @@
 package network.ycc.raknet.server.channel;
 
 import io.netty.channel.Channel;
+import io.netty.channel.ChannelFuture;
 import network.ycc.raknet.RakNet;
 import network.ycc.raknet.config.DefaultConfig;
 import network.ycc.raknet.server.RakNetServer;
@@ -53,6 +54,10 @@ public class RakNetChildChannel extends AbstractChannel {
                         new ConnectionInitializer(connectPromise));
             }
         });
+    }
+
+    public ChannelFuture connectFuture() {
+        return connectPromise;
     }
 
     @Override
