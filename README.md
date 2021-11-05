@@ -5,7 +5,7 @@
 [![SonarCloud Bugs](https://sonarcloud.io/api/project_badges/measure?project=yesdog_netty-raknet&metric=bugs)](https://sonarcloud.io/component_measures/metric/reliability_rating/list?id=yesdog_netty-raknet)
 [![SonarCloud Coverage](https://sonarcloud.io/api/project_badges/measure?project=yesdog_netty-raknet&metric=coverage)](https://sonarcloud.io/component_measures/metric/coverage/list?id=yesdog_netty-raknet)
 
-High performance fork of [RakNetServer](https://github.com/Shevchik/RakNetServer) 
+High performance RakNet implementation
 targeting unreliable and rate-limited client connections. It provides strict netty 
 style server and client channels. 
 
