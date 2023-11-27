@@ -7,7 +7,7 @@
 
     <groupId>network.ycc</groupId>
     <artifactId>netty-raknet</artifactId>
-    <version>0.8-SNAPSHOT</version>
+    <version>1.0</version>
     <name>Netty RakNet</name>
     <description>A RakNet reliable UDP transport server using Netty.</description>
     <url>https://github.com/yesdog/netty-raknet</url>

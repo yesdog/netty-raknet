@@ -48,21 +48,20 @@ room for extension with any plugins or custom behavior.
         <dependency>
             <groupId>network.ycc</groupId>
             <artifactId>raknet-server</artifactId>
-            <version>0.8-SNAPSHOT</version>
+            <version>1.0</version>
         </dependency>
         <dependency>
             <groupId>network.ycc</groupId>
             <artifactId>raknet-client</artifactId>
-            <version>0.8-SNAPSHOT</version>
+            <version>1.0</version>
         </dependency>
     </dependencies>
 
-    <repositories>
-        <repository>
-            <id>codemc-repo</id>
-            <url>https://repo.codemc.org/repository/maven-public</url>
-        </repository>
-    </repositories>
+    <repository>
+        <id>waterdogpe-repo-releases</id>
+        <name>WaterdogPE Repository</name>
+        <url>https://repo.waterdog.dev/releases</url>
+    </repository>
 ```
 
 ### Example
