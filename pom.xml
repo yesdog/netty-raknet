@@ -71,12 +71,12 @@
 
     <distributionManagement>
         <snapshotRepository>
-            <id>codemc-snapshots</id>
-            <url>https://repo.codemc.org/repository/maven-snapshots</url>
+            <id>waterdog</id>
+            <url>https://repo.waterdog.dev/snapshots</url>
         </snapshotRepository>
         <repository>
-            <id>codemc-releases</id>
-            <url>https://repo.codemc.org/repository/maven-releases</url>
+            <id>waterdog</id>
+            <url>https://repo.waterdog.dev/releases</url>
         </repository>
     </distributionManagement>
 
