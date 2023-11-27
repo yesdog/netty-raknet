@@ -8,13 +8,11 @@
     <parent>
         <groupId>network.ycc</groupId>
         <artifactId>netty-raknet</artifactId>
-        <version>1.0</version>
+        <version>1.1</version>
         <relativePath>../pom.xml</relativePath>
     </parent>
 
-    <groupId>network.ycc</groupId>
     <artifactId>netty-raknet-common</artifactId>
-    <version>1.0</version>
     <name>Netty RakNet - Common</name>
 
     <dependencies>

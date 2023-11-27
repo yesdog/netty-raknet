@@ -7,7 +7,7 @@
 
     <groupId>network.ycc</groupId>
     <artifactId>netty-raknet</artifactId>
-    <version>1.0</version>
+    <version>1.1</version>
     <name>Netty RakNet</name>
     <description>A RakNet reliable UDP transport server using Netty.</description>
     <url>https://github.com/yesdog/netty-raknet</url>
@@ -58,11 +58,6 @@
             <scope>test</scope>
         </dependency>
     </dependencies>
-
-    <ciManagement>
-        <system>jenkins</system>
-        <url>http://ci.codemc.org/job/yesdog/job/netty-raknet</url>
-    </ciManagement>
 
     <issueManagement>
         <system>GitHub</system>

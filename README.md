@@ -48,12 +48,12 @@ room for extension with any plugins or custom behavior.
         <dependency>
             <groupId>network.ycc</groupId>
             <artifactId>raknet-server</artifactId>
-            <version>1.0</version>
+            <version>1.1</version>
         </dependency>
         <dependency>
             <groupId>network.ycc</groupId>
             <artifactId>raknet-client</artifactId>
-            <version>1.0</version>
+            <version>1.1</version>
         </dependency>
     </dependencies>
 
